@@ -2,7 +2,7 @@
 # Bootstrap the hymme skill toolchain.
 #
 #   ./scripts/bootstrap.sh            # nix develop (enter a dev shell with the tools)
-#   ./scripts/bootstrap.sh install    # nix profile install .#tools (persist into profile)
+#   ./scripts/bootstrap.sh install    # nix profile install .#skill-tools (persist into profile)
 #
 # Installs Determinate Nix first if `nix` is missing. The Nix install is a
 # system-level change (needs sudo, adds /nix, edits your shell rc), so it
@@ -46,7 +46,7 @@ case "$mode" in
     exec nix "${flags[@]}" develop "$here"
     ;;
   install)
-    exec nix "${flags[@]}" profile install "$here#tools"
+    exec nix "${flags[@]}" profile install "$here#skill-tools"
     ;;
   *)
     echo "usage: $0 [develop|install]" >&2

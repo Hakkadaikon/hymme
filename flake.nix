@@ -60,15 +60,15 @@
     in
     {
       packages = {
-        default = pkgs.buildEnv {
-          name = "hymme-tools";
-          paths = tools;
-        };
         inherit tlaplus apalache;
-        tools = pkgs.buildEnv {
-          name = "hymme-tools";
+        # Named `skill-tools` (not `tools`) so it shows a distinct profile entry
+        # from dotfiles' own `tools`, which lets `nix profile upgrade skill-tools`
+        # target it by name.
+        skill-tools = pkgs.buildEnv {
+          name = "hymme-skill-tools";
           paths = tools;
         };
+        default = self.packages.${system}.skill-tools;
       };
 
       devShells.default = pkgs.mkShell {

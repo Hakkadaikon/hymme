@@ -31,14 +31,14 @@ before the system-level install; set `HYMME_ASSUME_YES=1` for non-interactive):
 
 ```sh
 ./scripts/bootstrap.sh          # nix develop — dev shell with the toolchain on PATH
-./scripts/bootstrap.sh install  # nix profile install .#tools — persist into profile
+./scripts/bootstrap.sh install  # nix profile install .#skill-tools — persist into profile
 ```
 
 Or directly, if you already have Nix:
 
 ```sh
 nix develop                 # dev shell with the toolchain on PATH
-nix profile install .#tools # or install into your profile
+nix profile install .#skill-tools # or install into your profile
 ```
 
 `tlc` / `sany` / `apalache-mc` / `lake` / `lean` become available. nixpkgs has no
