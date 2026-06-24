@@ -24,7 +24,17 @@ A Claude Code plugin marketplace bundling two skills with the Nix toolchain they
 ## Toolchain (Nix)
 
 The skills shell out to TLA+ (TLC/SANY), Apalache, make, python3, and Lean (via elan).
-The flake provides them all:
+The flake provides them all.
+
+One-shot bootstrap (installs Determinate Nix first if `nix` is missing — prompts
+before the system-level install; set `HYMME_ASSUME_YES=1` for non-interactive):
+
+```sh
+./scripts/bootstrap.sh          # nix develop — dev shell with the toolchain on PATH
+./scripts/bootstrap.sh install  # nix profile install .#tools — persist into profile
+```
+
+Or directly, if you already have Nix:
 
 ```sh
 nix develop                 # dev shell with the toolchain on PATH
