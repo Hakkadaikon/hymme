@@ -1,51 +1,46 @@
 # hymme
 
-A Claude Code plugin marketplace bundling two skills with the Nix toolchain they need.
+3 つのスキルと、それらが必要とする Nix ツールチェインをまとめた Claude Code プラグインマーケットプレイス。
 
-## Skills
+## 収録スキル
 
-- **loop-engineering** — NL → EARS → TLA+ → Gherkin. Structures natural-language
-  requirements, model-checks the design with TLC/Apalache, and turns counterexamples
-  into Gherkin acceptance specs.
-- **test-design** — a catalog and selection workflow for designing tests (and
-  reviewing existing ones): exhaustively extract behaviors-under-test and assign a
-  fitting technique to each.
-- **formal-verification** — autoformalize a rough spec into a Lean 4 spec, verify it
-  by proof (proof-repair loop), then bridge the proven properties into a test-first
-  implementation.
+- **loop-engineering**：自然言語の要求を EARS 記法と状態モデルへ構造化し、TLA+(TLC/Apalache)で設計をモデル検査して、反例を Gherkin の受け入れ仕様に落とす。
+- **test-design**：テストを設計する、または既存テストをレビューするための手法カタログと選定ワークフロー。テストすべき振る舞いを網羅抽出し、各振る舞いに手法を割り当てる。
+- **formal-verification**：雑な仕様を Lean 4 の形式仕様へ落とし込み、証明で検証し(proof-repair ループ)、証明済みの性質を test-first 実装へ橋渡しする。
 
-## Install (Claude Code)
+## インストール(Claude Code)
 
 ```
 /plugin marketplace add Hakkadaikon/hymme
 /plugin install hymme@hymme
 ```
 
-## Toolchain (Nix)
+## ツールチェイン(Nix)
 
-The skills shell out to TLA+ (TLC/SANY), Apalache, make, python3, and Lean (via elan).
-The flake provides them all.
+スキルは TLA+(TLC/SANY)、Apalache、make、python3、Lean(elan 経由)を外部コマンドとして呼ぶ。
+flake がこれらをまとめて提供する。
 
-One-shot bootstrap (installs Determinate Nix first if `nix` is missing — prompts
-before the system-level install; set `HYMME_ASSUME_YES=1` for non-interactive):
-
-```sh
-./scripts/bootstrap.sh          # nix develop — dev shell with the toolchain on PATH
-./scripts/bootstrap.sh install  # nix profile install .#skill-tools — persist into profile
-```
-
-Or directly, if you already have Nix:
+一括セットアップ。
+`nix` が無ければ先に Determinate Nix を入れる。
+システム全体への変更なので実行前に確認を求める(非対話で進めるなら `HYMME_ASSUME_YES=1`)。
 
 ```sh
-nix develop                 # dev shell with the toolchain on PATH
-nix profile install .#skill-tools # or install into your profile
+./scripts/bootstrap.sh          # nix develop — ツールチェインを PATH に載せた dev シェル
+./scripts/bootstrap.sh install  # nix profile install .#skill-tools — profile に永続化
 ```
 
-`tlc` / `sany` / `apalache-mc` / `lake` / `lean` become available. nixpkgs has no
-official TLA+/Apalache package, so the flake fetches pinned release artifacts and
-wraps them with a JRE; bump the URLs and hashes in `flake.nix` together.
+すでに Nix があるなら直接実行してもよい。
 
-Not provisioned (install per-project only when actually needed):
+```sh
+nix develop                       # ツールチェインを PATH に載せた dev シェル
+nix profile install .#skill-tools # または profile にインストール
+```
 
-- Gherkin runners — `cucumber-js` (npm) / `godog` (`go install`); not in nixpkgs.
-- `doorstop` for requirement traceability — `uv pip install doorstop`.
+これで `tlc` / `sany` / `apalache-mc` / `lake` / `lean` が使えるようになる。
+nixpkgs には TLA+ と Apalache の公式パッケージが無いため、flake は固定したリリース成果物を取得して JRE でラップする。
+バージョンを上げるときは `flake.nix` の URL とハッシュを揃えて更新する。
+
+次のものは含めていない(必要になったプロジェクトで個別に入れる)。
+
+- Gherkin ランナー：`cucumber-js`(npm)や `godog`(`go install`)。nixpkgs に無い。
+- 要求のトレーサビリティ用の `doorstop`：`uv pip install doorstop`。
