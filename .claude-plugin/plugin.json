@@ -1,0 +1,9 @@
+{
+  "name": "hymme",
+  "version": "0.1.0",
+  "description": "loop-engineering, test-design, and formal-verification skills with a Nix flake for their toolchain.",
+  "author": {
+    "name": "Hakkadaikon",
+    "url": "https://github.com/Hakkadaikon"
+  }
+}
