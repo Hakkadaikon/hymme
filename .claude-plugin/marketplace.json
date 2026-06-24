@@ -8,7 +8,7 @@
     {
       "name": "hymme",
       "source": "./",
-      "description": "loop-engineering (NL→EARS→TLA+→Gherkin design verification), test-design, and formal-verification (Lean 4) skills, with a Nix flake for their toolchain (TLA+/Apalache/make/python3/Lean)."
+      "description": "loop-engineering(NL→EARS→TLA+→Gherkin で設計を検証)、test-design(テスト設計とレビュー)、formal-verification(Lean 4 で形式検証)の3スキルと、その toolchain(TLA+/Apalache/make/python3/Lean)を入れる Nix flake。"
     }
   ]
 }
