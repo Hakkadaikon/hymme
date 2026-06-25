@@ -118,6 +118,12 @@ example をそのまま雛形にして対象へ写す。
 - critical な `T-ID` は mutation やカバレッジを CI ゲートにし、下限を割る変更をマージさせない([`reference/nonfunctional-process.md`](reference/nonfunctional-process.md)、[`reference/mutation-testing.md`](reference/mutation-testing.md))。
 - 以後バグが出たら、その欠陥を再現する最小テストを1本固定して回帰へ積む([`reference/levels-system.md`](reference/levels-system.md) の回帰テスト)。台帳には新しい `T-ID` として追記する。
 
+## 完了前の必須ゲート(コンプライアンスレビュー)
+
+テストを1件でも書く前(0段を閉じた直後)と、実装が済んで完了扱いにする前の2点で、必ず `hymme:skill-compliance-reviewer` サブエージェントへ渡して外側から検査させる。
+渡すもの: 対象スキル名(test-design)、T-ID 台帳のパス、テストファイルと実行ログの場所。
+レビュアーが挙げた違反(台帳の未完・欠番、手法名のみで reference 未開封、T-ID とテストの存在不一致、実行ログ無しの「緑」報告、理由なしの優先度落とし)を解消してから先へ進む。「緑と報告された」を証跡の代わりにしない。
+
 ## やらないこと
 
 - **0段(振る舞い抽出)を飛ばしてテストを書かない。** 思いつきで書くと正常系に偏り、境界と異常系が抜ける。
