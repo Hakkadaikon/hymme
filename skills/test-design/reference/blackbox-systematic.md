@@ -15,8 +15,10 @@ ISO/IEC/IEEE 29119-4 はこれらを「仕様ベースのテスト設計技法(s
 
 - [同値分割(Equivalence Partitioning)](#同値分割equivalence-partitioning)
 - [境界値分析(Boundary Value Analysis)](#境界値分析boundary-value-analysis)
+- [ドメイン分析テスト(Domain Analysis)](#ドメイン分析テストdomain-analysis)
 - [デシジョンテーブル(Decision Table)](#デシジョンテーブルdecision-table)
 - [状態遷移テスト(State Transition)](#状態遷移テストstate-transition)
+- [CRUD / エンティティライフサイクルテスト(CRUD / Entity Lifecycle)](#crud--エンティティライフサイクルテストcrud--entity-lifecycle)
 
 ---
 
@@ -121,6 +123,67 @@ describe("isValidScore: boundary values (range 0..100)", () => {
   2. 各境界に直前、境界上、直後の3点(または on/off の2点)を割り当て、1ケースずつにする。
 - **達成チェック**：片側(上限だけ、下限だけ)になっている境界が無いか、両端の対称性を確認する。
 - 浮動小数の境界では `±1` でなく次の表現可能値(`Number.EPSILON` 相当)を使えているか見る。
+
+---
+
+## ドメイン分析テスト(Domain Analysis)
+
+### 概要
+
+複数の入力変数が同時に効くとき、各変数の境界を on(境界上)/off(境界の外側直近)/in(領域の内側)/out(領域の外側)の点で攻める。
+境界値分析を多変数へ拡張したもので、1つの変数の境界を1ケースで攻める間、他の変数は領域内(in)に固定する(1点1テスト原則)。
+
+### 目的/いつ使う
+
+判定が複数の入力変数の組合せで決まり、各変数に順序境界があるとき(矩形領域への内外判定、与信スコア×年収のしきい値、座標が範囲内か、など)に使う。
+境界値分析を変数ごとに別々に回すと変数間の組合せを取りこぼすので、その隙間を埋めたいときに足す。
+変数が1つだけなら境界値分析で足り、変数が独立な真偽の組合せならデシジョンテーブルへ進む。
+
+### TypeScript example
+
+矩形領域 `0<=x<=100, 0<=y<=50` に点が入るかの判定を、各境界の on/off と他変数 in 固定で回す。
+
+```ts
+import { describe, it, expect } from "vitest";
+import { inRegion } from "./region";
+
+describe("inRegion: domain analysis (0<=x<=100, 0<=y<=50)", () => {
+  // 各行は1つの変数の境界を攻め、他変数は in(領域内)に固定する
+  const cases = [
+    { label: "x lower on",  x: 0,   y: 25, expected: true },  // x=境界上, y=in
+    { label: "x lower off", x: -1,  y: 25, expected: false }, // x=境界外直近
+    { label: "x upper on",  x: 100, y: 25, expected: true },
+    { label: "x upper off", x: 101, y: 25, expected: false },
+    { label: "y lower on",  x: 50,  y: 0,  expected: true },  // y=境界上, x=in
+    { label: "y lower off", x: 50,  y: -1, expected: false },
+    { label: "y upper on",  x: 50,  y: 50, expected: true },
+    { label: "y upper off", x: 50,  y: 51, expected: false },
+    { label: "interior in", x: 50,  y: 25, expected: true },  // in: 領域内部
+    { label: "exterior out", x: 200, y: 200, expected: false }, // out: 両変数とも外
+  ] as const;
+
+  it.each(cases)("$label ($x,$y) -> $expected", ({ x, y, expected }) => {
+    expect(inRegion(x, y)).toBe(expected);
+  });
+});
+```
+
+### 落とし穴
+
+- 変数が独立でない(相関する境界、たとえば `x <= y` のような連動制約)とき、各変数を別々に攻めると非実現の組合せ(あり得ない点)を作ってしまう。制約を満たす範囲内で境界を選ぶ。
+- on/off だけ並べて in/out を省くと、領域の内部・外部に潜む欠陥(境界以外の場所での誤判定)を逃す。各変数の境界点に加え、領域内 in と領域外 out の代表点を必ず1つずつ置く。
+- ある変数の境界を攻めるときに他変数まで境界へ寄せると、どの変数の欠陥で落ちたか切り分けられない。攻める1変数以外は in に固定する。
+
+### 網羅の定義
+
+- **網羅基準**：各境界について on/off/in/out の4点(最低でも on/off の2点)を踏み、かつ領域全体に対する in 代表点と out 代表点を踏んだとき網羅完了。
+- **網羅手順**：
+  1. 判定に効く入力変数と、各変数の境界をすべて列挙する。
+  2. 各境界に on(境界上)/off(外側直近)を割り当て、他変数は in(領域内)に固定して1ケースずつにする(1点1テスト原則)。
+  3. 領域内部の in 代表点と、領域外の out 代表点を各1ケース足す。
+  4. 変数間に相関制約があれば、それを満たす組合せだけ残す。
+- **達成チェック**:on/off を攻める各ケースで、攻める変数以外がすべて in に固定されているか確認する。in/out の代表点が欠けていないか確認する。
+- 変数が独立でないとき、非実現の組合せ(制約に反する点)を誤って採用していないか見る。
 
 ---
 
@@ -264,6 +327,78 @@ describe("order state machine: traces", () => {
 落とし穴は、禁止列を異常系の入力1個と同一視して単発に縮めてしまうことである。
 履歴の途中まで正常で、ある一手で初めて禁止になる列(連休跨ぎ、二重支払い、期限切れ後の操作)が N-switch の本命で、ここが単発検査からこぼれる。
 状態空間が広く禁止列の網羅性を厳密に押さえたいなら、列の生成は `loop-engineering`(TLA+)に任せ、反例トレースをそのまま拒否テストへ落とす。
+
+---
+
+## CRUD / エンティティライフサイクルテスト(CRUD / Entity Lifecycle)
+
+### 概要
+
+エンティティの一生(create → read → update → delete)を一貫したシナリオとして辿り、各操作の結果が次の操作に正しく反映されることを検査する。
+扱うエンティティと操作 {C,R,U,D} のマトリクスを作り、各セルが少なくとも1ケースで埋まることを網羅基準にする。
+
+### 目的/いつ使う
+
+永続化を伴うリソース(DB レコード、API リソース、ファイル)を CRUD する層に使う(リポジトリ、永続化層、REST リソース)。
+個々の操作を孤立して検査するだけだと、作成直後の読み出し、更新後の再読み出し、削除後の参照といった**操作間の整合**が抜ける。ライフサイクル全体を1本で辿ってそこを埋める。
+状態が分岐し履歴依存が複雑なものは、CRUD ではなく状態遷移テスト(上)へ進む。CRUD は線形なライフサイクルの完全性を見るのに向く。
+
+### TypeScript example
+
+ユーザーリポジトリの C→R→U→R→D→R を1本のシナリオで辿る。削除後の読み出しが不在(null)になることを必須で確認する。
+
+```ts
+import { describe, it, expect, beforeEach } from "vitest";
+import { UserRepo } from "./userRepo";
+
+describe("UserRepo: CRUD lifecycle", () => {
+  let repo: UserRepo;
+  beforeEach(() => {
+    repo = new UserRepo();
+  });
+
+  it("create -> read -> update -> read -> delete -> read", async () => {
+    // C: 作成し、生成 id が返る
+    const id = await repo.create({ name: "alice" });
+    expect(id).toBeTruthy();
+
+    // R: 作成直後に読めて、書いた値が反映されている
+    expect(await repo.read(id)).toMatchObject({ name: "alice" });
+
+    // U: 更新が次の read に反映される
+    await repo.update(id, { name: "bob" });
+    expect(await repo.read(id)).toMatchObject({ name: "bob" });
+
+    // D: 削除後の read は不在(null)になる(削除後参照の必須確認)
+    await repo.delete(id);
+    expect(await repo.read(id)).toBeNull();
+  });
+
+  it("update is idempotent for same payload", async () => {
+    const id = await repo.create({ name: "alice" });
+    await repo.update(id, { name: "bob" });
+    await repo.update(id, { name: "bob" });
+    expect(await repo.read(id)).toMatchObject({ name: "bob" });
+  });
+});
+```
+
+### 落とし穴
+
+- read のテストだけ厚くして、delete 後の参照(404 / null / 論理削除フラグ)を検査しない。削除済みエンティティへのアクセスは欠陥の温床なので必須にする。
+- update の冪等性(同じ更新を2回当てても結果が同じ)と部分更新(一部フィールドだけ更新し他は保持)を見落とす。
+- create の重複(同一キーの二重作成)や、存在しない id への update/delete の振る舞いを検査しない。これらは異常系として別ケースに立てる。
+
+### 網羅の定義
+
+- **網羅基準**：全エンティティ × {C,R,U,D} のマトリクスが各1ケース以上で埋まり、かつ削除後の R(不在確認)が踏まれたとき網羅完了。
+- **網羅手順**：
+  1. 対象エンティティをすべて列挙し、行に並べる。
+  2. 列に {C,R,U,D} を置き、エンティティ × 操作のマトリクスを作る。
+  3. 各エンティティについて C→R→U→R→D→R を辿る基本シナリオを1本立て、全セルを埋める。
+  4. 削除後の R(不在確認)、存在しない id への U/D、重複 C、部分更新と冪等性を異常系・性質のケースとして足す。
+- **達成チェック**:マトリクスに空セル(検査されていないエンティティ×操作)が無いか確認する。削除後の R が各エンティティで踏まれているか確認する。
+- 状態分岐が複雑で線形ライフサイクルに収まらないものは、CRUD ではなく状態遷移テストへ移したか見る。
 
 ---
 
