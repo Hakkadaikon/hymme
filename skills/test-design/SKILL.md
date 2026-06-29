@@ -90,6 +90,7 @@ description: >
 | 出力が非決定的(LLM/生成モデルを組み込んだシステム、揺らぎを層で封じ込める) | [`reference/ai-nondeterministic.md`](reference/ai-nondeterministic.md) |
 | AI/LLM にテストを書かせる・レビューさせる(信頼は限定的、観点出しの叩き台、指摘の偽陽性対策) | [`reference/ai-nondeterministic.md`](reference/ai-nondeterministic.md) |
 | 非機能(性能、負荷、a11y、セキュリティ…)や運用(BDD、カナリア、CI ゲート)、静的、並行 | [`reference/nonfunctional-process.md`](reference/nonfunctional-process.md) |
+| テスト実装を複数 subagent に並列で投げる(共有リソースの直列化・命名衝突の予防・単体緑≠統合緑・成果物の実在で進捗判定・外部ツールの sandbox 可否) | [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) |
 
 各 reference は手法ごとに **概要 / 目的といつ使うか / TypeScript example / 落とし穴** を厳密に定義している。
 example をそのまま雛形にして対象へ写す。
@@ -134,4 +135,5 @@ example をそのまま雛形にして対象へ写す。
 - **台帳を実装後に後付けで埋めない。** 0段は実装の前に閉じる。後から辻褄を合わせると、書いたテストに台帳を寄せるだけになり抜けが見えなくなる。
 - **手法名だけ書いて reference を読まずに実装しない。** 割り当ては reference 開封とセット(上の手法割り当て)。
 - **異常系や境界を安易に「優先度低/対象外」へ流して実質スキップしない。** 過剰抽出の趣旨は「出してから落とす」であって、出さない言い訳ではない。落とすなら台帳に理由を1行残す。
+- **「巨大だから別タスク」と振る舞いのスコープを自分で縮めない。** 依存先の仕様も調べて台帳に積む。大きい対象は MECE 分割して順に消化し、分割をスコープ除外と混同しない。完了条件は「対象範囲の全 T-ID が緑か、物理的に止まるまで」で、自発的な区切りを完了と偽らない(異常系・境界を安易に「対象外」へ流さない、の延長)。
 - 自明な1行や設定値にテストを先行させない(YAGNI)。
