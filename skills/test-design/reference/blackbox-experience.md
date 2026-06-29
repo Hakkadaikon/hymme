@@ -10,7 +10,9 @@
 
 - [ユースケーステスト(Use Case Testing)](#ユースケーステストuse-case-testing)
 - [シナリオテスト(Scenario Testing)](#シナリオテストscenario-testing)
+- [構文テスト(Syntax Testing)](#構文テストsyntax-testing)
 - [エラー推測(Error Guessing)](#エラー推測error-guessing)
+- [ランダム / アドホックファジング(Random / Ad Hoc Fuzzing)](#ランダム--アドホックファジングrandom--ad-hoc-fuzzing)
 - [探索的テスト(Exploratory Testing)](#探索的テストexploratory-testing)
 - [アドホックテスト(Ad Hoc Testing)](#アドホックテストad-hoc-testing)
 
@@ -110,6 +112,58 @@ describe("scenario: churn and return", () => {
 
 ---
 
+## 構文テスト(Syntax Testing)
+
+### 概要
+入力の文法(BNF や正規表現)を起点に、文法に従う正常入力と、文法を1箇所だけ壊した不正入力を機械的に生成して叩く。
+エラー推測(直感で壊す)の近縁で、こちらは「壊し方」を文法の構造から系統立てて出す。
+
+### 目的/いつ使う
+入力フォーマットが文法で定義できるとき(メールアドレス、日付、URL、設定ファイル、プロトコルメッセージなど)に、パーサやバリデータの受理/拒否が正しいかを確かめる。
+不正生成は1つの production(文法規則)を1箇所だけ壊すのが要点で、欠落・余分・順序入替・型違反の4種を当てる。複数同時に壊すと、どの規則で弾けたか切り分けられなくなる。
+文法で表せない意味制約(値の整合、業務ルール)はデシジョンテーブルやメタモルフィックへ回す。
+
+### TypeScript example
+`YYYY-MM-DD` の日付文法(`digit{4} "-" digit{2} "-" digit{2}`)から、正常列と各 production を1箇所壊した不正列を `it.each` で回す。
+
+```ts
+import { describe, it, expect } from "vitest";
+import { isIsoDate } from "./date";
+
+describe("isIsoDate: syntax testing (YYYY-MM-DD)", () => {
+  const valid = ["2026-06-29", "2000-01-01"] as const;
+  it.each(valid)("accepts %s", (s) => {
+    expect(isIsoDate(s)).toBe(true);
+  });
+
+  // 各不正は1 production を1箇所だけ壊したもの
+  const invalid = [
+    { input: "2026-6-29", desc: "month digit 欠落" },
+    { input: "2026--06-29", desc: "区切り 余分" },
+    { input: "06-2026-29", desc: "year/month 順序入替" },
+    { input: "20X6-06-29", desc: "digit に型違反(英字)" },
+  ] as const;
+  it.each(invalid)("rejects $desc", ({ input }) => {
+    expect(isIsoDate(input)).toBe(false);
+  });
+});
+```
+
+### 落とし穴
+- 1つの不正入力で複数の規則を同時に壊すと、目的の規則で拒否されたのか別の規則で弾かれたのか分からない。1ミューテーション1ケースに保つ。
+- 正常方向(文法に従う入力の受理)を出し忘れ、拒否ばかり並べる。受理側を踏まないと「常に false を返すだけ」のバグを見逃す。
+- 文法に表れない意味制約(2026-02-30 のような暦上あり得ない日付)を構文テストで網羅しようとする。それは別技法の領分。
+
+### 網羅の定義
+- **網羅基準**：文法の全 production を最低1回は正方向(従う入力)で踏み、かつ各 production について1ミューテーション(欠落/余分/順序入替/型違反のいずれか)を踏んだとき網羅完了。
+- **網羅手順**：
+  1. 入力フォーマットを BNF か正規表現で書き下し、production を列挙する。
+  2. 全 production を通る正常入力を最低1本作る。
+  3. 各 production を1箇所だけ壊した不正入力を1つずつ作る(壊し方は欠落・余分・順序入替・型違反から選ぶ)。
+- **達成チェック**：ミューテーションが割り当たっていない production が0であること、正常入力の受理ケースが1本以上あることを確認する。複数規則を同時に壊した不正ケースが混ざっていないか見る。
+
+---
+
 ## エラー推測(Error Guessing)
 
 ### 概要
@@ -150,6 +204,61 @@ describe("slugify: error guessing", () => {
 - **なぜ網羅を定義できないか**：経験や直感由来で狙うため、入力空間を形式的に覆えない。
 - **停止規範(どこまでやれば十分とするか)**：既知障害パターンのチェックリスト(空、null、0、巨大値、特殊文字、重複、並行 等)を全項目当て込むまで。
 - **体系的技法への昇格**：見つけた壊れる入力は同値分割、境界値、回帰テストへ書き戻し、網羅資産化する。
+
+---
+
+## ランダム / アドホックファジング(Random / Ad Hoc Fuzzing)
+
+### 概要
+ランダムに生成した入力を対象へ大量に投げ、クラッシュや不変条件違反だけを見張る軽量・経験ベースの壊し方。
+エラー推測が「狙った1点」を当てるのに対し、こちらは「数で当てずっぽうに広く撒く」。
+
+### 目的/いつ使う
+入力空間が広く手で代表値を選びきれないとき、パーサやデコーダ、サニタイザを乱数入力で素早く揺さぶって「落ちないこと」を確かめたいとき。
+ここで扱うのは手書きループ程度の軽量版に留める。カバレッジ計装で経路を掘り進める本格的な生成系ファジング(coverage-guided fuzzing)や、性質で出力の正しさまで縛る PBT は [`modern-generative.md`](modern-generative.md) を参照(役割分担: ここは軽量・経験ベース、本格的な生成と oracle は向こう)。
+出力の意味的正しさを問いたいなら、ランダムファジングではなく PBT やメタモルフィック([`modern-oracle.md`](modern-oracle.md))へ進む。ファジングが見られるのは原則「落ちないこと」だけ。
+
+### TypeScript example
+固定 seed の擬似乱数で文字列を量産し、`parse` がクラッシュしないこと(=不変条件)だけを検査する。
+
+```ts
+import { describe, it, expect } from "vitest";
+import { parse } from "./parser";
+
+// 固定 seed の簡易 PRNG(再現可能にするため Math.random は使わない)
+function mulberry32(seed: number) {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+describe("parse: random fuzzing (crash-only)", () => {
+  it("never throws on random input", () => {
+    const rand = mulberry32(42); // seed 固定で再現可能
+    for (let i = 0; i < 1000; i++) {
+      const len = Math.floor(rand() * 64);
+      const s = Array.from({ length: len }, () =>
+        String.fromCharCode(Math.floor(rand() * 0x110000)),
+      ).join("");
+      expect(() => parse(s)).not.toThrow();
+    }
+  });
+});
+```
+
+### 落とし穴
+- `Math.random` をそのまま使うと落ちた入力を再現できない。seed を固定し、失敗時はその入力をログに出して回帰へ昇格させる。
+- 「落ちない」しか見ていないことを忘れ、正しさを検証した気になる。意味的正しさは PBT やメタモルフィックの領分。
+- ランダムは浅い経路ばかり踏んで深い分岐に届かないことがある。経路を掘りたくなったら coverage-guided fuzzing([`modern-generative.md`](modern-generative.md))へ上げる合図。
+
+### 「網羅」の扱い(網羅は主張しない)
+- **なぜ網羅を定義できないか**：乱数で撒くため、踏んだ入力集合を形式的に覆えない(到達経路も保証できない)。
+- **停止規範(どこまでやれば十分とするか)**：固定 seed での試行回数(例: 数百〜数千)を上限に打ち切り、落ちた入力は最小化して回帰テストへ固定する。
+- **体系的技法への昇格**:落ちた入力は構文テスト・境界値・回帰へ書き戻して資産化する。深い経路が要るなら coverage-guided fuzzing([`modern-generative.md`](modern-generative.md))へ移す。
 
 ---
 
