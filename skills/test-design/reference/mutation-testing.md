@@ -3,7 +3,7 @@
 カバレッジがコードへの到達を測るのに対し、ミューテーションテストはテスト自身の欠陥検出力を測る。
 コードを壊したときにテストが落ちるかを問うことで、通したかどうかと正しさを確かめたかどうかの溝を埋める。
 
-構造網羅（カバレッジ）の各手法は別ファイル（[whitebox-coverage.md](whitebox-coverage.md)）で扱う。
+構造網羅（カバレッジ）の各手法は別ファイル（制御フロー系は [whitebox-controlflow-basic.md](whitebox-controlflow-basic.md) / [whitebox-controlflow-path.md](whitebox-controlflow-path.md)、データ・ループ系は [whitebox-dataflow-loop.md](whitebox-dataflow-loop.md)）で扱う。
 
 ## 目次
 
@@ -89,4 +89,4 @@ Mutation Score = Killed / (生成ミュータント − 等価ミュータント
 カバレッジ率は穴（未到達）を見つける道具、ミューテーションスコアはテストの強さを測る道具として、役割で使い分ける。
 どちらも、目標値の達成自体を目的化しない（高カバレッジは良いテストと同義ではない）。
 
-構造網羅（カバレッジ）の各手法は [whitebox-coverage.md](whitebox-coverage.md) で扱う。
+構造網羅（カバレッジ）の各手法は [whitebox-controlflow-basic.md](whitebox-controlflow-basic.md) / [whitebox-controlflow-path.md](whitebox-controlflow-path.md) と [whitebox-dataflow-loop.md](whitebox-dataflow-loop.md) で扱う。
