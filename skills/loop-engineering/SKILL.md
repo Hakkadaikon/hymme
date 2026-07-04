@@ -71,7 +71,7 @@ flowchart TD
 - [`reference/troubleshooting.md`](reference/troubleshooting.md) — 実行時の罠(TMPDIR/JDK 即死、TLC スクラッチ、トレース形式)。動かないときまずここ。
 - [`reference/mutation-oracle.md`](reference/mutation-oracle.md) — equivalent-mutant の見分けと打ち切り基準。survivor を潰すとき。
 - [`reference/gherkin-runners.md`](reference/gherkin-runners.md) — 生成 `.feature` を実行可能テストにする(言語別 OSS、C 例外)。
-- [`reference/lessons.md`](reference/lessons.md) — 抽出漏れの実地教訓(RFC 6455)。0段の重要性の裏付け。
+- [`reference/lessons.md`](reference/lessons.md) — 抽出漏れの実地教訓(ドメイン非依存)。0段の重要性の裏付け。
 - [`reference/example-counter.md`](reference/example-counter.md) — Counter を 0段→3ループ通した最小完全例。初回はこれをなぞる。
 - [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) — 抽出/検査を複数 subagent に並列で投げるときの落とし穴(共有リソースの直列化・命名衝突の予防・単体緑≠統合緑・成果物の実在で進捗判定・外部ツールの sandbox 可否)。
 
