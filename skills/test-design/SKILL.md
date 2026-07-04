@@ -114,6 +114,7 @@ description: >
 | 非機能・耐障害性とデータ整合(バルクヘッド/レートリミット/サーキットブレーカ、マイグレーション整合) | [`reference/nonfunctional-resilience.md`](reference/nonfunctional-resilience.md) |
 | プロセス運用・静的・並行(BDD/ATDD、CI ゲート、カナリア、静的解析、冪等性、並行性) | [`reference/process-static.md`](reference/process-static.md) |
 | テスト実装を複数 subagent に並列で投げる(共有リソースの直列化・命名衝突の予防・単体緑≠統合緑・成果物の実在で進捗判定・外部ツールの sandbox 可否) | [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) |
+| コード/テスト/コミット/コメントのどこに何を書くか(How/What/Why/Why not の役割分担) | [`../_shared/code-comment-commit-roles.md`](../_shared/code-comment-commit-roles.md) |
 
 各 reference は手法ごとに **概要 / 目的といつ使うか / TypeScript example / 落とし穴** を厳密に定義している。
 example をそのまま雛形にして対象へ写す。

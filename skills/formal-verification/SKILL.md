@@ -122,6 +122,9 @@ theorem chunking_invariant (c1 c2 : List (List Byte)) (h : c1.flatten = c2.flatt
   subagent に投げるときの落とし穴(共有リソースの直列化・命名衝突の予防・単体緑≠
   統合緑・成果物の実在で進捗判定・外部ツールの sandbox 可否)は
   [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) を守る。
+- 証明の都合で定義を等価変形したときの理由(Why not)はコメントに残すが、手法の存在(Lean で証明した、
+  という How の手段)はコミットや git 管理下ドキュメントに書かない。コード/テスト/コミット/コメントの
+  役割分担は [`../_shared/code-comment-commit-roles.md`](../_shared/code-comment-commit-roles.md) を参照。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 

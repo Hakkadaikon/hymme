@@ -74,6 +74,7 @@ flowchart TD
 - [`reference/lessons.md`](reference/lessons.md) — 抽出漏れの実地教訓(ドメイン非依存)。0段の重要性の裏付け。
 - [`reference/example-counter.md`](reference/example-counter.md) — Counter を 0段→3ループ通した最小完全例。初回はこれをなぞる。
 - [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) — 抽出/検査を複数 subagent に並列で投げるときの落とし穴(共有リソースの直列化・命名衝突の予防・単体緑≠統合緑・成果物の実在で進捗判定・外部ツールの sandbox 可否)。
+- [`../_shared/code-comment-commit-roles.md`](../_shared/code-comment-commit-roles.md) — コード/テスト/コミット/コメントのどこに何を書くか(How/What/Why/Why not)。管理番号を本体に漏らさない規範の根拠。
 
 ## 前提ツール
 
