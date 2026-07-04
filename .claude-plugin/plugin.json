@@ -1,6 +1,6 @@
 {
   "name": "hymme",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "loop-engineering / test-design / formal-verification の3スキルと、その toolchain を入れる Nix flake。",
   "author": {
     "name": "Hakkadaikon",

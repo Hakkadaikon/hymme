@@ -1,0 +1,53 @@
+# Loop engineering driver.  NL -> EARS+model -> TLA+ -> Gherkin, three loops.
+#
+#   loop-outer  scaffold a TLA+ spec + Gherkin feature from the templates
+#   loop-middle model-check the spec (TLC) then mutation-test it (is it tight?)
+#   loop-inner  replay a TLC counterexample as a Gherkin scenario
+#
+# Run from the directory holding your spec, e.g.:
+#   make -f $LOOPENG_HOME/Makefile.loopeng loop-middle SPEC=Counter
+#
+# LOOPENG_HOME / TLA_JAR / APALACHE_BIN come from conf.d/loopeng.fish.
+
+LOOPENG_HOME ?= $(HOME)/.config/loopeng
+BIN          := $(LOOPENG_HOME)/bin
+TMPL         := $(LOOPENG_HOME)/templates
+SPEC         ?= Spec
+TLA          := $(SPEC).tla
+FEATURE      ?= $(SPEC).feature
+NAME         ?= $(SPEC)
+
+# Prefer the flake `tlc` wrapper (bundles its own JDK); fall back to
+# java -cp $(TLA_JAR) only when no wrapper is on PATH (needs java present).
+TLC := $(if $(shell command -v tlc),tlc,java -cp $(TLA_JAR) tlc2.TLC)
+
+.PHONY: loop-outer loop-middle loop-inner check-spec mutate help
+
+help:
+	@sed -n 's/^# \{0,1\}//p' $(firstword $(MAKEFILE_LIST)) | sed -n '1,12p'
+
+## outer: scaffold spec + feature from templates (won't clobber existing files)
+loop-outer:
+	@test -f $(TLA) || python3 -c "import string,sys; \
+		open('$(TLA)','w').write(string.Template(open('$(TMPL)/Spec.tla.tmpl').read())\
+		.safe_substitute(name='$(NAME)', vars='x'))" && echo "wrote $(TLA)" || echo "$(TLA) exists, kept"
+	@test -f $(FEATURE) || python3 -c "import string; \
+		open('$(FEATURE)','w').write(string.Template(open('$(TMPL)/feature.tmpl').read())\
+		.safe_substitute(name='$(NAME)'))" && echo "wrote $(FEATURE)" || echo "$(FEATURE) exists, kept"
+
+## middle: model-check, then mutation-test the spec
+loop-middle: check-spec mutate
+
+check-spec:
+	@echo "== TLC: $(TLA) =="
+	$(TLC) -deadlock $(TLA)
+
+MUT_TIMEOUT ?= 60
+mutate:
+	@echo "== mutation oracle: $(TLA) =="
+	python3 $(BIN)/tla_mutate_oracle.py $(TLA) --mut-timeout $(MUT_TIMEOUT)
+
+## inner: turn the latest TLC counterexample into a Gherkin scenario
+loop-inner:
+	@echo "== TLC -> Gherkin: $(TLA) -> $(FEATURE) =="
+	-$(TLC) -deadlock $(TLA) 2>&1 | python3 $(BIN)/trace_to_gherkin.py | tee $(FEATURE)

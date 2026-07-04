@@ -1,0 +1,32 @@
+---- MODULE $name ----
+\* Auto-scaffolded by loopeng. Fill in from the EARS requirements + domain model.
+\* Outer loop:  NL -> EARS + state/domain model -> this TLA+ spec.
+\* Middle loop: `loop-middle` runs TLC then mutation-tests THIS spec.
+\* Inner loop:  a TLC counterexample becomes a Gherkin scenario (`loop-inner`).
+
+EXTENDS Naturals, Sequences
+
+\* --- Domain model: the state variables (one per noun in your model) ---
+VARIABLES $vars
+
+vars == <<$vars>>
+
+\* --- TypeOK: the domain invariant (every variable stays in its type) ---
+TypeOK ==
+    /\ TRUE  \* e.g. $vars \in Nat
+
+\* --- Init: the initial state ---
+Init ==
+    /\ TRUE  \* e.g. $vars = 0
+
+\* --- Next: the EARS event-driven / state-driven transitions ---
+\* One disjunct per EARS "WHEN <trigger> the system SHALL <response>".
+Next ==
+    \/ UNCHANGED vars  \* replace with real actions
+
+\* --- Safety: the EARS "WHILE/SHALL never" properties to model-check ---
+Inv ==
+    /\ TypeOK
+
+Spec == Init /\ [][Next]_vars /\ WF_vars(Next)
+====

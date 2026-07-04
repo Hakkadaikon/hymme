@@ -1,0 +1,15 @@
+Feature: $name
+  # Outer-loop source of truth: the EARS requirements behind this feature.
+  # Each EARS clause maps to one scenario; the inner loop fills these in from
+  # TLC counterexample traces via trace_to_gherkin.py.
+
+  # EARS ubiquitous:  "The <system> SHALL <response>."
+  # EARS event:       "WHEN <trigger> the <system> SHALL <response>."
+  # EARS state:       "WHILE <state> the <system> SHALL <response>."
+  # EARS unwanted:    "IF <condition> THEN the <system> SHALL <response>."
+  # EARS optional:    "WHERE <feature> the <system> SHALL <response>."
+
+  Scenario: $name happy path
+    Given the initial domain state
+    When the triggering event occurs
+    Then the system responds as the EARS clause requires
