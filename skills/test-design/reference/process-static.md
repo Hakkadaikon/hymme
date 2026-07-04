@@ -168,7 +168,7 @@ describe("reserve は冪等", () => {
   it("2 回適用しても 1 回分しか減らない", () => {
     const once = reserve({ reserved: false, count: 10 });
     const twice = reserve(once);
-    expect(twice).toEqual(once); // 状態が変わらない = 冪等
+    expect(twice).toEqual(once);
     expect(twice.count).toBe(9);
   });
 });

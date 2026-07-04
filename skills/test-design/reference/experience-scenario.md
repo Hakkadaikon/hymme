@@ -88,9 +88,9 @@ describe("scenario: churn and return", () => {
     const acc = new Account("bob");
     acc.subscribe("pro");
     acc.cancel();
-    acc.subscribe("free"); // 戻ってきた
+    acc.subscribe("free");
     expect(acc.plan).toBe("free");
-    expect(acc.history).toHaveLength(3); // 履歴は保持
+    expect(acc.history).toHaveLength(3);
   });
 });
 ```

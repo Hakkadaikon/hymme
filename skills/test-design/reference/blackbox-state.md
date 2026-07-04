@@ -135,18 +135,15 @@ describe("UserRepo: CRUD lifecycle", () => {
   });
 
   it("create -> read -> update -> read -> delete -> read", async () => {
-    // C: 作成し、生成 id が返る
     const id = await repo.create({ name: "alice" });
     expect(id).toBeTruthy();
 
-    // R: 作成直後に読めて、書いた値が反映されている
     expect(await repo.read(id)).toMatchObject({ name: "alice" });
 
-    // U: 更新が次の read に反映される
     await repo.update(id, { name: "bob" });
     expect(await repo.read(id)).toMatchObject({ name: "bob" });
 
-    // D: 削除後の read は不在(null)になる(削除後参照の必須確認)
+    // 削除後の read が例外でなく null を返すことを明示的に確認する(素通りしやすい禁止列)
     await repo.delete(id);
     expect(await repo.read(id)).toBeNull();
   });

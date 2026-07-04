@@ -36,17 +36,17 @@ describe("TempStore", () => {
   let store: TempStore;
 
   beforeEach(async () => {
-    store = new TempStore(); // setup: リソース確保
+    store = new TempStore();
     await store.open();
   });
 
   afterEach(async () => {
-    await store.close(); // teardown: 必ず解放
+    await store.close();
   });
 
   it("persists a value", async () => {
-    await store.put("k", "v"); // exercise
-    expect(await store.get("k")).toBe("v"); // verify
+    await store.put("k", "v");
+    expect(await store.get("k")).toBe("v");
   });
 });
 ```

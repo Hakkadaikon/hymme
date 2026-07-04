@@ -49,8 +49,7 @@ it("stub supplies input, mock verifies output", () => {
   const result = quote.inUsd(300);
 
   // スタブが供給した値の結果は「状態/出力」で確かめる(スタブ自体は検証しない)
-  expect(result).toBe(2); // 300 / 150
-  // モックは呼び出しを検証する
+  expect(result).toBe(2);
   expect(auditLog.record).toHaveBeenCalledWith("quote", 2);
 });
 ```

@@ -84,7 +84,7 @@ Green に至る二つの戦略。
 ### TypeScript example
 ```ts
 // 仮実装: まず定数で緑にし、後で一般化する
-export const square = (n: number): number => 4; // square(2) のテストだけなら通る
+export const square = (n: number): number => 4;
 
 // 明白な実装: 正解が自明なので直接書く
 export const squareObvious = (n: number): number => n * n;
