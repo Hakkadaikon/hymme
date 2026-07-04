@@ -11,7 +11,8 @@ description: >
   「テストが flaky ／不安定／たまに落ちる」「リファクタ前にテストで固めたい」と困っているとき、
   あるいは手法名(同値分割、境界値、ドメイン分析、デシジョンテーブル、状態遷移、ペアワイズ、直交表、T-way、
   判定／条件網羅、MC/DC、基底パス、構文テスト、contract／Pact、property based、mutation、
-  メタモルフィック、ゴールデン／承認、モック／スタブ／テストダブル、LLM・非決定的出力のテスト)を直接挙げたとき、
+  メタモルフィック、ゴールデン／承認、仕様化テスト、チェックリストベース、
+  モック／スタブ／テストダブル、LLM・非決定的出力のテスト、EARS)を直接挙げたとき、
   実装前にテスト項目を固めたい／既存テストの抜けや脆さを点検したいときに使用する。
   実装の駆動は coder agent の TDD、設計の網羅検査は loop-engineering(TLA+)、実装の証明は formal-verification(Lean)。
 ---
@@ -48,8 +49,8 @@ description: >
 
 1. **曖昧な用語と暗黙の要求を先に定義する**：抽出の前に、対象に出てくる語の意味を一つずつ確定させる。「翌営業日」なら「営業日とは? 休日とは(日曜、指定土曜、祝日)? 月跨ぎは?」まで割る。語の定義が曖昧なまま振る舞いを出すと、境界(連休、月末)と異常系がそっくり抜ける。**用語の未定義は最大の抽出漏れ源**。併せて「当たり前要求」(セキュリティ、実行効率、法令)など暗黙のニーズも、非機能の種別として明示に引き上げる。
 2. **走査アンカーを選ぶ**：対象の構造単位を決める。受け入れ条件、関数シグネチャ、コードの分岐、状態遷移、API エンドポイント×メソッド、不変条件のいずれかを使う。仕様視点(ブラックボックス)とコード視点(ホワイトボックス)で**独立に**出して union を取ると漏れにくい。
-3. **採番チェックリスト台帳に落とす**：[`assets/test-extract-template.md`](assets/test-extract-template.md) を作業領域(`tasks/` 配下など git 管理外)にコピーし、振る舞いごとに `T-001` から連番で1行立てる。頭の中で済ませない。
-4. **各振る舞いに種別を振る**：正常系、境界、異常系(unwanted)、非機能のいずれかを振る。先に**事前条件**(対象が規定の振る舞いを保証する入力・状態の範囲)を確定させ、その内側だけを網羅対象にする。事前条件違反のうち**応答を保証したい分だけ**を事後条件へ引き上げて異常系に積む(契約の詳細は [`reference/test-target-design.md`](reference/test-target-design.md))。そのうえで各正常系に「不正入力なら? 境界なら? 並行なら?」を必ず問い、異常系の行を系統的に生やす。履歴依存があるものは「**起きてはいけない振る舞い(禁止される列)**は何か」も問う。途中まで正常で一手で初めて禁止になる列(二重支払い、期限切れ後の操作)が、ここで異常系の行になる(導出は [`reference/blackbox-state.md`](reference/blackbox-state.md) の禁止仕様からのテスト導出)。
+3. **採番チェックリスト台帳に落とす**：[`assets/test-extract-template.md`](assets/test-extract-template.md) を `tasks/test-design/<対象名>.md`(この場所に固定。`test-design-extract-gate` hook が検査する場所)にコピーし、振る舞いごとに `T-001` から連番で1行立てる。頭の中で済ませない。
+4. **各振る舞いに種別を振る**：テンプレートの EARS 5類型ラベル(`event`/`state`/`ubiquitous`/`unwanted`/`optional`、境界は `boundary`、非機能は `nonfunctional`)のいずれかを振る。この型ラベルは loop-engineering の EARS と共通で、TLA+ を使わない通常のタスクでも「正常系に対応する異常系を出したか」を書式として強制する軽量版として使う。先に**事前条件**(対象が規定の振る舞いを保証する入力・状態の範囲)を確定させ、その内側だけを網羅対象にする。事前条件違反のうち**応答を保証したい分だけ**を事後条件へ引き上げて `unwanted` に積む(契約の詳細は [`reference/test-target-design.md`](reference/test-target-design.md))。そのうえで各 `event`/`state` 行に「不正入力なら? 境界なら? 並行なら?」を必ず問い、`unwanted` の行を系統的に生やす。履歴依存があるものは「**起きてはいけない振る舞い(禁止される列)**は何か」も問う。途中まで正常で一手で初めて禁止になる列(二重支払い、期限切れ後の操作)が、ここで `unwanted` の行になる(導出は [`reference/blackbox-state.md`](reference/blackbox-state.md) の禁止仕様からのテスト導出)。状態遷移・並行・プロトコルがあり TLA+ の網羅検査まで要る場合は `loop-engineering` へ委譲する(下記「実装/検証へ橋渡し」参照)。
 5. **全 ID が `[x]` で欠番なしになったら抽出を閉じる**。未チェックが残る=抽出途中。
 6. **閉じた証跡を出す(必須ゲート、自己申告で済ませない)**：テストを1件でも書く、または `coder` に渡す前に、台帳の絶対パスと、未チェック残数ゼロ・欠番なしを機械確認した出力を応答に示す。示せないなら0段は未完で、先へ進まない。
    ```sh
@@ -73,8 +74,9 @@ description: >
 
 | 何を検証したいか | 読む reference |
 | --- | --- |
+| なぜその技法が要るか迷ったとき(テストの7原則) | [`reference/testing-principles.md`](reference/testing-principles.md) |
 | 粒度の選択(サービス内部: unit/integration) | [`reference/levels.md`](reference/levels.md) |
-| 粒度の選択(サービス間: component/contract) | [`reference/levels-service.md`](reference/levels-service.md) |
+| 粒度の選択(サービス間: component/contract/スキーマ検証) | [`reference/levels-service.md`](reference/levels-service.md) |
 | 粒度の選択(システム全体・広域: system/E2E/UAT) | [`reference/levels-system.md`](reference/levels-system.md) |
 | 粒度の選択(システム全体・運用: smoke/sanity/regression) | [`reference/levels-operational.md`](reference/levels-operational.md) |
 | テスト戦略・配分(ピラミッド/トロフィー、関心事の階層化、リスクベース) | [`reference/strategy-allocation.md`](reference/strategy-allocation.md) |
@@ -84,7 +86,7 @@ description: >
 | 条件の論理関係から組合せを縮約(原因結果グラフ、クラシフィケーションツリー) | [`reference/blackbox-cause-effect.md`](reference/blackbox-cause-effect.md) |
 | 因子の被覆で組合せを縮約(ペアワイズ、直交表、T-way) | [`reference/blackbox-covering.md`](reference/blackbox-covering.md) |
 | 経験・業務フローから導く(ユースケース、シナリオ、構文テスト) | [`reference/experience-scenario.md`](reference/experience-scenario.md) |
-| 経験・ヒューリスティック(エラー推測、ランダム/アドホックファジング、探索的) | [`reference/experience-heuristic.md`](reference/experience-heuristic.md) |
+| 経験・ヒューリスティック(チェックリストベース、エラー推測、ランダム/アドホックファジング、探索的) | [`reference/experience-heuristic.md`](reference/experience-heuristic.md) |
 | 構造網羅・制御フロー基本(C0/C1、条件、判定/条件) | [`reference/whitebox-controlflow-basic.md`](reference/whitebox-controlflow-basic.md) |
 | 構造網羅・経路と独立影響(MC/DC、多重条件、パス、基底パス) | [`reference/whitebox-controlflow-path.md`](reference/whitebox-controlflow-path.md) |
 | 構造網羅・ループとデータフロー(ループテスト、def-use) | [`reference/whitebox-dataflow-loop.md`](reference/whitebox-dataflow-loop.md) |
@@ -102,7 +104,7 @@ description: >
 | テストが flaky・外部依存と実時間(外部ネットワーク、タイマー・sleep) | [`reference/flakiness-external.md`](reference/flakiness-external.md) |
 | 期待値が用意しにくい・性質で縛る(PBT、コンビナトリアル) | [`reference/generative-property.md`](reference/generative-property.md) |
 | 期待値が用意しにくい・頑健性の生成系(ファジング、カバレッジガイド付きファジング) | [`reference/generative-fuzzing.md`](reference/generative-fuzzing.md) |
-| 期待値が用意しにくい・過去出力/別実装基準(ゴールデン、承認、差分) | [`reference/oracle-snapshot.md`](reference/oracle-snapshot.md) |
+| 期待値が用意しにくい・過去出力/別実装基準(ゴールデン、承認、仕様化テスト、差分) | [`reference/oracle-snapshot.md`](reference/oracle-snapshot.md) |
 | 期待値が用意しにくい・関係/形式手法(メタモルフィック、形式検証連携) | [`reference/oracle-relational.md`](reference/oracle-relational.md) |
 | 期待値が用意しにくい・抽象モデル基準(モデルベーステスト) | [`reference/oracle-model-based.md`](reference/oracle-model-based.md) |
 | 出力が非決定的(LLM/生成モデルを組み込んだシステム、揺らぎを層で封じ込める) | [`reference/ai-nondeterministic.md`](reference/ai-nondeterministic.md) |
