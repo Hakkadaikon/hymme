@@ -34,9 +34,13 @@ for seg in "${SEGMENTS[@]}"; do
     read -ra words <<< "$seg"
     first="${words[0]}"
 
-    first_path="${first/#\~/$HOME}"
+    first_path="${first//\"/}"
+    first_path="${first_path//\'/}"
+    first_path="${first_path/#\~/$HOME}"
     first_path="${first_path/#\$HOME/$HOME}"
-    if [[ "$first_path" == "$COLLECT_SH" ]]; then
+    first_path="${first_path//\$\{CLAUDE_PLUGIN_ROOT\}/${CLAUDE_PLUGIN_ROOT:-}}"
+    first_path="${first_path//\$CLAUDE_PLUGIN_ROOT/${CLAUDE_PLUGIN_ROOT:-}}"
+    if [[ -e "$first_path" && "$(readlink -f "$first_path" 2>/dev/null)" == "$COLLECT_SH" ]]; then
         continue
     elif [[ "$first" == "git" ]]; then
         # グローバルフラグ(-C <path> / -c <k=v> 等)を飛ばしてサブコマンドを特定
