@@ -38,6 +38,7 @@ model: inherit
 - トレーサビリティ表が条項→要件→形式手法→テストまで埋まっている。逆抽出時は「現状コード」と
   「本来の仕様(要人間確認)」が別列に分かれているか。
 - `.tla`/`.feature` を手編集して源泉(EARS+モデル)と乖離させていないか。
+- loopeng-gherkin まで進んでいる場合、`.feature` の正常系シナリオが test-design の T-ID 台帳へ転記されているか(出典欄に `.feature` 名があるか grep で確認)。未転記なら未達。
 - **本体への痕跡漏れ**(最重要): 本体ソース・コメント・テスト名・コミット・git 管理下ドキュメントに
   `S-001`/`R-xx`/`P7` 等の管理番号、`Inv`/disjunct 名、EARS/TLA+/Gherkin/mutation の手法用語が
   漏れていないか。`grep -rnE 'S-[0-9]|R-[0-9]|EARS|TLA\+|Gherkin|mutation' <本体ソース>` で確認。
