@@ -1,7 +1,7 @@
 {
   "name": "hymme",
-  "version": "0.2.0",
-  "description": "loop-engineering / test-design / formal-verification の3スキルと、その toolchain を入れる Nix flake。",
+  "version": "0.3.0",
+  "description": "loop-engineering / test-design のルーター+工程スキル、formal-verification(Lean 4)、開発ワークフロースキル群(diff-review / commit-flow / pr-create ほか)と、その toolchain を入れる Nix flake。",
   "author": {
     "name": "Hakkadaikon",
     "url": "https://github.com/Hakkadaikon"

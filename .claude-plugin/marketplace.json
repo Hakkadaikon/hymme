@@ -8,7 +8,7 @@
     {
       "name": "hymme",
       "source": "./",
-      "description": "loop-engineering(NL→EARS→TLA+→Gherkin で設計を検証)、test-design(テスト設計とレビュー)、formal-verification(Lean 4 で形式検証)の3スキルと、その toolchain(TLA+/Apalache/make/python3/Lean)を入れる Nix flake。"
+      "description": "loop-engineering(NL→EARS→TLA+→Gherkin の3重ループ)と test-design(振る舞い抽出→手法選定→実装橋渡し)の各ルーター+工程スキル、formal-verification(Lean 4 で形式検証)、開発ワークフロースキル群(diff-review / commit-flow / test-targeted / gh-ci-investigate / rebase-flow / reset-flow / pr-create)と、その toolchain(TLA+/Apalache/make/python3/Lean)を入れる Nix flake。"
     }
   ]
 }

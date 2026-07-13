@@ -1,12 +1,30 @@
 # hymme
 
-3 つのスキルと、それらが必要とする Nix ツールチェインをまとめた Claude Code プラグインマーケットプレイス。
+設計検証・テスト設計・形式検証のスキル群と開発ワークフロースキル、それらが必要とする Nix ツールチェインをまとめた Claude Code プラグインマーケットプレイス。
 
 ## 収録スキル
 
-- **loop-engineering**：自然言語の要求を EARS 記法と状態モデルへ構造化し、TLA+(TLC/Apalache)で設計をモデル検査して、反例を Gherkin の受け入れ仕様に落とす。
-- **test-design**：テストを設計する、または既存テストをレビューするための手法カタログと選定ワークフロー。テストすべき振る舞いを網羅抽出し、各振る舞いに手法を割り当てる。
+検証系は「入口ルーター + 工程スキル」の構成をとる。ルーターが局面を判定し、対応する工程スキルへ振り分ける。
+
+- **loop-engineering**：自然言語の要求を TLA+ で検査可能な設計へ厳密化する 3 重ループの入口ルーター。
+  - **loopeng-extract**(0 段)：仕様・要求から要件を網羅抽出する。
+  - **loopeng-formalize**(外)：EARS 記法と状態/ドメインモデルへ構造化し、TLA+ spec に落とす。
+  - **loopeng-modelcheck**(中)：TLC でモデル検査し、spec 自体を mutation oracle で点検する。
+  - **loopeng-gherkin**(内)：反例トレースを Gherkin の受け入れ仕様に落とす。
+- **test-design**：テスト設計・既存テストレビューの入口ルーター。
+  - **test-extract**(0 段)：テストすべき振る舞いを網羅抽出し、台帳にする。
+  - **test-catalog**：手法カタログから各振る舞いへテスト手法を割り当てる。
+  - **test-verify**：実装への橋渡し・実行ゲート・回帰固定を行う。
 - **formal-verification**：雑な仕様を Lean 4 の形式仕様へ落とし込み、証明で検証し(proof-repair ループ)、証明済みの性質を test-first 実装へ橋渡しする。
+
+開発ワークフロースキル。
+
+- **diff-review**：差分を多観点で並列レビューする(diff-reviewer agent 同梱)。
+- **commit-flow**：コミットの粒度判断と計画。
+- **test-targeted**：変更に関係するテストだけを絞り込んで実行する。
+- **gh-ci-investigate**：GitHub CI の失敗を調査する。
+- **rebase-flow** / **reset-flow**：履歴破壊操作の安全運用(同梱の git-guard hook が arm なしの実行を機械的にブロックする)。
+- **pr-create**：PR を作成する。
 
 ## インストール(Claude Code)
 
