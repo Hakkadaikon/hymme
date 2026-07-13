@@ -13,7 +13,7 @@
   - **loopeng-gherkin**(内)：反例トレースを Gherkin の受け入れ仕様に落とす。
 - **test-design**：テスト設計・既存テストレビューの入口ルーター。
   - **test-extract**(0 段)：テストすべき振る舞いを網羅抽出し、台帳にする。
-  - **test-catalog**：手法カタログから各振る舞いへテスト手法を割り当てる。
+  - **test-catalog**：手法カタログ(索引専用)。各振る舞いへ、同値分割・状態遷移・mutation testing・TDDサイクルなど個別スキル化された40のテスト技法から手法を割り当てる。
   - **test-verify**：実装への橋渡し・実行ゲート・回帰固定を行う。
 - **formal-verification**：雑な仕様を Lean 4 の形式仕様へ落とし込み、証明で検証し(proof-repair ループ)、証明済みの性質を test-first 実装へ橋渡しする。
 
