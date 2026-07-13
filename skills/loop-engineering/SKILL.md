@@ -83,6 +83,4 @@ flowchart TD
 
 ## やらないこと
 
-- 0段の抽出台帳を省いて EARS / TLA+ へ進まない(PreToolUse hook が機械的に強制する)。
 - 通常のユニットテストで足りる小タスクにループを持ち込まない。状態遷移・並行・プロトコルが無いなら過剰。
-- 管理番号・手法用語を本体へ漏らさない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
