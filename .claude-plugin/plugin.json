@@ -1,7 +1,7 @@
 {
   "name": "hymme",
-  "version": "0.3.0",
-  "description": "loop-engineering / test-design のルーター+工程スキル、formal-verification(Lean 4)、開発ワークフロースキル群(diff-review / commit-flow / pr-create ほか)と、その toolchain を入れる Nix flake。 agents として diff-reviewer / loop-engineering-reviewer / test-design-reviewer / formal-verification-reviewer を同梱。",
+  "version": "0.4.0",
+  "description": "loop-engineering / test-design のルーター+工程スキル、formal-verification(Lean 4)、開発ワークフロースキル群(diff-review / commit-flow / micro-commit / pr-create ほか)と、その toolchain を入れる Nix flake。 agents として coder / code-reviewer / diff-reviewer / modeler / prover / loop-engineering-reviewer / test-design-reviewer / formal-verification-reviewer を同梱。",
   "author": {
     "name": "Hakkadaikon",
     "url": "https://github.com/Hakkadaikon"

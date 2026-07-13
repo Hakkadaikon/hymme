@@ -19,14 +19,22 @@
 
 開発ワークフロースキル。
 
-- **diff-review**：差分を多観点で並列レビューする(diff-reviewer agent が担当)。
-- **commit-flow**：コミットの粒度判断と計画。
+- **diff-review**：差分を多観点で並列レビューする(diff-reviewer agent が担当)。過剰設計だけを見る場合は code-reviewer agent を使う。
+- **commit-flow**：コミットの粒度判断と計画。実務の分割・実行は micro-commit スキルが担う。
+- **micro-commit**：変更を~30-50行の論理単位に分割し conventional commit で連続コミットする実務手順。
 - **test-targeted**：変更に関係するテストだけを絞り込んで実行する。
 - **gh-ci-investigate**：GitHub CI の失敗を調査する。
 - **rebase-flow** / **reset-flow**：履歴破壊操作の安全運用(同梱の git-guard hook が arm なしの実行を機械的にブロックする)。
 - **pr-create**：PR を作成する。
 
-agents として diff-reviewer(diff-review のワーカー)と、各スキル群の完了前ゲートを担う loop-engineering-reviewer / test-design-reviewer / formal-verification-reviewer を同梱する。
+agents として次を同梱する。
+
+- **diff-reviewer**：diff-review のワーカー(多観点レビュー)。
+- **code-reviewer**：ponytail-review 観点(過剰設計)だけを見るレビュー担当。
+- **coder**：ponytail(最小・YAGNI)と TDD で実装・修正・リファクタを行う担当。formal-verification / loop-engineering / test-design が必要な局面ではそれぞれ prover / modeler / test-design へ委譲する。
+- **modeler**：loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中し、完了前に loop-engineering-reviewer で外部検査する。
+- **prover**：formal-verification(Lean 4)で証明を行う担当。1 性質に集中し、完了前に formal-verification-reviewer で外部検査する。
+- **loop-engineering-reviewer** / **test-design-reviewer** / **formal-verification-reviewer**：各スキル群の完了前ゲートを担う外部コンプライアンスレビュアー。
 
 ## インストール(Claude Code)
 
