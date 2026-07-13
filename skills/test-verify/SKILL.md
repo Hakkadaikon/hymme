@@ -46,11 +46,11 @@ description: >
 
 完了扱いにする前に、必ず `hymme:test-design-reviewer` サブエージェントへ渡して外側から検査させる。
 渡すもの: T-ID 台帳のパス、テストファイルと実行ログの場所。
-レビュアーが挙げた違反(T-ID とテストの存在不一致、実行ログ無しの「緑」報告、理由なしの優先度落とし)を解消してから完了とする。「緑と報告された」を証跡の代わりにしない。
+レビュアーが挙げた違反(手法名のみで reference 未開封、T-ID とテストの存在不一致、実行ログ無しの「緑」報告、理由なしの優先度落とし)を解消してから完了とする。「緑と報告された」を証跡の代わりにしない。
 
 ## やらないこと
 
 - **「緑」の報告だけで完了にしない。** 実行ログと型検査を自分で確認する。flaky は1回の緑では見えない。
-- **API 境界の互換性維持を抜かさない。** 提供側と利用側を別々にテストするだけでは破壊的変更を見逃す。consumer-driven contract([`../test-catalog/references/nonfunctional-attributes.md`](../test-catalog/references/nonfunctional-attributes.md) のコントラクトテスト)で境界の互換を固定する。
+- **API 境界の互換性維持を抜かさない。** 提供側と利用側を別々にテストするだけでは破壊的変更を見逃す。consumer-driven contract([`../test-catalog/references/nonfunctional-attributes.md`](../test-catalog/references/nonfunctional-attributes.md) のコントラクトテスト、粒度の選択は [`../test-catalog/references/levels.md`](../test-catalog/references/levels.md))で境界の互換を固定する。
 - 完了条件は「対象範囲の全 T-ID が緑か、物理的に止まるまで」。自発的な区切りを完了と偽らない。
 - テストのコメント・テスト名へ `T-xxx` 等の管理番号を書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
