@@ -11,7 +11,7 @@ argument-hint: "[run/PR/job の URL・run_id・#PR番号（省略時は現在ブ
 
 CI 失敗調査で毎回同じことをする——失敗した run を開き、どのジョブ・ステップが落ちたかを見て、失敗ステップのログから原因を読む——を、決定論スクリプトに寄せて安定させる。
 
-肝は **WebFetch を使わないこと**。github.com への WebFetch は Actions 画面の HTML が返るだけでログにならない。失敗ジョブ・ステップと「失敗ステップだけのログ」は `gh` で確実かつ簡潔に取れる。だから run/PR/job の URL を渡された時点で `scripts/gh-ci-investigate.sh` に解決させ、そこから調査に入る（グローバル CLAUDE.md の「GitHub 情報は gh で取得」ルールの具体実装）。
+肝は **WebFetch を使わないこと**。github.com への WebFetch は Actions 画面の HTML が返るだけでログにならない。失敗ジョブ・ステップと「失敗ステップだけのログ」は `gh` で確実かつ簡潔に取れる。だから run/PR/job の URL を渡された時点で `scripts/gh-ci-investigate.sh` に解決させ、そこから調査に入る。
 
 ## 前提
 

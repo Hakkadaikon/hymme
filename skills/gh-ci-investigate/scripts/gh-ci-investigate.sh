@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # gh-ci-investigate.sh — GitHub Actions の失敗調査を gh 経由で決定論的に収集する。
 #
-# WebFetch は github.com の Actions ログを取れない（HTML を返すだけ）で
-# ログにならない。失敗ジョブ・ステップと「失敗ステップのログだけ」は gh で確実に
+# WebFetch は github.com の Actions ログを取れない（HTML が返るだけでログにならない）。
+# 失敗ジョブ・ステップと「失敗ステップのログだけ」は gh で確実に
 # 取れるので、URL / run_id / PR 番号を渡された時点でこのスクリプトに解決させる。
 #
 # 使い方:

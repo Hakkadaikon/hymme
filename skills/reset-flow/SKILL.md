@@ -36,6 +36,8 @@ argument-hint: "[target-ref と mode（例: backup/rebase/foo-20260707 hard）]"
 
 ### 1. コンテキスト収集
 
+`<skill-dir>` はこのファイルのあるディレクトリ。
+
 ```bash
 bash <skill-dir>/scripts/reset-context.sh <target-ref> <hard|mixed|soft>
 ```
