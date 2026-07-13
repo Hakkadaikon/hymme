@@ -15,7 +15,7 @@ argument-hint: "[証明したい性質/仕様(ファイルパス or 説明)]"
 
 ## 前提ツール
 
-`elan`(flake の tools に含む)が入っていること。なければ `nix profile add .#tools`。
+`elan`(flake の tools に含む)が入っていること。なければ `nix profile install .#skill-tools`。
 
 - `elan`：Lean toolchain manager。`lake` / `lean` を供給する。
 - 初回のみ `elan default stable` で Lean 4 本体を入れる(これをやるまで `lake` は "no default toolchain" で落ちる)。
