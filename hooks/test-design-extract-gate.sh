@@ -4,6 +4,8 @@
 # 台帳が無いプロジェクト/タスクは素通り(誤爆ゼロを優先)。
 # 台帳が1つでもあれば、未チェック(- [ ] T-...)や T-NNN 欠番が残っていないか検査し、
 # 残っていれば exit 2 でブロックする。
+# 加えて tasks/loopeng/ に .feature があるのに台帳へ1件も転記されていなければブロックする
+# (loopeng-gherkin の成果物が test-design 側で握りつぶされるのを防ぐ)。
 # PreToolUse(matcher: Write|Edit)。stdin に hook の JSON。
 set -euo pipefail
 
@@ -47,5 +49,20 @@ for ledger in $ledgers; do
     fi
   }
 done
+
+# loopeng-gherkin の成果物(.feature)があるのに、どの台帳にも1件も転記されていなければブロック。
+# 出典欄に "<対象>.feature" と書く規約(loopeng-gherkin/SKILL.md・test-extract/SKILL.md 参照)。
+features="$(find tasks/loopeng -maxdepth 1 -name '*.feature' 2>/dev/null || true)"
+if [ -n "$features" ]; then
+  transcribed=0
+  for f in $features; do
+    base="$(basename "$f")"
+    if grep -qF "$base" $ledgers 2>/dev/null; then
+      transcribed=1
+      break
+    fi
+  done
+  [ "$transcribed" -eq 1 ] || block "tasks/loopeng/ に .feature があるが、どの台帳にも出典として転記されていない。loopeng-gherkin の正常系シナリオを T-ID として台帳に転記してから実装へ進め。"
+fi
 
 exit 0
