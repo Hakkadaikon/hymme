@@ -13,6 +13,10 @@ cmd="$(printf '%s' "$payload" | python3 -c 'import sys,json; print(json.load(sys
 verb="$(printf '%s' "$cmd" | awk '{for(i=1;i<=NF;i++){if($i!~/=/){print $i;exit}}}')"
 case "$verb" in
   loop-outer|loop-middle|loop-inner) ;;
+  make)
+    # make -f .../Makefile.loopeng loop-outer SPEC=... 形式も対象(公式手順のもう一方の入口)
+    printf '%s' "$cmd" | grep -qE '(^|[[:space:]])loop-(outer|middle|inner)([[:space:]]|$)' || exit 0
+    ;;
   *) exit 0 ;;
 esac
 
