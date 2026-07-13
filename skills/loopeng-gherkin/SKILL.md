@@ -31,3 +31,7 @@ description: >
 ## 次の工程
 
 反例が尽き、正常系シナリオまで足せたら loop-engineering ルーターへ戻り、完了前ゲート(reviewer 委譲)と実装への橋渡し([`../loop-engineering/references/bridging.md`](../loop-engineering/references/bridging.md))へ進む。
+
+**テスト設計への転記は任意でなく出口条件**: 実装のテストを書く前に必ず **test-extract** へこの `.feature` を渡し、
+シナリオ1件=T-ID 1行として台帳(`tasks/test-design/<対象名>.md`)に転記させる(出典欄に `<Name>.feature` と書く)。
+転記せず実装テストを書き始めると `test-design-extract-gate` hook がブロックする。
