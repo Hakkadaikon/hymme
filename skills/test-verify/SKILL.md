@@ -20,7 +20,7 @@ description: >
 
 - **実装の駆動**: テスト項目リストを `coder` agent に渡し、t-wada スタイルの TDD(Red→Green→Refactor)で1項目ずつ消化する。台帳の `T-ID` リストがそのままテストリストになる。
 - **設計に状態遷移、並行、順序があるとき**: テストで全 interleaving は踏めない。`loop-engineering`(TLA+)で設計をモデル検査し、反例を Gherkin の受け入れシナリオに落としてから、その述語をテストへ移す。
-- **critical なアルゴリズムやセキュリティ性質**: 通常テストより強い保証が要るなら `formal-verification`(Lean 4)で証明し、証明済み述語を property-based test([`../test-catalog/references/generative-property.md`](../test-catalog/references/generative-property.md))の property として叩く。
+- **critical なアルゴリズムやセキュリティ性質**: 通常テストより強い保証が要るなら `formal-verification`(Lean 4)で証明し、証明済み述語を property-based test([`../generative-property/SKILL.md`](../generative-property/SKILL.md))の property として叩く。
 - 複数 subagent への並列委譲は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) の落とし穴に従う。
 
 ## 2. 実行ゲート(自己申告を信用しない)
@@ -29,8 +29,8 @@ description: >
 
 1. **網羅(取りこぼし無し)**: 台帳の全 `T-ID` について、対応するテスト名が実在のテストファイル内に見つかることを grep で1行ずつ逆引きする。緑チェックはスイートの健全性を見るだけで、coder が一部 `T-ID` を実装し忘れても「全緑」になる。存在チェックは緑チェックと別物として必ず回す。
 2. **緑**: 全テストが緑。型検査がクリーン。実行は修正範囲に絞る(`test-targeted` スキルの絞り込み運用)。
-3. **flaky**: 性質ベースやメタモルフィック、並行を含むテストは seed を変えて複数回(最低でも数十回、または CI の連続成功)走っても落ちない。1回の緑では flaky は見えない。要因別の封じ込めは値の非決定性([`../test-catalog/references/flakiness-value.md`](../test-catalog/references/flakiness-value.md))と協調の非決定性([`../test-catalog/references/flakiness-concurrency.md`](../test-catalog/references/flakiness-concurrency.md))。
-4. **強さ(critical のみ)**: 金額、セキュリティ、状態遷移など critical な `T-ID` は、緑に加えて mutation([`../test-catalog/references/mutation-testing.md`](../test-catalog/references/mutation-testing.md))を回し、survived がアサーション不足として残っていないことを確認する。全部に回すのは過剰(YAGNI)。
+3. **flaky**: 性質ベースやメタモルフィック、並行を含むテストは seed を変えて複数回(最低でも数十回、または CI の連続成功)走っても落ちない。1回の緑では flaky は見えない。要因別の封じ込めは値の非決定性([`../flakiness-value/SKILL.md`](../flakiness-value/SKILL.md))と協調の非決定性([`../flakiness-concurrency/SKILL.md`](../flakiness-concurrency/SKILL.md))。
+4. **強さ(critical のみ)**: 金額、セキュリティ、状態遷移など critical な `T-ID` は、緑に加えて mutation([`../mutation-testing/SKILL.md`](../mutation-testing/SKILL.md))を回し、survived がアサーション不足として残っていないことを確認する。全部に回すのは過剰(YAGNI)。
 
 台帳の `T-ID` は、貼ったログ中の該当テスト名の緑に対応して初めて閉じる。
 
@@ -38,9 +38,9 @@ description: >
 
 実行ゲートを通った緑は、その場限りでは守られ続けない。次の変更で黙って赤化しないよう継続実行に載せて初めて「テストが守られる」状態になる。
 
-- 緑にしたテスト群を CI の継続実行対象に入れる([`../test-catalog/references/process-static.md`](../test-catalog/references/process-static.md) の CI 自動実行)。
+- 緑にしたテスト群を CI の継続実行対象に入れる([`../process-static/SKILL.md`](../process-static/SKILL.md) の CI 自動実行)。
 - critical な `T-ID` は mutation やカバレッジを CI ゲートにし、下限を割る変更をマージさせない。
-- 以後バグが出たら、その欠陥を再現する最小テストを1本固定して回帰へ積む([`../test-catalog/references/levels-operational.md`](../test-catalog/references/levels-operational.md) の回帰テスト)。台帳には新しい `T-ID` として追記する。
+- 以後バグが出たら、その欠陥を再現する最小テストを1本固定して回帰へ積む([`../levels-operational/SKILL.md`](../levels-operational/SKILL.md) の回帰テスト)。台帳には新しい `T-ID` として追記する。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
@@ -51,6 +51,6 @@ description: >
 ## やらないこと
 
 - **「緑」の報告だけで完了にしない。** 実行ログと型検査を自分で確認する。flaky は1回の緑では見えない。
-- **API 境界の互換性維持を抜かさない。** 提供側と利用側を別々にテストするだけでは破壊的変更を見逃す。consumer-driven contract([`../test-catalog/references/nonfunctional-attributes.md`](../test-catalog/references/nonfunctional-attributes.md) のコントラクトテスト、粒度の選択は [`../test-catalog/references/levels.md`](../test-catalog/references/levels.md))で境界の互換を固定する。
+- **API 境界の互換性維持を抜かさない。** 提供側と利用側を別々にテストするだけでは破壊的変更を見逃す。consumer-driven contract([`../nonfunctional-attributes/SKILL.md`](../nonfunctional-attributes/SKILL.md) のコントラクトテスト、粒度の選択は [`../levels/SKILL.md`](../levels/SKILL.md))で境界の互換を固定する。
 - 完了条件は「対象範囲の全 T-ID が緑か、物理的に止まるまで」。自発的な区切りを完了と偽らない。
 - テストのコメント・テスト名へ `T-xxx` 等の管理番号を書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
