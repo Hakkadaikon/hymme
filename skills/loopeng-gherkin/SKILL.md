@@ -30,4 +30,4 @@ description: >
 
 ## 次の工程
 
-反例が尽き、正常系シナリオまで足せたら loop-engineering ルーターへ戻り、完了前ゲート(reviewer 委譲)と実装への橋渡し(`references/bridging.md`)へ進む。
+反例が尽き、正常系シナリオまで足せたら loop-engineering ルーターへ戻り、完了前ゲート(reviewer 委譲)と実装への橋渡し([`../loop-engineering/references/bridging.md`](../loop-engineering/references/bridging.md))へ進む。

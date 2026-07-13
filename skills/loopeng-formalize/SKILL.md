@@ -46,11 +46,14 @@ description: >
 
 最小の書き方の完全例(Counter)は [`../loop-engineering/references/example-counter.md`](../loop-engineering/references/example-counter.md)。
 
+## 消し込みと置き場
+
+- 台帳の R 番号と `Next` disjunct / `Inv` の対応をトレーサビリティ・マトリクスの「形式手法」列へ消し込む。空欄の EARS 行=外ループの漏れ。
+- 成果物は `tasks/loopeng/` 配下・git 管理外([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
+
 ## やらないこと
 
 - 生成物(`.tla`/`.feature`)を手編集して源泉(EARS + モデル)と乖離させない。源泉を直して再生成する。
-- 台帳の R 番号と `Next` disjunct / `Inv` の対応をトレーサビリティ・マトリクスの「形式手法」列へ消し込む。空欄の EARS 行=外ループの漏れ。
-- 成果物は `tasks/loopeng/` 配下・git 管理外([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
 
 ## 次の工程
 
