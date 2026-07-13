@@ -1,6 +1,7 @@
 ---
 name: gh-ci-investigate
 description: "GitHub Actions の CI 失敗を調査するスキル。失敗した run / PR / job の URL（例: https://github.com/OWNER/REPO/actions/runs/RUNID、…/pull/PR、…/job/JOBID）や run_id・PR 番号を貼られて「このCIが失敗している、原因を調査して」「ビルド/テストがコケた、なぜ落ちたか調べて」「workflow が failed、修正案を出して」「job のログを見て」と頼まれたら必ず使う。WebFetch では github.com のログは取れない（HTML しか返らずログは取れない）ため、gh（`gh run view --log-failed` / `gh run view --job` / `gh pr checks` / `gh api`）で失敗ジョブ・ステップと失敗ステップのログだけを決定論スクリプトで収集し、失敗原因を特定して修正案を提示する。GitHub Actions 以外（GitLab CI 等）や、URL がログではなくソース閲覧目的のときは対象外。GitHub(gh) 前提。`/gh-ci-investigate` で明示起動も可。"
+user-invocable: true
 argument-hint: "[run/PR/job の URL・run_id・#PR番号（省略時は現在ブランチの最新 run）]"
 ---
 
