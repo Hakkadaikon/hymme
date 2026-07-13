@@ -1,6 +1,8 @@
 ---
 name: diff-review
 description: 作業ブランチの diff を複数観点(レンズ)で並列レビューするオーケストレーションスキル。「レビューして」「diff をレビュー」「〇〇観点で見て」などユーザーが明示的にコードレビューを依頼したときに必ず使用する。決定論スクリプトで差分を収集し、レンズごとに diff-reviewer サブエージェントを並列起動して結果を統合報告する。コードの修正は行わない。
+user-invocable: true
+argument-hint: "[レビュー範囲や観点(例: origin/main 以降 / security 観点も)。省略時は既定レンズで全差分]"
 ---
 
 # diff-review: 並列多観点 diff レビュー
