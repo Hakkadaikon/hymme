@@ -149,7 +149,7 @@ describe("build matrix: 2-way coverage", () => {
 
 ## oracle を別の参照で代替する手法は別ファイルへ
 
-正解を直接持たないまま、別の参照や関係で正しさを判定する手法は、過去出力/別実装基準(スナップショット、承認テスト、差分テスト)を [oracle-snapshot.md](oracle-snapshot.md)、関係/モデル基準(メタモルフィックテスト、モデルベーステスト、形式検証連携)を [oracle-relational.md](oracle-relational.md) にまとめた。
+正解を直接持たないまま、別の参照や関係で正しさを判定する手法は、過去出力基準(スナップショット、承認テスト、仕様化テスト)を [oracle-past-output.md](oracle-past-output.md)、別実装基準(差分テスト)を [oracle-differential.md](oracle-differential.md)、関係/モデル基準(メタモルフィックテスト、モデルベーステスト、形式検証連携)を [oracle-relational.md](oracle-relational.md) にまとめた。
 
 ---
 

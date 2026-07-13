@@ -3,7 +3,7 @@
 システムの振る舞いを抽象モデル(状態機械など)で表し、そこからテスト系列(操作の列)を自動生成して実システムと突き合わせる手法を扱う。
 モデル側を oracle として、各操作後にモデルと実装の状態が一致するかを判定する。
 
-oracle 問題への他の解(メタモルフィック、形式検証連携)は [`oracle-relational.md`](oracle-relational.md)、過去出力・別実装を基準にする系(ゴールデン、承認、差分)は [`oracle-snapshot.md`](oracle-snapshot.md)、ランダム入力で性質を叩く系は [`generative-property.md`](generative-property.md) を参照。
+oracle 問題への他の解(メタモルフィック、形式検証連携)は [`oracle-relational.md`](oracle-relational.md)、過去出力を基準にする系(ゴールデン、承認)は [`oracle-past-output.md`](oracle-past-output.md)、別実装との差分は [`oracle-differential.md`](oracle-differential.md)、ランダム入力で性質を叩く系は [`generative-property.md`](generative-property.md) を参照。
 
 ## モデルベーステスト(Model-Based Testing)
 

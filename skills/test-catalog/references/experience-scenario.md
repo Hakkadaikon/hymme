@@ -1,10 +1,10 @@
 # ブラックボックス設計技法: シナリオベース(業務フローから導く)
 
 仕様の構造から機械的に導くのではなく、業務フローや利用の物語から欠陥を狙う非形式的な技法のうち、**フローを起点にするもの**を扱う。
-経験・直感・乱数を起点にするもの(エラー推測、ランダムファジング、探索的、アドホック)は [`experience-heuristic.md`](experience-heuristic.md) を参照。
+経験・直感を起点にするもの(チェックリスト、エラー推測)は [`experience-checklist.md`](experience-checklist.md) を、乱数・即興を起点にするもの(ランダムファジング、探索的、アドホック)は [`experience-exploratory.md`](experience-exploratory.md) を参照。
 
 体系的(仕様ベース)な技法のうち入力空間の分割(同値分割、境界値、デシジョンテーブル)は [`blackbox-partition.md`](blackbox-partition.md) を、履歴と状態(状態遷移、CRUD/ライフサイクル)は [`blackbox-state.md`](blackbox-state.md) を、組合せの縮約のうち論理ベース(原因結果グラフ、クラシフィケーションツリー)は [`blackbox-cause-effect.md`](blackbox-cause-effect.md) を、因子被覆(ペアワイズ、直交表、T-way)は [`blackbox-covering.md`](blackbox-covering.md) を参照。
-本格的な生成系ファジングや PBT は [`generative-property.md`](generative-property.md) / [`generative-fuzzing.md`](generative-fuzzing.md)、ゴールデン/承認/差分等の oracle 代替は [`oracle-snapshot.md`](oracle-snapshot.md)、メタモルフィック/モデルベース/形式検証連携は [`oracle-relational.md`](oracle-relational.md) を参照。
+本格的な生成系ファジングや PBT は [`generative-property.md`](generative-property.md) / [`generative-fuzzing.md`](generative-fuzzing.md)、ゴールデン/承認等の oracle 代替は [`oracle-past-output.md`](oracle-past-output.md)、差分は [`oracle-differential.md`](oracle-differential.md)、メタモルフィック/モデルベース/形式検証連携は [`oracle-relational.md`](oracle-relational.md) を参照。
 
 これらは体系的技法の網を補う仕上げであり、単独で網羅性を主張しない。
 見つけた欠陥は体系的技法へ書き戻して資産化(回帰テスト化)する。
@@ -115,7 +115,7 @@ describe("scenario: churn and return", () => {
 
 ### 概要
 入力の文法(BNF や正規表現)を起点に、文法に従う正常入力と、文法を1箇所だけ壊した不正入力を機械的に生成して叩く。
-エラー推測(直感で壊す、[`experience-heuristic.md`](experience-heuristic.md))の近縁で、こちらは「壊し方」を文法の構造から系統立てて出す。
+エラー推測(直感で壊す、[`experience-checklist.md`](experience-checklist.md))の近縁で、こちらは「壊し方」を文法の構造から系統立てて出す。
 
 ### 目的/いつ使う
 入力フォーマットが文法で定義できるとき(メールアドレス、日付、URL、設定ファイル、プロトコルメッセージなど)に、パーサやバリデータの受理/拒否が正しいかを確かめる。
@@ -165,10 +165,10 @@ describe("isIsoDate: syntax testing (YYYY-MM-DD)", () => {
 
 ## 関連 reference
 
-- 経験・乱数を起点にする非形式技法(エラー推測、ランダムファジング、探索的、アドホック)：[`experience-heuristic.md`](experience-heuristic.md)
+- 経験を起点にする非形式技法(チェックリスト、エラー推測)：[`experience-checklist.md`](experience-checklist.md)。乱数・即興系(ランダムファジング、探索的、アドホック)：[`experience-exploratory.md`](experience-exploratory.md)
 - 入力空間の分割と履歴(同値分割、境界値、状態遷移)：[`blackbox-partition.md`](blackbox-partition.md) / [`blackbox-state.md`](blackbox-state.md)
 - 組合せの縮約・論理ベース(原因結果グラフ、クラシフィケーションツリー)：[`blackbox-cause-effect.md`](blackbox-cause-effect.md)
 - 組合せの縮約・因子被覆(ペアワイズ、直交表、T-way)：[`blackbox-covering.md`](blackbox-covering.md)
 - 本格的な生成系ファジング・PBT：[`generative-property.md`](generative-property.md) / [`generative-fuzzing.md`](generative-fuzzing.md)
-- oracle 代替・過去出力/別実装(ゴールデン、承認、差分)：[`oracle-snapshot.md`](oracle-snapshot.md)
+- oracle 代替・過去出力(ゴールデン、承認)：[`oracle-past-output.md`](oracle-past-output.md)。別実装との差分：[`oracle-differential.md`](oracle-differential.md)
 - oracle 代替・関係/モデル(メタモルフィック、モデルベース、形式検証連携)：[`oracle-relational.md`](oracle-relational.md)

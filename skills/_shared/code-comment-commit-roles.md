@@ -7,7 +7,7 @@ test-design・loop-engineering・formal-verification のいずれでも、成果
 | 場所 | 書くこと | 書かないこと |
 | --- | --- | --- |
 | **コード** | How(どう実現するか、ロジックそのもの) | コードを読めば分かる説明の逐語訳 |
-| **テストコード** | What(何を保証するか、振る舞い) | 実装の内部手順のなぞり(実装詳細への結合、[`test-design-quality.md`](../test-design/references/test-design-quality.md) の脆さ回避) |
+| **テストコード** | What(何を保証するか、振る舞い) | 実装の内部手順のなぞり(実装詳細への結合、[`test-design-quality.md`](../test-catalog/references/test-design-quality.md) の脆さ回避) |
 | **コミットログ** | Why(なぜこの変更が要るか、動機) | 差分の逐語訳(「〜を追加」だけで終わらせない) |
 | **コードコメント** | Why not(なぜ別の書き方をしなかったか、却下した選択肢・回避した罠) | What/How の説明(コードと重複する) |
 
@@ -15,7 +15,7 @@ test-design・loop-engineering・formal-verification のいずれでも、成果
 
 - **test-design**: 0段の台帳(`T-ID`)が「何を保証するか」の一覧そのもの。テストコードの `it`/`describe` 名は
   この `T-ID` の振る舞いを説明し、実装の内部手順(呼び出し順序、変数名)をなぞらない。
-  [`good-test-principles.md`](../test-design/references/good-test-principles.md) の「観察可能な振る舞い」もこの原則の実装面での具体化。
+  [`good-test-principles.md`](../test-catalog/references/good-test-principles.md) の「観察可能な振る舞い」もこの原則の実装面での具体化。
 - **loop-engineering**: TLA+ の `Inv`/disjunct 名や EARS の管理番号(`S-001` 等)を本体コード・テスト名・
   コミットに漏らさない(既存規範)のは、これらが「Why not のための内部識別子」であって、コードが
   表現すべき How やテストが表現すべき What ではないため。証明の都合で等価変形したら、その理由

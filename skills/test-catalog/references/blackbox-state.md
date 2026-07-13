@@ -7,7 +7,7 @@ ISO/IEC/IEEE 29119-4 はこれらを「仕様ベースのテスト設計技法(s
 ここでは振る舞いが過去の履歴に依存する技法(状態遷移、CRUD / エンティティライフサイクル)をまとめる。
 入力空間の分割を扱う技法(同値分割、境界値分析、ドメイン分析、デシジョンテーブル)は [`blackbox-partition.md`](blackbox-partition.md) を参照。
 条件や因子の組合せが爆発するときにそれを縮約する技法のうち論理ベース(原因結果グラフ、クラシフィケーションツリー)は [`blackbox-cause-effect.md`](blackbox-cause-effect.md) を、因子被覆(ペアワイズ、直交表、T-way)は [`blackbox-covering.md`](blackbox-covering.md) を参照。
-経験と直感に依る非形式的な技法のうち、業務フロー起点(ユースケース、シナリオ、構文テスト)は [`experience-scenario.md`](experience-scenario.md) を、経験・乱数起点(エラー推測、ランダムファジング、探索的、アドホック)は [`experience-heuristic.md`](experience-heuristic.md) を参照。
+経験と直感に依る非形式的な技法のうち、業務フロー起点(ユースケース、シナリオ、構文テスト)は [`experience-scenario.md`](experience-scenario.md) を、経験起点(チェックリスト、エラー推測)は [`experience-checklist.md`](experience-checklist.md) を、乱数・即興起点(ランダムファジング、探索的、アドホック)は [`experience-exploratory.md`](experience-exploratory.md) を参照。
 
 各手法は独立ではなく重ねて使う。
 まず同値分割で入力空間を割り、境界値で割れ目を攻め、条件の組合せはデシジョンテーブル、振る舞いの履歴依存は状態遷移、という順で必要なものだけ足す。

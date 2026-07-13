@@ -40,7 +40,7 @@ JSTQB/ISTQB が定めるテストの7原則。個々の技法(同値分割、mut
 テストは定期的に見直し、更新する必要がある。
 
 - 対応先: [`mutation-testing.md`](mutation-testing.md) が存在する直接の理由。既存テストが本当に欠陥を検出する力を保っているかを、
-  人工的な変異注入で定期的に検証する。[`experience-heuristic.md`](experience-heuristic.md) のエラー推測・探索的テストも、
+  人工的な変異注入で定期的に検証する。[`experience-checklist.md`](experience-checklist.md) のエラー推測・[`experience-exploratory.md`](experience-exploratory.md) の探索的テストも、
   体系的技法だけでは尽くせない新しい欠陥パターンを狙う補完策。
 
 ## 6. テストは状況次第

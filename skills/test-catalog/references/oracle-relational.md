@@ -2,7 +2,7 @@
 
 期待値を1つずつ手で書けないとき、入力と出力の**関係**、振る舞いの**抽象モデル**、上流の形式手法で確立した**証明済み述語**に正しさの判定を委ねるテスト群。正解を直接持たないまま、それらの基準との突き合わせで合否を決める。
 
-**oracle 問題**(期待値をどう用意するか)の3つの解のうち、このファイルは関係・形式手法の述語を基準に取る手法(メタモルフィック、形式検証連携)を扱う。抽象モデルを oracle に据えるモデルベーステストは分量が大きいので [`oracle-model-based.md`](oracle-model-based.md) に分けた。過去出力を固める/別実装と突き合わせる解(スナップショット、承認、差分)は [`oracle-snapshot.md`](oracle-snapshot.md) を参照。
+**oracle 問題**(期待値をどう用意するか)の3つの解のうち、このファイルは関係・形式手法の述語を基準に取る手法(メタモルフィック、形式検証連携)を扱う。抽象モデルを oracle に据えるモデルベーステストは分量が大きいので [`oracle-model-based.md`](oracle-model-based.md) に分けた。過去出力を固める解(スナップショット、承認、仕様化)は [`oracle-past-output.md`](oracle-past-output.md)、別実装と突き合わせる解(差分)は [`oracle-differential.md`](oracle-differential.md) を参照。
 
 各手法は **概要 / 目的といつ使うか / TypeScript example / 落とし穴 / 遂行手順(着手→完了)/ 完了チェック(もれ確認)/ 網羅の定義** の構成で示す。
 
@@ -156,5 +156,5 @@ describe("codec: bridges the proven invariant", () => {
 
 ---
 
-過去の出力・別実装を oracle に据える系(ゴールデン、承認、差分)は [`oracle-snapshot.md`](oracle-snapshot.md) にまとめた。
+過去の出力を oracle に据える系(ゴールデン、承認、仕様化)は [`oracle-past-output.md`](oracle-past-output.md)、別実装と突き合わせる系(差分)は [`oracle-differential.md`](oracle-differential.md) にまとめた。
 ランダム入力を生成して性質や頑健性を叩く系(PBT、ファジング、コンビナトリアル)は [`generative-property.md`](generative-property.md) にまとめた。

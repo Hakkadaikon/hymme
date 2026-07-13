@@ -7,7 +7,7 @@
 Green に至る戦略(三角測量、仮実装と明白な実装)は [`tdd-green-strategy.md`](tdd-green-strategy.md) に分けた。
 「良いテストとは何か」の規範は [`good-test-principles.md`](good-test-principles.md)、テストダブルの使い分けは [`test-doubles.md`](test-doubles.md) を参照。
 **このサイクルはグリーンフィールド(新規コード)前提。** テストの無い既存コードへ後付けでテストを張ってから着手したいときは、
-先に [`oracle-snapshot.md`](oracle-snapshot.md) の仕様化テスト(Characterization Testing)で現状の挙動を固定し、
+先に [`oracle-past-output.md`](oracle-past-output.md) の仕様化テスト(Characterization Testing)で現状の挙動を固定し、
 安全網ができてから Red→Green→Refactor に合流する。
 
 各項目は「概要」「目的/いつ使う」「TypeScript example(vitest 想定)」「落とし穴」の構成で示す。
