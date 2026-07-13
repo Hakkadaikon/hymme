@@ -6,6 +6,8 @@
 # - git push: --force/-f(結合短フラグ含む)・値なし/sha なしの --force-with-lease・+refspec を常時ブロック。
 #   検証済み tip を明示した --force-with-lease=<ref>:<sha> のみ許可。
 # PreToolUse(matcher: Bash)。stdin に hook の JSON。ブロックは exit 2。
+# ponytail: 既知の上限 — xargs 経由・シェル 3 段以上のネスト・`git -C <別リポ>` の marker 照合は
+# cwd リポジトリ基準のまま。クォート内の実改行は行分割で別コマンド扱いになる(fail-closed の誤爆側)。
 set -euo pipefail
 
 payload="$(cat)"
@@ -58,12 +60,12 @@ def split_segments(text):
 def check_git(args):
     j = 0
     while j < len(args) and args[j].startswith("-"):
-        j += 2 if args[j] in ("-C", "-c") else 1
+        j += 2 if args[j] in ("-C", "-c", "--git-dir", "--work-tree") else 1
     if j >= len(args):
         return
     sub, rest = args[j], args[j + 1:]
 
-    if sub == "rebase" or (sub == "pull" and any(a == "--rebase" or a.startswith("--rebase=") for a in rest)):
+    if sub == "rebase" or (sub == "pull" and any(a in ("--rebase", "-r") or a.startswith("--rebase=") for a in rest)):
         if "--abort" in rest:
             return
         if not marker_fresh("rebase-flow.armed"):
@@ -88,14 +90,14 @@ def scan(text, depth=0):
             base = os.path.basename(t)
             if ("=" in t and not t.startswith("-")) and base not in ("git",):
                 i += 1  # env VAR=val
-            elif base in WRAPPERS or t.startswith("-") or re.fullmatch(r"\d+[smhd]?", t):
+            elif base in WRAPPERS or t.startswith("-") or re.fullmatch(r"[\d.]+[smhd]?", t):
                 i += 1  # ラッパ・そのオプション・timeout の秒数
             elif base in SHELLS:
-                # sh -c "..." の中身を1段だけ再帰検査
+                # sh -c "..." / bash -lc "..." の中身を再帰検査(2段まで)
                 if depth < 2:
                     rest = seg[i + 1:]
                     for k, a in enumerate(rest):
-                        if a == "-c" and k + 1 < len(rest):
+                        if re.fullmatch(r"-[A-Za-z]*c[A-Za-z]*", a) and k + 1 < len(rest):
                             scan(rest[k + 1], depth + 1)
                             break
                 break
