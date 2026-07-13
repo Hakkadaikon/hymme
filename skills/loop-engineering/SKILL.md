@@ -84,3 +84,5 @@ flowchart TD
 ## やらないこと
 
 - 通常のユニットテストで足りる小タスクにループを持ち込まない。状態遷移・並行・プロトコルが無いなら過剰。
+- 0段の抽出台帳を省いて次工程へ進まない(詳細は [`loopeng-extract`](../loopeng-extract/SKILL.md) のゲート)。
+- 管理番号・手法用語を本体へ漏らさない(詳細は [`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
