@@ -5,6 +5,8 @@ description: >
   ユーザーが「形式検証」「formal verification」「FV」「証明したい」「不変条件を保証」「Lean で書いて」
   「仕様を形式化」と言ったとき、またはアルゴリズム・プロトコル・セキュリティ性質の正しさを
   数学的に保証したいときに使用する。autoformalization と proof repair のループを回す。
+user-invocable: true
+argument-hint: "[証明したい性質/仕様(ファイルパス or 説明)]"
 ---
 
 # Formal Verification (Lean 4)
@@ -47,36 +49,14 @@ description: >
 
 ### 2. Lean に形式化(autoformalization)
 
-NL → Lean の `def` + `theorem`。例:
-
-```lean
--- 「ソートは要素を保存し、順序付ける」
-theorem sort_perm (l : List Int) : (sort l).Perm l := by sorry
-theorem sort_sorted (l : List Int) : (sort l).Sorted (· ≤ ·) := by sorry
-```
+NL → Lean の `def` + `theorem`。例: 「ソートは要素を保存し、順序付ける」を 2 theorem に対応させる → [references/formalization-examples.md](references/formalization-examples.md)。
 
 `sorry` で穴を明示してから埋める。型エラー・証明失敗のメッセージを次の段にフィードバックする。
 
 **状態機械・temporal 性質の形式化**(§1 で洗い出した非数学的性質はここで形式化する):
 
-- **決定的 step 関数**にする。`step : State → Input → (State × Output)` を定義し、不変条件を「step の単一ステップ性質」として証明する。網羅性(全入力が accept か reject に分かれる)・単調性(状態が逆行しない)・吸収性はここで落ちる。
-
-```lean
--- 状態は逆行しない(単調)。rank で順序を与えて示す。
-theorem step_monotone (s : State) (i : Input) : s.rank ≤ (step s i).1.rank := by sorry
--- error を返すなら必ず closed へ(Fail the Connection の一方向性)。
-theorem error_implies_closed (s : State) (i : Input)
-    (h : (step s i).2 = .error) : (step s i).1 = .closed := by sorry
-```
-
-- **temporal 性質は trace 述語**にする。イベント列を `List Event` で表し、順序・応答義務・収束を List 上の述語/関数で証明する。チャンク分割非依存(`flatten` 不変)、メッセージ境界保存(encode/decode roundtrip)、race 収束(`f (f s) = terminal`)など。
-
-```lean
--- 受信粒度非依存: どう分割しても再構成結果は同じ。
-theorem chunking_invariant (c1 c2 : List (List Byte)) (h : c1.flatten = c2.flatten) :
-    reassemble c1 = reassemble c2 := by sorry
-```
-
+- **決定的 step 関数**にする。`step : State → Input → (State × Output)` を定義し、不変条件を「step の単一ステップ性質」として証明する。網羅性(全入力が accept か reject に分かれる)・単調性(状態が逆行しない)・吸収性はここで落ちる。例(単調性・error→closed の一方向性)は [references/formalization-examples.md](references/formalization-examples.md)。
+- **temporal 性質は trace 述語**にする。イベント列を `List Event` で表し、順序・応答義務・収束を List 上の述語/関数で証明する。チャンク分割非依存(`flatten` 不変)、メッセージ境界保存(encode/decode roundtrip)、race 収束(`f (f s) = terminal`)など。例(チャンク分割非依存)は [references/formalization-examples.md](references/formalization-examples.md)。
 - **応答義務に層がある場合は「層注」を明示**する。たとえば「ping に pong を返す」のうち、ライブラリは ping を欠落なく通知する所まで保証し、pong 送信はアプリ責務、という切り分けがあるなら、証明対象を「通知の正確さ」に限定し、境界を仕様にも証明コメントにも書く。嘘の全体保証をしない。
 
 ### 3. 証明(proof repair ループ)
@@ -107,12 +87,9 @@ theorem chunking_invariant (c1 c2 : List (List Byte)) (h : c1.flatten = c2.flatt
 
 ## 成果物の置き場(デフォルトは裏方)
 
-ユーザーが明示しない限り、形式検証は**裏方**で回す。証明物をリポジトリの git 管理に持ち込まない。
-
-- 作業場所は `tasks/fv/` 配下(`tasks/todo.md` と同じエリア)。Lean プロジェクト(`lakefile`・`.lean`・性質カタログ・`#print axioms` のログ)はここで作り込む。リポジトリの `.gitignore` 状況に関わらず、`git add` の対象にしない。
-- **git 管理下のドキュメントに形式検証の存在を書かない**。README・設計文書・コミットメッセージ・PR 本文に「Lean で証明した」「形式検証済み」等を記載しない。証明はあくまで実装の正しさを裏で固める手段で、表に出す成果は通常の実装とテストだけ。
-- 表に反映するのは**結果だけ**: 証明で確定した性質を、通常のユニット/property テストの述語として実装側に落とす(§4 の橋渡し)。そのテストとプロダクションコードが git 管理の成果物になる。テストのコメントにも「Lean 由来」とは書かず、性質そのものを普通に説明する。
-- 例外(明示オプトインのときだけ): ユーザーが「証明をリポジトリに入れて」「Lean を残して」「形式検証を文書化して」等と言ったら、そのとき初めて証明物を git 管理下へ置き、ドキュメントに言及する。
+証明物(Lean プロジェクト・性質カタログ・`#print axioms` ログ)は `tasks/fv/` 配下で作り込み、git 管理に持ち込まない。
+git 管理下のドキュメント・コミット・テストコメントに手法の存在を書かず、表に出すのは §4 の橋渡しテストと実装だけ。
+明示オプトイン時の例外を含む詳細は [../_shared/stealth-artifacts.md](../_shared/stealth-artifacts.md)。
 
 ## 現実的な期待
 
@@ -122,9 +99,8 @@ theorem chunking_invariant (c1 c2 : List (List Byte)) (h : c1.flatten = c2.flatt
   subagent に投げるときの落とし穴(共有リソースの直列化・命名衝突の予防・単体緑≠
   統合緑・成果物の実在で進捗判定・外部ツールの sandbox 可否)は
   [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) を守る。
-- 証明の都合で定義を等価変形したときの理由(Why not)はコメントに残すが、手法の存在(Lean で証明した、
-  という How の手段)はコミットや git 管理下ドキュメントに書かない。コード/テスト/コミット/コメントの
-  役割分担は [`../_shared/code-comment-commit-roles.md`](../_shared/code-comment-commit-roles.md) を参照。
+- 証明の都合で定義を等価変形したときの理由(Why not)はコメントに残す。コード/テスト/コミット/
+  コメントの役割分担は [`../_shared/code-comment-commit-roles.md`](../_shared/code-comment-commit-roles.md) を参照。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
