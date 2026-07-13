@@ -24,7 +24,7 @@ ledger="tasks/loopeng/${name}.extract.md"
 
 block() { echo "loopeng 0段ゲート: $1" >&2; exit 2; }
 
-[ -f "$ledger" ] || block "抽出台帳 $ledger が無い。assets/extract-template.md をコピーして埋めてから loop-* を回せ。"
+[ -f "$ledger" ] || block "抽出台帳 $ledger が無い。loopeng-extract スキルの assets/extract-template.md をコピーして埋めてから loop-* を回せ。"
 
 # 「## 台帳」以降だけを対象にする(テンプレ見出しの例 [ ] を拾わないため)
 body="$(awk '/^## 台帳/{f=1;next} /^## /{if(f)exit} f' "$ledger")"
