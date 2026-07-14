@@ -24,6 +24,9 @@ description: >
 - unwanted: 「IF <condition> THEN the <system> SHALL <response>.」(異常系)
 - optional: 「WHERE <feature> the <system> SHALL <response>.」
 
+基本5パターンで書けない(多条件・ロール別分岐・優先順位・定量化 NFR)、または変換前の弱点洗い出しや
+書き上げ後のセルフレビューが要るときは [`references/ears-patterns.md`](references/ears-patterns.md) を使う。
+
 ## 状態/ドメインモデル
 
 名詞=状態変数、各変数の型(値域)、初期状態、不変条件。各 EARS 節がどの状態遷移に対応するかを対応づける。

@@ -84,6 +84,7 @@ description: >
 
 - **unwanted の系統生成**: 各 event 要件(正常系)に「この入力が不正なら?」を必ず問い、unwanted(IF-THEN)を立てる。
 - **多視点の独立抽出 + 突き合わせ**: 違う観点(状態機械/バイト/セキュリティ/相互運用)で独立抽出し union を取る。`adaptive-explore` workflow や複数 subagent で観点を分ける(並列化の落とし穴は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md))。**同じ観点を N 回より違う観点を1回ずつ**。
+- **ドメイン別チェックリストとの突き合わせ**: [`../loopeng-formalize/references/ears-patterns.md`](../loopeng-formalize/references/ears-patterns.md) 1節の弱点トリアージで対象ドメインの典型要件カテゴリと台帳を突き合わせる。
 
 ## 出口: 独立基準で漏れを逆検出(最後の砦)
 
