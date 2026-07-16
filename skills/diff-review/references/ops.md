@@ -34,3 +34,9 @@ severity 体系・2 パス自己検証は本体(diff-reviewer.md)に一元化さ
 - リトライの上限・バックオフ欠如(無限リトライ・thundering herd)
 - graceful shutdown を壊す変更(シグナル処理・in-flight 処理の破棄・リソースの後始末漏れ)
 - 影響の大きい新機能に対する feature flag / kill switch の欠如: flag 基盤が既に運用されている場合のみ **want**
+
+## デプロイ・依存・CI 変更の成立性
+
+- CI ワークフロー・依存・ビルド設定を変更したのに、動作確認の証跡(CI 実行結果・ローカルでの再現ログ)が無い: **want+**(壊れたまま気づけない)
+- デプロイ手順・マイグレーション順序が変更後も成立するか: 手順やスクリプトが参照するファイル・コマンドを diff が壊す構図が成立していれば **must**
+- 依存更新での lockfile と manifest の不整合、breaking change を含むメジャー更新の無言取り込み: **want+**
