@@ -1,6 +1,6 @@
 ---
 name: pr-create
-description: "Pull Request / Merge Request を作成するときに必ず参照する。`gh pr create`/`glab mr create` で PR/MR を作る、コミット済みの作業をレビューに出す、並列・stacked 作業の各ブランチで PR を起こす、といった場面で使う。リポジトリの pull_request_template/merge_request_template を決定論スクリプトで検出して優先し、テンプレの骨組み（見出し・チェックリスト・順序）を改変せず入力箇所を埋めるだけにする（作成前に骨組み照合ゲートで機械検証）。無ければ汎用観点で本文を構成。本文の素材は対象リポジトリの git 差分のみに限定し、他リポジトリ・他タスクの内容を混入させない。draft 既定・作成前にユーザー承認。未 push のときは AskUserQuestion で承認を取ってから push。GitHub(gh) 基本、GitLab(glab) 等にも対応。"
+description: "Pull Request / Merge Request を作成するときに必ず参照する。`gh pr create`/`glab mr create` で PR/MR を作る、コミット済みの作業をレビューに出す、並列・stacked 作業の各ブランチで PR を起こす、といった場面で使う。リポジトリの pull_request_template/merge_request_template を決定論スクリプトで検出して優先し、テンプレの骨組み（見出し・チェックリスト・順序）を改変せず入力箇所を埋めるだけにする（作成前に骨組み照合ゲートで機械検証）。無ければ汎用観点で本文を構成。作成前に diff-review でのセルフレビュー反復（must ゼロまで）を必須とし、証跡を hook が検査する。本文の素材は対象リポジトリの git 差分のみに限定し、他リポジトリ・他タスクの内容を混入させない。draft 既定・作成前にユーザー承認。未 push のときは AskUserQuestion で承認を取ってから push。GitHub(gh) 基本、GitLab(glab) 等にも対応。"
 user-invocable: true
 argument-hint: "[ベースブランチ名や追加指示（任意）]"
 ---
@@ -16,6 +16,7 @@ argument-hint: "[ベースブランチ名や追加指示（任意）]"
 - **作成前に必ずタイトルと本文を提示しユーザー承認を得てから** 作成コマンドを実行する。
 - **対象リポジトリの取り違え・文脈混入を禁止**。本文・タイトルは `scripts/pr-context.sh` が出す**この作業ディレクトリの git 状態（REPO IDENTITY / COMMITS / DIFF）だけ**を根拠にする。会話履歴に残る別リポジトリ・別タスクの内容を PR 本文へ持ち込まない。スクリプトの `REPO IDENTITY`（repo slug / worktree-root）が、PR を作ろうとしている対象と一致することを作成前に必ず確認する。
 - **テンプレートは確定フォーム。骨組みを改変しない**。`TEMPLATE` が `primary`/選択 `multi` を返したら、見出し・チェックリスト・順序を逐語で保ち、入力箇所を埋めるだけ（§4）。独自フォーマットへの差し替え・セクションの削除/追加/並べ替え・見出しの言い換えは禁止。作成前に `scripts/template-check.sh` の骨組み照合ゲート（§5）を必ず通す。
+- **作成前に必ずセルフレビュー反復（§1.5）を通す**。diff-review の must 指摘がゼロになるまで修正→コミット→再レビューを繰り返す。骨組み照合・ユーザー承認と同列の通過必須ゲートで、未通過のままの `gh pr create` は hook にブロックされる。
 - **PR本文にセッションURLを含めない**。Claude Code の既定動作は本文末尾にセッションへのリンクを付与するが、このリポジトリでは付与しない。ローカル CLI・remote-control のどちらのセッションでも同様。
 
 ## ワークフロー
@@ -37,6 +38,19 @@ bash <skill-dir>/scripts/pr-context.sh [base-branch]
 - **COMMITS / COMMIT MESSAGES** = 本文の主素材。
 - **DIFF STAT / CHANGED FILES** = 変更範囲。完全差分が要れば末尾の `git diff <base>...HEAD` を別途実行。
 - **UPSTREAM / PUSH STATUS** に WARNING（未 push／未 push コミットあり）が出たら記録しておき、§7 の作成直前に **AskUserQuestion で push 可否の承認**を取る（承認されれば push、拒否なら停止）。ここで自動 push はしない。
+
+### 1.5 セルフレビュー反復（作成前ゲート）
+
+本文を書く前に、差分そのものを diff-review スキルでセルフレビューし、must 指摘ゼロの状態にする。
+
+1. 未コミットの差分があれば先に確定（コミット）してから始める。レビュー対象はコミット済み差分。
+2. diff-review スキルを実行する。レンズは既定（design, test）に加えて **spec・fresh-eyes を必須**で含め、差分の性質に応じて security / ops / compat / performance / concurrency を追加する。
+3. must 指摘が出たら: 修正 → コミット → diff-review 再実行。**must がゼロになるまで反復する**。1 周で終えてよいのは初回から must ゼロの場合のみ。should は対応するか見送るか判断し、見送るものは PR 本文に理由を書ける状態にしておく。
+4. 各周のレンズと must 件数を控えておく（§4 の本文に証跡として記載する）。
+
+証跡の形式は diff-review スキルの証跡出力節を正とする（tasks/diff-review/evidence.md）。
+
+`gh pr create` は PreToolUse hook（hooks/pr-review-gate.sh）により、このファイルが「存在 && commit==現 HEAD && must==0」でなければブロックされる。レビュー後に追加コミットすると HEAD が変わるため、再レビューを通すまで作成はブロックされる。
 
 ### 2. テンプレート確認
 
@@ -83,6 +97,8 @@ bash <skill-dir>/scripts/pr-context.sh [base-branch]
 ## 関連 Issue / リンク
 <!-- Closes #xxx など -->
 ```
+
+「動作確認」には、テスト・検証手順に加えて §1.5 のセルフレビュー証跡（実施レンズ・周回数・最終 must 0）を記載する。テンプレートがあるリポジトリでは骨組みを壊さず、該当セクション（動作確認・チェックリスト等）の入力箇所に同じ内容を書く。
 
 ### 5. 骨組み照合（テンプレートがある場合の作成前ゲート）
 
