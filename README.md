@@ -24,6 +24,7 @@
 - **micro-commit**：変更を~30-50行の論理単位に分割し conventional commit で連続コミットする実務手順。
 - **test-targeted**：変更に関係するテストだけを絞り込んで実行する。
 - **gh-ci-investigate**：GitHub CI の失敗を調査する。
+- **review-feedback**：レビュー指摘に対応し、原因分析・水平展開・観点の埋め込みまで行う。
 - **rebase-flow** / **reset-flow**：履歴破壊操作の安全運用(同梱の git-guard hook が arm なしの実行を機械的にブロックする)。
 - **pr-create**：PR を作成する。
 
