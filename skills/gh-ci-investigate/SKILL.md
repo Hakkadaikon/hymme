@@ -71,3 +71,7 @@ bash <skill-dir>/scripts/gh-ci-investigate.sh logs "<url|run_id|#PR>" [--job <jo
 - private リポジトリや GitHub Enterprise で認証が通らないときは、`gh auth status` / `gh auth login --hostname <host>` を案内し、憶測で進めない。
 - ログにトークン・認証情報・顧客データ様の文字列が含まれうる。引用は原因説明に必要な最小限にとどめ、秘匿様の文字列は伏せる。
 - push・fetch が SSH 認証で弾かれる非対話環境では、コマンドを提示してユーザーに実行を委ねる。
+
+## 完了条件
+
+終端は「根本原因のログ証跡付き報告と修正案の提示」まで（修正の適用は含まない）。原因を特定しきれないときは、追加で何をどう調査すべきかとその理由を提示して終える。

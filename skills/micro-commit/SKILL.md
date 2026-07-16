@@ -114,3 +114,7 @@ Created N commits:
 - If a pre-commit hook fails, fix the issue and create a new commit
 - Check `git log` first to match the project's existing commit style if it differs from these guidelines
 - Do not commit files that look like secrets (`.env`, credentials, keys)
+
+## Completion criteria
+
+Done when the workflow and constraints above are satisfied. Anything intentionally left uncommitted is reported as such.
