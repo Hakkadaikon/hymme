@@ -37,6 +37,7 @@ bash <skill-dir>/scripts/pr-context.sh [base-branch]
 - **BASE BRANCH** = リモート既定ブランチではなく、**作業ブランチの分岐元**をローカル探索した結果。`(特定できませんでした)` や誤検出が疑わしいときは引数 `base-branch` を渡して再実行、またはユーザーに確認。
 - **COMMITS / COMMIT MESSAGES** = 本文の主素材。
 - **DIFF STAT / CHANGED FILES** = 変更範囲。完全差分が要れば末尾の `git diff <base>...HEAD` を別途実行。
+- **CI WORKFLOWS** = CI workflow ファイルの一覧と、差分に含まれるファイル拡張子の集合。**ローカルで回した検証ゲートは CI 全 workflow の部分集合でしかない**(ローカルの主要ゲートが全緑のまま、別 workflow の fmt/lint/docs ジョブが赤で本流を割るのが定番の事故)。差分のファイル種別に反応する workflow を突き合わせ、ローカル未実行のジョブがあれば PR 前に実行するか、実行できない理由と「未検証」の旨を本文に明記する。CI がツールのバージョンを pin している場合(lockfile・setup アクションの version 指定)、ローカル版とのバージョン照合もここで行う — フォーマッタ等の skew は「ローカル緑・CI 赤」の典型原因で、pin と違う版の整形差分をコミットすると CI が全拒否する。
 - **UPSTREAM / PUSH STATUS** に WARNING（未 push／未 push コミットあり）が出たら記録しておき、§7 の作成直前に **AskUserQuestion で push 可否の承認**を取る（承認されれば push、拒否なら停止）。ここで自動 push はしない。
 
 ### 1.5 セルフレビュー反復（作成前ゲート）

@@ -163,6 +163,27 @@ detect_templates() {
     fi
 }
 
+# --- CI workflow 検出 -----------------------------------------------------
+# ローカルで回した検証ゲートは CI 全 workflow の部分集合でしかない。差分の
+# ファイル種別とここに出た workflow のトリガーを突き合わせ、ローカル未実行の
+# ジョブ(fmt/lint/docs 等)が無いか呼び出し側が確認するための素材を出す。
+detect_workflows() {
+    local root f
+    root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "(repo root 不明 — 検出不可)"; return; }
+    local found=0
+    if [ -d "$root/.github/workflows" ]; then
+        while IFS= read -r f; do
+            [ -n "$f" ] && { echo "workflow: $f"; found=1; }
+        done < <(cd "$root" && find .github/workflows -maxdepth 1 \( -iname '*.yml' -o -iname '*.yaml' \) 2>/dev/null | sort)
+    fi
+    [ -f "$root/.gitlab-ci.yml" ] && { echo "workflow: .gitlab-ci.yml"; found=1; }
+    if [ "$found" -eq 0 ]; then
+        echo "(CI workflow なし)"
+        return
+    fi
+    echo "changed-file extensions: $(git diff "$1"...HEAD --name-only 2>/dev/null | sed -n 's/.*\.\([A-Za-z0-9_]\{1,10\}\)$/\1/p' | sort -u | tr '\n' ' ')"
+}
+
 # --- プラットフォーム判定 -------------------------------------------------
 # remote URL のホストから github / gitlab / bitbucket を判定し、使用 CLI と
 # その有無を出す。ホスト不明（GHE 等の self-hosted 含む）は unknown とし、
@@ -267,6 +288,10 @@ echo ""
 
 echo "=== CHANGED FILES ==="
 git diff "$base"...HEAD --name-status || true
+echo ""
+
+echo "=== CI WORKFLOWS ==="
+detect_workflows "$base"
 echo ""
 
 echo "=== NOTE ==="
