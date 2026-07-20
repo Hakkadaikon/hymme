@@ -5,6 +5,9 @@
 # - git reset: reset-flow の arm marker(.git/reset-flow.armed、30分有効)が無ければブロック。
 # - git push: --force/-f(結合短フラグ含む)・値なし/sha なしの --force-with-lease・+refspec を常時ブロック。
 #   検証済み tip を明示した --force-with-lease=<ref>:<sha> のみ許可。
+# - git commit: 同一行で (a) `;` の直前連結、(b) 先行セグメントに `| tail`/`| head` があるとブロック。
+#   どちらも「検証ゲートの赤が exit に反映されないままコミットが走る」再発事例のパターン。
+#   `検証 && git commit` と `検証 | grep -q ... && git commit`(exit が判定を反映する形)は許可。
 # PreToolUse(matcher: Bash)。stdin に hook の JSON。ブロックは exit 2。
 # ponytail: 既知の上限 — xargs 経由・シェル 3 段以上のネスト・`git -C <別リポ>` の marker 照合は
 # cwd リポジトリ基準のまま。クォート内の実改行は行分割で別コマンド扱いになる(fail-closed の誤爆側)。
@@ -82,7 +85,62 @@ def check_git(args):
             if not a.startswith("-") and a.startswith("+"):
                 block("+refspec による force push は禁止。--force-with-lease=<branch>:<sha> を使うこと。")
 
+def line_parts(line):
+    # split_segments と同じ字句化だが、直前の連結子(; && || | 等)を保持する
+    try:
+        lex = shlex.shlex(line, posix=True, punctuation_chars=";&|()")
+        lex.whitespace_split = True
+        tokens = list(lex)
+    except ValueError:
+        tokens = line.split()
+    parts, cur, conn = [], [], None
+    for t in tokens:
+        if t and all(c in ";&|()" for c in t):
+            if cur:
+                parts.append((conn, cur))
+                cur = []
+            conn = t
+        else:
+            cur.append(t)
+    if cur:
+        parts.append((conn, cur))
+    return parts
+
+def git_sub(seg):
+    i = 0
+    while i < len(seg):
+        t = seg[i]
+        base = os.path.basename(t)
+        if ("=" in t and not t.startswith("-")) and base != "git":
+            i += 1
+        elif base in WRAPPERS or t.startswith("-") or re.fullmatch(r"[\d.]+[smhd]?", t):
+            i += 1
+        elif base == "git":
+            args = seg[i + 1:]
+            j = 0
+            while j < len(args) and args[j].startswith("-"):
+                j += 2 if args[j] in ("-C", "-c", "--git-dir", "--work-tree") else 1
+            return args[j] if j < len(args) else None
+        else:
+            return None
+    return None
+
+def check_commit_chain(text):
+    # ゲート素通しコミットの2パターンを同一行内で検出する。
+    # if 文の then 節(`if 検証; then git commit; fi`)はセグメント先頭が then になるので誤爆しない。
+    for line in text.replace("\\\n", " ").split("\n"):
+        parts = line_parts(line)
+        for idx, (conn, seg) in enumerate(parts):
+            if git_sub(seg) != "commit":
+                continue
+            if conn == ";":
+                block("`;` で直前コマンドと連結された git commit は禁止(直前の失敗を無視して走る)。`&&` か if で失敗時に止まる形にすること。")
+            for pconn, pseg in parts[:idx]:
+                if pconn == "|" and pseg and os.path.basename(pseg[0]) in ("tail", "head"):
+                    block("`| tail`/`| head` を経た行での git commit は禁止(パイプの exit がフィルタ側になり、検証の赤が握り潰される)。検証は `grep -q` 等 exit に判定が乗る形にするか、コミットを別コマンドに分けること。")
+
 def scan(text, depth=0):
+    check_commit_chain(text)
     for seg in split_segments(text):
         i = 0
         while i < len(seg):
