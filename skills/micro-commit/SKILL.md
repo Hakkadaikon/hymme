@@ -114,6 +114,7 @@ Created N commits:
 - If a pre-commit hook fails, fix the issue and create a new commit
 - Check `git log` first to match the project's existing commit style if it differs from these guidelines
 - Do not commit files that look like secrets (`.env`, credentials, keys)
+- Never chain a verification gate into the commit on the same shell line: `tests 2>&1 | tail && git commit` commits even when the tests are red (the pipe's exit is `tail`'s), and `tests; git commit` ignores the failure. Run the gate first, confirm exit 0, then commit as a separate command (or guard it with `if <gate>; then git commit ...; fi`)
 
 ## Completion criteria
 
