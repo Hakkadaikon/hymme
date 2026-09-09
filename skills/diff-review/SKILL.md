@@ -10,6 +10,26 @@ argument-hint: "[レビュー範囲や観点(例: origin/main 以降 / security 
 フローは 4 段階: **1. 差分収集(決定論)→ 2. レンズごとに diff-reviewer agent を並列起動 → 3. 統合報告 → 4. 証跡出力**。
 レビューは読み取り専用。修正・コミットはこのスキルの範囲外で、ユーザーの指示があってから別途行う。
 
+## superpowers との関係
+
+superpowers:subagent-driven-development のタスク単位レビュー(task-reviewer-prompt.md / re-review-prompt.md)と最終ブランチレビュー(requesting-code-review の code-reviewer.md)は superpowers のテンプレートで行い、本スキルはそれを置き換えない。本スキルを使う場面は 3 つ:
+
+- **(a) PR 作成前**: pr-create が必須とし、`hooks/pr-review-gate.sh` が証跡(§4)を検査する。
+- **(b) ユーザーの明示依頼**: 「レビューして」「〇〇観点で見て」。
+- **(c) SDD 最終レビューの多観点補強**(任意): コントローラが code-reviewer.md の最終レビューに**加えて**本スキルを回す。順序は code-reviewer.md → 本スキル(同じ MERGE_BASE..HEAD)。本スキルの指摘は下の対応表で severity を読み替えて最終レビューの指摘リストに合流させ、fix 波(1 回)と scoped re-review は SDD の手順で回す(fix 波の後に本スキルを回して 2 回目の波を作らない)。本スキルの must が残るなら、code-reviewer.md の verdict に関わらず fix 波へ回し、merge 判断は scoped re-review の後にする。証跡ファイル(§4)はこの場面でも書き出す——後続の pr-create ゲートがそれを使う。
+
+diff-reviewer ワーカーはサブエージェントを起動しない。並列化はこのスキル(オーケストレータ)がレンズ単位で行うものであり、実装 subagent の並列化ではない(実装は superpowers が直列に回す)。
+
+### severity 対応表
+
+| hymme(diff-reviewer) | superpowers(Critical / Important / Minor) |
+|---|---|
+| must | Critical |
+| want+ | Important |
+| want | Minor |
+| nit | Minor |
+| `[PLAUSIBLE]` | 読み替え後も併記。severity を上げも下げもしない |
+
 ## 1. 差分収集
 
 `<skill-dir>` はこのファイルのあるディレクトリ。
@@ -63,6 +83,7 @@ manifest を全 agent に同一内容で渡すことで、レビュー範囲の�
 - 冒頭に「対象: <範囲> / レンズ: <適用レンズ>」を明記する
 - 同一 `ファイルパス:行番号` に複数レンズの指摘が重なったら 1 件に統合する。severity は最も重いものを採用し、レンズタグを併記する(例: `[design][security]`)
 - `[PLAUSIBLE]` マークは統合後も維持する
+- 場面 (c) では、hymme 形式の統合報告に加えて、対応表で読み替えた Critical / Important / Minor の一覧を最終レビューへの合流用に出す(証跡 §4 の `must:` は hymme 形式の件数のまま)
 
 ### 完了条件
 
