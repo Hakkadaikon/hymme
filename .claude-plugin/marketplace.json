@@ -1,14 +1,28 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "hymme",
+  "description": "superpowers を前提に、設計検証(TLA+)・テスト設計・形式検証(Lean 4)の 3 系統と git/レビュー運用スキル、専用 agents を足す hymme と、その前提となる superpowers 本体を配る marketplace。",
   "owner": {
     "name": "Hakkadaikon",
     "url": "https://github.com/Hakkadaikon"
   },
   "plugins": [
     {
+      "name": "superpowers",
+      "description": "hymme の前提プラグイン(obra/superpowers 本体、動作確認版 6.3.0)。brainstorming → writing-plans → subagent-driven-development → finishing-a-development-branch の工程と TDD / systematic-debugging を提供する。",
+      "category": "development",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/obra/superpowers.git"
+      },
+      "homepage": "https://github.com/obra/superpowers"
+    },
+    {
       "name": "hymme",
+      "description": "superpowers 前提の拡張。検証 3 系統(loop-engineering: NL→EARS→TLA+→Gherkin / test-design: 振る舞い抽出→手法選定→実装橋渡し / formal-verification: Lean 4)、git・レビュー運用スキル(diff-review / commit-flow / micro-commit / pr-create / review-feedback / ledger-flow / rebase-flow / reset-flow / gh-ci-investigate / test-targeted)、agents(coder / code-reviewer / diff-reviewer / modeler / prover / 3 reviewers)と、toolchain(TLA+/Apalache/Lean)を入れる Nix flake。",
+      "category": "development",
       "source": "./",
-      "description": "loop-engineering(NL→EARS→TLA+→Gherkin の3重ループ)と test-design(振る舞い抽出→手法選定→実装橋渡し)の各ルーター+工程スキル、formal-verification(Lean 4 で形式検証)、開発ワークフロースキル群(diff-review / commit-flow / micro-commit / test-targeted / gh-ci-investigate / rebase-flow / reset-flow / pr-create / ledger-flow)と、その toolchain(TLA+/Apalache/make/python3/Lean)を入れる Nix flake。 agents として coder / code-reviewer / diff-reviewer / modeler / prover / loop-engineering-reviewer / test-design-reviewer / formal-verification-reviewer を同梱。"
+      "homepage": "https://github.com/Hakkadaikon/hymme"
     }
   ]
 }
