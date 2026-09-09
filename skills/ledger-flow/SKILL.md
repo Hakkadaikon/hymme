@@ -2,7 +2,7 @@
 name: ledger-flow
 user-invocable: true
 argument-hint: "[対象の台帳・計画文書のパス(任意)]"
-description: "進捗台帳と計画・引き継ぎ文書の運用ルール。todo・計画書・テストリスト・STATUS 等のチェックボックス付き文書を作る/更新する、「台帳を更新して」「進捗をまとめて」「引き継ぎ文書を書いて」「todo を整理して」と頼まれる、作業完了で台帳を消し込む、スナップショット文書(STATUS/RESUME)を発行する、といった場面で参照する。記法の凡例を一本化し、消し込み先を1ファイルに固定し、完了主張に証跡ポインタを義務付け、完了文書を closed で閉じる。台帳が緑を偽らない・履歴が消えない・読み手が考古学をしないための規範。コミット粒度は commit-flow、教訓の記録は review-feedback が担う。"
+description: "進捗台帳と計画・引き継ぎ文書の運用ルール。todo・計画書・テストリスト・STATUS 等のチェックボックス付き文書を作る/更新する、「台帳を更新して」「進捗をまとめて」「引き継ぎ文書を書いて」「todo を整理して」と頼まれる、作業完了で台帳を消し込む、スナップショット文書(STATUS/RESUME)を発行する、といった場面で参照する。記法の凡例を一本化し、消し込み先を1ファイルに固定し、完了主張に証跡ポインタを義務付け、完了文書を closed で閉じる。台帳が緑を偽らない・履歴が消えない・読み手が考古学をしないための規範。コミット粒度は commit-flow、教訓の記録は review-feedback が担う。 superpowers の SDD 台帳(.superpowers/sdd/<plan>/progress.md)は superpowers が所有し、本スキルは hymme 側の台帳を担う。"
 ---
 
 # ledger-flow — 進捗台帳と文書ライフサイクルの運用
@@ -43,6 +43,15 @@ description: "進捗台帳と計画・引き継ぎ文書の運用ルール。tod
 ## 6. 機械検査に落とせるものは落とす
 
 未チェック残・欠番・凡例違反の検査は決定論で書ける。loopeng-extract / test-design の採番台帳ゲート(hooks/loopeng-extract-gate.sh、hooks/test-design-extract-gate.sh)が同型の実装例で、`- [ ]` の残存と ID の欠番を PreToolUse で機械ブロックしている。恒常運用する台帳には同型の検査を用意し、目視の数え上げに置き換える。
+
+## 7. SDD 台帳(superpowers)との分担
+
+superpowers:subagent-driven-development は自前の進捗台帳 `<repo-root>/.superpowers/sdd/<plan-basename>/progress.md` を持つ(先頭行 `# SDD ledger — plan: <plan file path>`、行形式 `Task <N>: complete (commits <base7>..<head7>, review clean)` / `Task <N>: fix round <R>/5 (...)` / `Task <N>: minor (deferred): ...` / `Task <N>: parked — ... — Ruling: ...` / `Ruling: <what> — <why> — <cost if wrong>`)。所有者は superpowers。本スキルの凡例(`[ ]`/`[~]`/`[x]`)に書き換えない、チェックボックスを足さない、closed 行を足さない(plan 完走後に superpowers 自身が `rm -rf` する)。
+
+- **SDD 実行中の真実源(§2)は SDD 台帳。** hymme 側の台帳(`tasks/loopeng/`・`tasks/test-design/`・`tasks/fv/`・`tasks/todo.md`・引き継ぎ文書)に同じ Task の進捗を転記しない。載せるなら「進捗は `.superpowers/sdd/<plan>/progress.md` を正とする」と 1 行。
+- §3(証跡ポインタ)と §4(コミット前に完了を書かない)は SDD 台帳にも精神として効いている: `Task N: complete` 行はコミット範囲を含み、review clean か breaker で parked 済みのときだけ書かれる。superpowers が既にそう定めているので追加記法は要らない。
+- hymme の台帳(T-ID 台帳・採番チェックリスト・性質カタログ・todo・STATUS)は §1〜6 に従う。例外は worktree 内の台帳で、closed 行で閉じず worktree と共に破棄する([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。SDD の Task が hymme 台帳の消し込みを含む場合、implementer は台帳を触らず、コントローラが SDD 台帳に `Task N: complete` を書くと同時に消し込み、証跡ポインタには Task のコミット SHA を使う。
+- writing-plans の plan 文書(`docs/superpowers/plans/*.md`)は §2 の「計画書は write-once」に当たる。plan 内の `- [ ]` ステップは superpowers の追跡用で、hymme の hook(`hooks/loopeng-extract-gate.sh` は `tasks/loopeng/*.extract.md`、`hooks/test-design-extract-gate.sh` は `tasks/test-design/*.md` だけを見る)の対象外である。
 
 ## やらないこと
 
