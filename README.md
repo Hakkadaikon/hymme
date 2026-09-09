@@ -1,6 +1,25 @@
 # hymme
 
-設計検証・テスト設計・形式検証のスキル群と開発ワークフロースキル、それらが必要とする Nix ツールチェインをまとめた Claude Code プラグインマーケットプレイス。
+[superpowers](https://github.com/obra/superpowers) を前提に、設計検証(TLA+)・テスト設計・形式検証(Lean 4)の 3 系統と git/レビュー運用のスキル、専用 agents を足す Claude Code プラグイン。superpowers 本体もこの marketplace から入れられる(動作確認版 6.3.0)。工程を決めるのは superpowers、hymme はその各工程に検証と運用を差し込む。差し込み位置の地図は `using-hymme` スキルで、セッション開始時に自動注入される。
+
+必要な Nix ツールチェイン(TLA+/Apalache/Lean)も flake で配る。
+
+## superpowers との役割分担
+
+| 局面 | superpowers が担う | hymme が足す |
+| --- | --- | --- |
+| 設計 | brainstorming(spec 化、Architectural 経路) | 設計後・spec 前に loop-engineering の 2 問ゲート / formal-verification の性質カタログ |
+| 計画 | writing-plans(Task / Step) | spec 承認後に test-design で T-ID 台帳 → Task に落とす |
+| 実装 | subagent-driven-development / executing-plans、test-driven-development | implementer は coder agent(ponytail + TDD 契約)。prover / modeler は controller が別 dispatch、完了ゲートで各 reviewer |
+| コミット | (規約なし) | commit-flow(粒度)+ micro-commit(実務) |
+| レビュー | task review(SDD の task-reviewer-prompt.md)/ final review(requesting-code-review) | 多観点 diff-review。PR 前は hook で diff-review 証跡を必須化 |
+| PR | finishing-a-development-branch | pr-create |
+| バグ | systematic-debugging | gh-ci-investigate(Phase 1 の証拠収集) |
+| 訂正 | receiving-code-review | review-feedback(水平展開・lessons) |
+| 台帳 | SDD の ledger 形式 | ledger-flow(それ以外の進捗・引き継ぎ文書) |
+| 履歴 | using-git-worktrees | rebase-flow / reset-flow + git-guard hook |
+
+superpowers の `using-superpowers` と hymme の `using-hymme` はどちらもセッション開始時に注入される。前者が「スキルを使え」、後者が「どこで hymme を使うか」を決める。
 
 ## 収録スキル
 
@@ -29,21 +48,32 @@
 - **rebase-flow** / **reset-flow**：履歴破壊操作の安全運用(同梱の git-guard hook が arm なしの実行を機械的にブロックする)。
 - **pr-create**：PR を作成する。
 
-agents として次を同梱する。
+agents として次を同梱する。呼び出しは subagent_type `hymme:<name>`。
 
-- **diff-reviewer**：diff-review のワーカー(多観点レビュー)。
-- **code-reviewer**：ponytail-review 観点(過剰設計)だけを見るレビュー担当。
-- **coder**：ponytail(最小・YAGNI)と TDD で実装・修正・リファクタを行う担当。formal-verification / loop-engineering / test-design が必要な局面ではそれぞれ prover / modeler / test-design へ委譲する。
-- **modeler**：loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中し、完了前に loop-engineering-reviewer で外部検査する。
-- **prover**：formal-verification(Lean 4)で証明を行う担当。1 性質に集中し、完了前に formal-verification-reviewer で外部検査する。
-- **loop-engineering-reviewer** / **test-design-reviewer** / **formal-verification-reviewer**：各スキル群の完了前ゲートを担う外部コンプライアンスレビュアー。
+- **coder**:SDD の implementer 契約(spec → 実装 → 自己検証 → 報告)を、ponytail(最小・YAGNI)と TDD で遂行する。prover / modeler への委譲はしない。形式検証・モデル検査が必要なら「必要」と報告して controller に返す。
+- **modeler**:loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中して結果を返す。loop-engineering-reviewer への hand-off は controller が行う。
+- **prover**:formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。formal-verification-reviewer への hand-off は controller が行う。
+- **diff-reviewer**:diff-review のワーカー(多観点レビュー)。
+- **code-reviewer**:ponytail-review 観点(過剰設計)だけを見るレビュー担当。
+- **loop-engineering-reviewer** / **test-design-reviewer** / **formal-verification-reviewer**:各系統の完了ゲート。controller が modeler / prover / test-design の成果を渡して外部検査させる。
+
+coder と code-reviewer は [ponytail](https://github.com/DietrichGebert/ponytail) プラグインを Skill ツールで呼ぶ(soft dependency、未導入なら該当手順をスキップ)。ponytail は自身の marketplace から入れる:`/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`。
 
 ## インストール(Claude Code)
 
+superpowers が前提。hymme の marketplace から両方入れる。
+
 ```
 /plugin marketplace add Hakkadaikon/hymme
+/plugin install superpowers@hymme
 /plugin install hymme@hymme
 ```
+
+superpowers は `/plugin install superpowers@claude-plugins-official` で入れても同じ(同一プラグイン)。**どちらか一方だけ**入れる。両方入れるとスキルと SessionStart hook が二重になる。すでに official 版が入っているなら `superpowers@hymme` は入れない。
+
+動作確認版は superpowers 6.3.0。marketplace の entry は sha を固定しない(`/plugin update superpowers@hymme` で上流に追従する)。
+
+更新は `/plugin marketplace update hymme` → `/plugin update hymme@hymme`(hymme marketplace は autoUpdate 無効)。反映には再起動が要る。
 
 ## ツールチェイン(Nix)
 
