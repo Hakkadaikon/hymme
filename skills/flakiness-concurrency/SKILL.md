@@ -27,6 +27,7 @@ flaky テストは「赤を信用できない」状態を生み、本物の退�
 
 相互参照:
 
+- 原因究明の基底は superpowers:systematic-debugging(Phase 1: 再現・証拠収集、原因確定前に直さない)。この文書の検出法(`--repeat`・shuffle・高並列)はその Phase 1 の道具。
 - 後始末漏れによるテスト間の状態汚染の構成パターンは [`test-structure-lifecycle.md`](../test-structure-lifecycle/SKILL.md) の Four-Phase Test(teardown)を参照。
 - 並行・状態遷移・順序の設計そのものをテスト前に固めるなら `loop-engineering`(TLA+)でモデル検査し、反例を回帰テストへ落とす。
 - 外部ネットワーク・タイマー sleep は [`flakiness-external.md`](../flakiness-external/SKILL.md)、値の非決定性(時刻・乱数・浮動小数)は [`flakiness-value.md`](../flakiness-value/SKILL.md)。

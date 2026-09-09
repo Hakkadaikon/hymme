@@ -171,7 +171,7 @@ flaky を放置も即削除もしない。検出して可視化し、本流の�
 1. **検出の仕組みを置く**:CI で各テストの成否履歴を記録し、同一コミットで揺れるテストを flaky として可視化する。1回の緑/赤では flaky は見えないので、複数回または継続実行の履歴で判定する。
 2. **検出したものを一時隔離する**:flaky と判定したテストを本流の緑から外す(quarantine タグ等)。本流を汚さないためであって、消すためではない。
 3. **隔離に期限と担当を付ける**:隔離した各テストに「いつまでに・誰が原因修正するか」を必ず付ける。期限の無い隔離は墓場になる。
-4. **原因を分類して直す**:時刻・乱数・並行・順序依存・外部依存・待ち合わせ不足のどれかへ分類し、[`flakiness-concurrency.md`](../flakiness-concurrency/SKILL.md) の対処で根本原因を消す。リトライで握り潰さない。
+4. **原因を分類して直す**:時刻・乱数・並行・順序依存・外部依存・待ち合わせ不足のどれかへ分類し、superpowers:systematic-debugging の Phase 1 で原因を確定し、[`flakiness-concurrency.md`](../flakiness-concurrency/SKILL.md) の対処で消す。リトライで握り潰さない。
 5. **復帰させる**:原因を直したテストを複数回(または CI の連続成功)走らせて安定を確認し、本流へ戻す。隔離置き場に残さない。
 
 ### 完了チェック(もれ確認)
@@ -198,7 +198,7 @@ CI でどの基準をマージのゲートにし、どう速く回し、どこ�
 ### 概要・目的
 
 - **CI ゲーティング**:コミット・マージのたびに自動実行し、退行を早期に捕まえる。さらにカバレッジと mutation([`mutation-testing.md`](../mutation-testing/SKILL.md))に**下限**を設け、下限を割る変更をマージさせない。目標値の決め方は「全コードに高い率を一律要求」ではなく、リスクベースで critical な領域(金額・セキュリティ・状態遷移)に厳しい下限、それ以外は緩めに、と濃淡を付ける。カバレッジは到達を、mutation は検出力を見るので、critical には両方を当てる。
-- **並列化**:テストを分割して並行実行し、総実行時間を縮める。並列化は共有リソースの直列化や命名衝突を新たに招くので、並列前提のデータ独立性([`test-doubles.md`](../test-doubles/SKILL.md)・テストデータ戦略)が要る。複数 subagent への並列委譲時の罠は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) を参照。
+- **並列化**:テストを分割して並行実行し、総実行時間を縮める。並列化は共有リソースの直列化や命名衝突を新たに招くので、並列前提のデータ独立性([`test-doubles.md`](../test-doubles/SKILL.md)・テストデータ戦略)が要る。複数 subagent への並列委譲時の罠は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md)(基底 superpowers:dispatching-parallel-agents)を参照。
 - **実行時間予算**:CI 全体・各レベルに「ここまでの時間」という予算を置く。予算を超えたら、遅いテストを下層へ送り返す(E2E の網羅を単体へ移す)、並列度を上げる、頻度を下げる(全件は nightly、PR は影響範囲だけ)のいずれかで収める。予算が無いと遅いテストが無制限に積もり、CI が遅すぎて誰も待たなくなる(=実質ゲートが死ぬ)。
 
 ### 遂行手順(着手→完了)
@@ -208,7 +208,7 @@ CI ゲートは「マージを止める基準を critical 領域に強く張り�
 1. **自動実行のトリガを決める**:コミット・PR・マージのどこで何を回すかを決める(PR は影響範囲、マージ前は全件、など)。退行を最も早く捕まえる位置に置く。
 2. **ゲート基準にカバレッジと mutation の下限を置く**:カバレッジ([`whitebox-controlflow-basic.md`](../whitebox-controlflow-basic/SKILL.md)・[`whitebox-dataflow-loop.md`](../whitebox-dataflow-loop/SKILL.md))と mutation([`mutation-testing.md`](../mutation-testing/SKILL.md))に下限を設け、下限割れをマージ不可にする。カバレッジは到達、mutation は検出力なので、critical には両方当てる。
 3. **下限をリスクで濃淡付けする**:リスクベース([`strategy-allocation.md`](../strategy-allocation/SKILL.md))で critical な領域(金額・セキュリティ・状態遷移)に厳しい下限、低リスク領域に緩い下限を割り当てる。全コード一律の高率にしない。
-4. **並列化のためにデータ独立性を担保する**:総実行時間を縮めるためテストを分割並行実行する前に、共有リソースの直列化・命名衝突を潰す(テストデータ戦略・[`test-doubles.md`](../test-doubles/SKILL.md))。subagent 並列委譲の罠は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md)。
+4. **並列化のためにデータ独立性を担保する**:総実行時間を縮めるためテストを分割並行実行する前に、共有リソースの直列化・命名衝突を潰す(テストデータ戦略・[`test-doubles.md`](../test-doubles/SKILL.md))。subagent 並列委譲の罠は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md)(基底 superpowers:dispatching-parallel-agents)。
 5. **実行時間予算を置き、超過時の収め方を決めておく**:CI 全体・各レベルに時間予算を設定し、超過したら「遅いテストを下層へ送り返す / 並列度を上げる / 頻度を下げる(全件 nightly、PR は影響範囲)」のどれで収めるかを先に決める。
 
 ### 完了チェック(もれ確認)

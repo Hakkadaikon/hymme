@@ -210,4 +210,4 @@ describe("classifyAge: table-driven", () => {
 ---
 
 リソースのライフサイクル(Four-Phase)とテストデータの供給(Builder / Object Mother)は [`test-structure-lifecycle.md`](../test-structure-lifecycle/SKILL.md) を参照。
-TDD の進め方(駆動のサイクルと戦略)は [`tdd-cycle.md`](../tdd-cycle/SKILL.md) を参照。
+TDD の進め方は superpowers:test-driven-development が基底。hymme の差分は [`tdd-cycle.md`](../tdd-cycle/SKILL.md) を参照。

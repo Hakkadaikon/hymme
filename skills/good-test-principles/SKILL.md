@@ -14,7 +14,7 @@ disable-model-invocation: true
 
 良い単体テストとは何かを測る基準をまとめる。
 出典は Vladimir Khorikov『単体テストの考え方/使い方』(Unit Testing Principles, Practices, and Patterns)。
-TDD の手順は [`tdd-cycle.md`](../tdd-cycle/SKILL.md)(サイクルの運用)と [`tdd-green-strategy.md`](../tdd-green-strategy/SKILL.md)(Green の戦略)、テストダブルの使い分けは [`test-doubles.md`](../test-doubles/SKILL.md) を参照。
+TDD の手順は superpowers:test-driven-development が基底で、hymme の差分は [`tdd-cycle.md`](../tdd-cycle/SKILL.md)(サイクルの運用)と [`tdd-green-strategy.md`](../tdd-green-strategy/SKILL.md)(Green の戦略)、テストダブルの使い分けは [`test-doubles.md`](../test-doubles/SKILL.md) を参照。
 
 このファイルは単体テストの基本規範を扱う。
 学派の選び方、何を検証対象とするか、テストの価値を測る物差し、検証スタイルの三分類を示す。

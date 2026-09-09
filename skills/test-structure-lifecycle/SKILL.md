@@ -159,4 +159,4 @@ Builder と Object Mother は、各振る舞いに対応するテストへ前提
 ---
 
 テスト本体の内部構成(AAA / Given-When-Then / テーブル駆動)は [`test-structure-anatomy.md`](../test-structure-anatomy/SKILL.md) を参照。
-TDD の進め方(駆動のサイクルと戦略)は [`tdd-cycle.md`](../tdd-cycle/SKILL.md) を参照。
+TDD の進め方は superpowers:test-driven-development が基底。hymme の差分は [`tdd-cycle.md`](../tdd-cycle/SKILL.md) を参照。
