@@ -13,6 +13,8 @@ CI 失敗調査で毎回同じことをする——失敗した run を開き、
 
 肝は **WebFetch を使わないこと**。github.com への WebFetch は Actions 画面の HTML が返るだけでログにならない。失敗ジョブ・ステップと「失敗ステップだけのログ」は `gh` で確実かつ簡潔に取れる。だから run/PR/job の URL を渡された時点で `scripts/gh-ci-investigate.sh` に解決させ、そこから調査に入る。
 
+**REQUIRED BACKGROUND:** superpowers:systematic-debugging。本スキルはその **Phase 1(根本原因調査)** の GitHub Actions 版証拠収集(どの run / job / step / 層で壊れたか)を決定論スクリプトで安定させる部分である。Phase 2〜3 は §3 で通常どおり行い、§4 の修正案は Phase 4 の形式で書く。修正の自動適用はしない。
+
 ## 前提
 
 - `gh auth status` でログイン済みであること。private リポジトリのログ取得にはトークンの read 権限が要る。
@@ -49,7 +51,7 @@ bash <skill-dir>/scripts/gh-ci-investigate.sh logs "<url|run_id|#PR>" [--job <jo
 
 ### 4. 修正案の提示
 
-原因と修正案をまとめて提示する。**修正はこのスキルの役割ではない**——コードやワークフローの変更はユーザーの承認を得てから、通常の編集フロー（必要なら commit-flow / pr-create）で行う。リリース PR やインフラ適用が絡むときは影響範囲を明示する。
+原因と修正案をまとめて提示する。修正案は superpowers:systematic-debugging の Phase 4 の形式(再現テスト → 根本原因への単一の変更 → 検証)で書く。timeout 延長・retry 追加・テスト skip のような CI 特有の症状対処は「症状対処」と明記し、推奨にしない。**修正はこのスキルの役割ではない**——コードやワークフローの変更はユーザーの承認を得てから、通常の編集フロー(superpowers:test-driven-development で失敗テストから、必要なら commit-flow / pr-create)で行う。リリース PR やインフラ適用が絡むときは影響範囲を明示する。
 
 ## 出力の型
 
@@ -61,7 +63,7 @@ bash <skill-dir>/scripts/gh-ci-investigate.sh logs "<url|run_id|#PR>" [--job <jo
 ## 根本原因
 - ログの該当行を最小限引用し、なぜ落ちたかを事実ベースで
 ## 修正案
-- 具体的な変更点（ファイル・行）。複数案あるときは推奨を先頭に
+- 再現テスト → 単一の変更(ファイル・行)→ 検証コマンド。複数案あるときは推奨を先頭に、症状対処は明記
 ```
 
 ## 制約

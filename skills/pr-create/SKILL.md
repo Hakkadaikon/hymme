@@ -1,6 +1,6 @@
 ---
 name: pr-create
-description: "Pull Request / Merge Request を作成するときに必ず参照する。`gh pr create`/`glab mr create` で PR/MR を作る、コミット済みの作業をレビューに出す、並列・stacked 作業の各ブランチで PR を起こす、といった場面で使う。リポジトリの pull_request_template/merge_request_template を決定論スクリプトで検出して優先し、テンプレの骨組み（見出し・チェックリスト・順序）を改変せず入力箇所を埋めるだけにする（作成前に骨組み照合ゲートで機械検証）。無ければ汎用観点で本文を構成。作成前に diff-review でのセルフレビュー反復（must ゼロまで）を必須とし、証跡を hook が検査する。本文の素材は対象リポジトリの git 差分のみに限定し、他リポジトリ・他タスクの内容を混入させない。draft 既定・作成前にユーザー承認。未 push のときは AskUserQuestion で承認を取ってから push。GitHub(gh) 基本、GitLab(glab) 等にも対応。"
+description: "Pull Request / Merge Request を作成するときに必ず参照する。`gh pr create`/`glab mr create` で PR/MR を作る、コミット済みの作業をレビューに出す、並列・stacked 作業の各ブランチで PR を起こす、といった場面で使う。リポジトリの pull_request_template/merge_request_template を決定論スクリプトで検出して優先し、テンプレの骨組み（見出し・チェックリスト・順序）を改変せず入力箇所を埋めるだけにする（作成前に骨組み照合ゲートで機械検証）。無ければ汎用観点で本文を構成。作成前に diff-review でのセルフレビュー反復（must ゼロまで）を必須とし、証跡を hook が検査する。本文の素材は対象リポジトリの git 差分のみに限定し、他リポジトリ・他タスクの内容を混入させない。draft 既定・作成前にユーザー承認。未 push のときは AskUserQuestion で承認を取ってから push。GitHub(gh) 基本、GitLab(glab) 等にも対応。 superpowers:finishing-a-development-branch の「Push and create a Pull Request」はこのスキルへ引き渡す。"
 user-invocable: true
 argument-hint: "[ベースブランチ名や追加指示（任意）]"
 ---
@@ -18,6 +18,16 @@ argument-hint: "[ベースブランチ名や追加指示（任意）]"
 - **テンプレートは確定フォーム。骨組みを改変しない**。`TEMPLATE` が `primary`/選択 `multi` を返したら、見出し・チェックリスト・順序を逐語で保ち、入力箇所を埋めるだけ（§4）。独自フォーマットへの差し替え・セクションの削除/追加/並べ替え・見出しの言い換えは禁止。作成前に `scripts/template-check.sh` の骨組み照合ゲート（§5）を必ず通す。
 - **作成前に必ずセルフレビュー反復（§1.5）を通す**。diff-review の must 指摘がゼロになるまで修正→コミット→再レビューを繰り返す。骨組み照合・ユーザー承認と同列の通過必須ゲートで、未通過のままの `gh pr create` は hook にブロックされる。
 - **PR本文にセッションURLを含めない**。Claude Code の既定動作は本文末尾にセッションへのリンクを付与するが、このリポジトリでは付与しない。ローカル CLI・remote-control のどちらのセッションでも同様。
+
+## superpowers:finishing-a-development-branch からの引き渡し
+
+finishing の選択肢 **2「Push and create a Pull Request」** が選ばれたら、その実行(finishing 側の `git push -u origin <branch>` → forge CLI で作成)は本スキル §1〜§7 に置き換える。
+
+1. finishing の Step 1(全体テスト緑)は済んでいる前提。§1.5 のセルフレビュー反復は別ゲートなので省かない。SDD の最終レビューに diff-review を合流させていた(diff-review スキルの場面 (c))なら、その証跡が現 HEAD と一致し must 0 のとき §1.5 は再実行不要(hook が同じ条件で判定する)。
+2. **push は本スキルの規約が優先**: finishing が push を実行手順に含めていても、§7 の AskUserQuestion で push 可否の承認を取ってから行う。選択肢 2 を選んだこと自体は push の承認とみなさない(選択肢の提示文にリモート・ブランチ・コミット数が含まれていないため)。SDD が「共有ブランチへの push は必ず尋ねる」と定めるのと同じ線。
+3. draft 既定・テンプレ骨組み照合・本文提示と承認は本スキルどおり。
+4. worktree は残す(finishing の規定と一致。PR フィードバックの修正はそこで行う)。ブランチ削除・`git worktree remove` はしない。
+5. PR URL を報告して finishing に戻る。finishing の Step 6(cleanup)は選択肢 2 では走らない。
 
 ## ワークフロー
 
