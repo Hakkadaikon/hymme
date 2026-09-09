@@ -14,7 +14,7 @@ TDD サイクルの Green フェーズで、赤を通すコードをどう書く
 方針が見えないときの三角測量、確信度に応じた仮実装と明白な実装の使い分けを扱う。
 出典は t-wada(和田卓人)の TDD 観点。
 
-サイクル全体の運用(Red→Green→Refactor の回し方、テストリスト先行)は [`tdd-cycle.md`](../tdd-cycle/SKILL.md) に分けた。
+**REQUIRED BACKGROUND:** Red→Green→Refactor のサイクル自体は superpowers:test-driven-development が定める。t-wada 流の差分(テストリスト先行、Refactor フェーズ、T-ID 台帳とのつなぎ)は [`tdd-cycle.md`](../tdd-cycle/SKILL.md)。本スキルの三角測量・仮実装・明白な実装は superpowers 側に無い Green の戦略であり、superpowers の「GREEN - Minimal Code」を確信度に応じてどう書くかを具体化する。
 「良いテストとは何か」の規範は [`good-test-principles.md`](../good-test-principles/SKILL.md)、テストダブルの使い分けは [`test-doubles.md`](../test-doubles/SKILL.md) を参照。
 
 各項目は「概要」「目的/いつ使う」「TypeScript example(vitest 想定)」「落とし穴」の構成で示す。
@@ -129,5 +129,5 @@ export const squareObvious = (n: number): number => n * n;
 
 ---
 
-TDD サイクル全体の運用(Red→Green→Refactor、Refactor フェーズ、テストリスト先行)は [`tdd-cycle.md`](../tdd-cycle/SKILL.md) を参照。
+サイクルの基盤は superpowers:test-driven-development、t-wada 差分(Refactor フェーズ、テストリスト先行、台帳とのつなぎ)は [`tdd-cycle.md`](../tdd-cycle/SKILL.md) を参照。
 テストの構成パターン(個々のテストをどう配置するかの型)は [`test-structure-anatomy.md`](../test-structure-anatomy/SKILL.md)(AAA パターン、Given-When-Then)を参照。
