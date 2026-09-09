@@ -1,9 +1,11 @@
 {
   "name": "hymme",
-  "version": "0.5.0",
-  "description": "loop-engineering / test-design のルーター+工程スキル、formal-verification(Lean 4)、開発ワークフロースキル群(diff-review / commit-flow / micro-commit / pr-create / ledger-flow ほか)と、その toolchain を入れる Nix flake。 agents として coder / code-reviewer / diff-reviewer / modeler / prover / loop-engineering-reviewer / test-design-reviewer / formal-verification-reviewer を同梱。",
+  "version": "0.6.0",
+  "description": "superpowers を前提とする拡張プラグイン。superpowers の工程(brainstorming → writing-plans → SDD → finishing-a-development-branch)に、検証 3 系統(loop-engineering: TLA+ モデル検査 / test-design: T-ID 台帳と 40 技法 / formal-verification: Lean 4 証明)と git・レビュー運用スキル(diff-review / commit-flow / micro-commit / pr-create / review-feedback / ledger-flow / rebase-flow / reset-flow / gh-ci-investigate / test-targeted)を差し込む。agents として coder(SDD implementer 契約 + ponytail + TDD)/ code-reviewer / diff-reviewer / modeler / prover / loop-engineering-reviewer / test-design-reviewer / formal-verification-reviewer を同梱。セッション開始時に using-hymme(差し込み地図)を注入する。",
   "author": {
     "name": "Hakkadaikon",
     "url": "https://github.com/Hakkadaikon"
-  }
+  },
+  "homepage": "https://github.com/Hakkadaikon/hymme",
+  "repository": "https://github.com/Hakkadaikon/hymme"
 }
