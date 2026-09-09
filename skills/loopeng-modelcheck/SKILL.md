@@ -32,4 +32,4 @@ description: >
 ## 次の工程
 
 - 反例が出た → **loopeng-gherkin** で Gherkin へ機械変換し、設計を直して外/中ループへ戻す。
-- `No error` かつ真の survivor 0 → 設計は固まった。loopeng-gherkin で正常系の受け入れシナリオを足して実装へ渡す。
+- `No error` かつ真の survivor 0 → 設計は固まった。loopeng-gherkin で正常系の受け入れシナリオを足す。modeler として委譲されていたなら、ここで成果物のパスと状態を報告して終わる。レビュアーの dispatch はコントローラの仕事(loop-engineering の完了前ゲート)。

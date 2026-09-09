@@ -43,6 +43,12 @@ IaC は厳密であってほしいので**動的側面は積極的に**このル
 
 両方 yes を通った要件だけ工程へ進む。導入・学習コストは判断材料に入れない。**判断材料はあくまで上の2問。**
 
+## superpowers ワークフロー上の位置
+
+- **入口は superpowers:brainstorming の Architectural パス。** アプローチを選び設計セクションの承認を得た後、spec(`docs/superpowers/specs/`)を書き上げる**前**に2問ゲートを掛ける。yes/yes なら 0→3 段をここで回し、固めた設計と正常系シナリオを spec の要件・受け入れ条件に**手法名なしで**書く(「TLA+ で検証した」とは書かない。[`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。これは設計の検証であって実装行為ではなく、成果物は git 管理外の `tasks/loopeng/` にしか置かない。Bounded パスの途中で2問ゲートが yes/yes になったら、それは brainstorming の言う隠れた複雑さであり、パスを Architectural に上げる。
+- **重い工程はコントローラが hymme:modeler へ dispatch する**(brainstorming を進めている本人がコントローラ)。modeler は検証ワーカー: `tasks/loopeng/` に成果物を残すだけで、コミットせず、レビュアーを自分で呼ばない。superpowers:subagent-driven-development の implementer にモデル検査をさせない(implementer は subagent を生めず、検査は実装タスクではない)。
+- **出口は test-design。** `.feature` は test-extract が T-ID 台帳へ転記し、superpowers:writing-plans の各 Task の失敗テストになる。
+
 ## 工程(各フェーズは専用スキルへ委譲)
 
 ```mermaid
@@ -73,13 +79,13 @@ flowchart TD
 - 駆動装置(tlc / loop-* / 0段ゲート hook): [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md)。未導入なら導入を促し、勝手に大規模インストールしない。
 - 生成物はすべて `tasks/loopeng/` 配下・git 管理外。管理番号・手法用語を本体に漏らさない: [`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md)。
 - 実装への橋渡し(Lean / test-design との分担、結線チェック): [`references/bridging.md`](references/bridging.md)。
-- 抽出/検査を subagent へ並列委譲するとき: [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md)。
+- 抽出/検査を subagent へ並列委譲するとき(基底は superpowers:dispatching-parallel-agents、hymme の差分): [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md)。
 - コード/テスト/コミット/コメントの役割分担: [`../_shared/code-comment-commit-roles.md`](../_shared/code-comment-commit-roles.md)。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
-完了扱いにする前、または「設計を検証した/網羅した」と報告する前に、必ず `hymme:loop-engineering-reviewer` サブエージェントへ渡して外側から検査させる。
-渡すもの: 0段の抽出台帳とトレーサビリティ表のパス、本体ソースの場所。
+完了扱いにする前、または「設計を検証した/網羅した」と報告する前に、**コントローラ(この工程を進めている本人)が** `hymme:loop-engineering-reviewer` サブエージェントを dispatch して外側から検査させる。modeler に委譲していた場合も、modeler は報告して終わり、報告を受けたコントローラが呼ぶ(ワーカーは呼ばない)。
+渡すもの: 0段の抽出台帳とトレーサビリティ表のパス、本体ソースの場所、spec があればそのパス(手法名・管理番号の漏れ検査の対象に含める)。
 レビュアーが挙げた違反(採番チェックリストの未完、台帳の欠落、`.tla`/`.feature` の手編集乖離、本体への管理番号・手法用語の漏れ)を解消してから完了とする。自分で「守れている」と判断して飛ばさない。
 実装検証時に追加確認する2点(環境パリティ・exit code)は [`references/bridging.md`](references/bridging.md)。
 
