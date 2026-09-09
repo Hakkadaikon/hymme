@@ -10,7 +10,7 @@ description: >
   「リファクタ前にテストで固めたい」と困っているとき、
   または個別のテスト手法名(同値分割、境界値、property based、mutation、ゴールデン、
   テストダブル、LLM のテスト等)を挙げたときに使用する。
-  実装の駆動は coder agent の TDD、設計の網羅検査は loop-engineering(TLA+)、実装の証明は formal-verification(Lean)。
+  TDD のサイクル自体は superpowers:test-driven-development、設計の網羅検査は loop-engineering(TLA+)、実装の証明は formal-verification(Lean)。
 user-invocable: true
 argument-hint: "[テスト設計/レビューの対象(機能・ファイル・PR 差分)]"
 ---
@@ -22,7 +22,7 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 
 役割分担(無理に結線しない、YAGNI):
 - **テスト項目の抽出と手法選定**: このスキル系(test-extract / test-catalog / test-verify)
-- **実装の駆動(TDD: Red→Green→Refactor)**: `coder` agent
+- **TDD サイクル(Red→Green→Refactor)**: superpowers:test-driven-development(implementer が実行)。hymme は「何をテストするか」(抽出・選定・検証)だけを担う
 - **設計の網羅検査(状態遷移、並行、プロトコル)**: `loop-engineering`(TLA+)
 - **実装の数学的証明(critical なアルゴリズムや性質)**: `formal-verification`(Lean 4)
 
@@ -37,16 +37,23 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 | --- | --- | --- | --- |
 | 1 | **test-extract** | テストすべき振る舞いを T-ID 採番台帳(`tasks/test-design/<対象名>.md`)へ網羅抽出。レビュー時は既存テストを右側に埋めて両向きに読む | 全 `T-ID` が `[x]`・欠番なし・機械確認の証跡提示 |
 | 2 | **test-catalog** | 各 T-ID に手法を割り当て、その手法の reference だけを開く | 全 T-ID に「手法名 + reference ファイル名」が埋まる |
-| 3 | **test-verify** | coder TDD / loop-engineering / formal-verification へ橋渡し。実行ゲート(網羅逆引き・緑・flaky・mutation)→ 回帰として CI に固定 | 全 T-ID が実行ログの緑に対応し、CI に載る |
+| 3 | **test-verify** | plan の Task(SDD implementer の TDD)または hymme:coder へ橋渡し。実行ゲート(superpowers:verification-before-completion + 網羅逆引き・flaky・mutation)→ 回帰として CI に固定 | 全 T-ID が実行ログの緑に対応し、CI に載る |
 
 前段の出口条件を満たさず次へ進まない(各スキルが前提として検査する)。
 手法の単発質問(「ペアワイズって何」等)は台帳なしで **test-catalog** の索引だけ引いてよい。
 
+## superpowers ワークフロー上の位置
+
+- **spec 承認後、superpowers:writing-plans の前(または並走)**に test-extract → test-catalog を回す。plan の各 Task の「Step 1: Write the failing test」は T-ID 台帳と `.feature` シナリオ**から**書く。Bounded パス(spec も plan も無い)では設計承認直後に同じ 0段→手法選定を回し、hymme:coder(または本人)へ渡す。
+- **トレーサビリティは台帳の「テスト」列だけが持つ。** 列には plan に書いたテスト名(`it`/`test` 名)を入れる。plan・コード・コミットに `T-xxx` や手法名は書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。台帳は作業 worktree の `tasks/test-design/` に置き(worktree 作成前に作った台帳は SDD Setup 直後に worktree へコピー)、ブランチ完了後は残さない。
+- **実行は superpowers:subagent-driven-development。** implementer(hymme:coder か superpowers 既定)が Task ごとに superpowers:test-driven-development で消化する。implementer は台帳を編集しない。`test-design-extract-gate` hook は implementer のテストファイル Write/Edit にも効く: 台帳が閉じていなければ機械的にブロックされ implementer は BLOCKED を返すので、コントローラが台帳を閉じてから再 dispatch する(意図した安全網)。
+- **`hymme:test-design-reviewer` はコントローラが dispatch する**: 0段を閉じた直後(plan にテストを書く前)と、SDD の最終 whole-branch レビューの前。
+
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
-2 点で `hymme:test-design-reviewer` サブエージェントへ渡して外側から検査させる:
+2 点でコントローラが `hymme:test-design-reviewer` サブエージェントを dispatch して外側から検査させる:
 
-1. **0 段を閉じた直後**(テストを1件でも書く前): 台帳の未完・欠番、理由なしの優先度落としを検査。
+1. **0 段を閉じた直後**(plan の Task に失敗テストを書く前。単発なら テストを1件でも書く前): 台帳の未完・欠番、理由なしの優先度落としを検査。
 2. **完了扱いにする前**: 手法名のみで reference 未開封、T-ID とテストの存在不一致、実行ログ無しの「緑」報告を検査。
 
 レビュアーが挙げた違反を解消してから先へ進む。「緑と報告された」を証跡の代わりにしない。

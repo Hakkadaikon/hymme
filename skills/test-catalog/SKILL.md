@@ -46,8 +46,8 @@ description: >
 | 構造網羅・経路と独立影響(MC/DC、多重条件、パス、基底パス) | [`../whitebox-controlflow-path/SKILL.md`](../whitebox-controlflow-path/SKILL.md) |
 | 構造網羅・ループとデータフロー(ループテスト、def-use) | [`../whitebox-dataflow-loop/SKILL.md`](../whitebox-dataflow-loop/SKILL.md) |
 | テストの強さを測る(mutation、テストの欠陥検出力) | [`../mutation-testing/SKILL.md`](../mutation-testing/SKILL.md) |
-| TDD のサイクル運用(Red→Green→Refactor、テストリスト先行) | [`../tdd-cycle/SKILL.md`](../tdd-cycle/SKILL.md) |
-| TDD の Green 戦略(三角測量、仮実装/明白な実装) | [`../tdd-green-strategy/SKILL.md`](../tdd-green-strategy/SKILL.md) |
+| TDD のサイクル運用(基底は superpowers:test-driven-development、hymme の差分のみ) | [`../tdd-cycle/SKILL.md`](../tdd-cycle/SKILL.md) |
+| TDD の Green 戦略(三角測量、仮実装/明白な実装。基底は superpowers:test-driven-development) | [`../tdd-green-strategy/SKILL.md`](../tdd-green-strategy/SKILL.md) |
 | テストの内部構成(AAA、Given-When-Then、テーブル駆動) | [`../test-structure-anatomy/SKILL.md`](../test-structure-anatomy/SKILL.md) |
 | テストのライフサイクルとデータ供給(Four-Phase、Test Data Builder/Object Mother) | [`../test-structure-lifecycle/SKILL.md`](../test-structure-lifecycle/SKILL.md) |
 | 良い単体テストの基本規範(4本柱、学派、観察可能な振る舞い、検証スタイル) | [`../good-test-principles/SKILL.md`](../good-test-principles/SKILL.md) |
@@ -69,7 +69,7 @@ description: >
 | 非機能・品質保証系(セキュリティ、a11y、互換、i18n、信頼性、可用性、カオス、contract) | [`../nonfunctional-attributes/SKILL.md`](../nonfunctional-attributes/SKILL.md) |
 | 非機能・耐障害性とデータ整合(バルクヘッド/レートリミット/サーキットブレーカ、マイグレーション整合) | [`../nonfunctional-resilience/SKILL.md`](../nonfunctional-resilience/SKILL.md) |
 | プロセス運用・静的・並行(BDD/ATDD、CI ゲート、カナリア、静的解析、冪等性、並行性) | [`../process-static/SKILL.md`](../process-static/SKILL.md) |
-| テスト実装を複数 subagent に並列で投げる | [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) |
+| テスト実装を複数 subagent に並列で投げる(SDD 外のみ。基底 superpowers:dispatching-parallel-agents) | [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) |
 | コード/テスト/コミット/コメントのどこに何を書くか(How/What/Why/Why not) | [`../_shared/code-comment-commit-roles.md`](../_shared/code-comment-commit-roles.md) |
 
 各技法スキルは手法ごとに **概要 / 目的といつ使うか / TypeScript example / 落とし穴** を厳密に定義している。

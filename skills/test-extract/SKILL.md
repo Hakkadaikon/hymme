@@ -23,6 +23,7 @@ description: >
 シナリオ1件=T-ID 1行。`Given/When/Then` の正常系シナリオは `event`/`state`、反例由来のシナリオは `unwanted` として起こす。
 出典欄に `<Name>.feature` と書く(`test-design-extract-gate` hook がこの文字列で転記済みかを機械判定する)。
 転記が済んでいないと、この後の実装テストの Write/Edit が hook でブロックされる。
+この hook は superpowers:subagent-driven-development の implementer がテストを書く Write/Edit にも効く(意図した安全網)。台帳を閉じるのはコントローラの仕事で、implementer に台帳を触らせない。ブロックされた implementer は BLOCKED を返し、コントローラが台帳を閉じて再 dispatch する。
 
 ## 手順
 
@@ -50,7 +51,7 @@ description: >
 
 ## 0 段を閉じた直後のゲート
 
-台帳を閉じたら、テストを1件でも書く前に `hymme:test-design-reviewer` サブエージェントへ台帳のパスを渡して外側から検査させる(台帳の未完・欠番、理由なしの優先度落とし)。違反を解消してから次工程へ。
+台帳を閉じたら、テストを1件でも書く前(superpowers:writing-plans なら Task に失敗テストを書く前)に、コントローラが `hymme:test-design-reviewer` サブエージェントを dispatch し、台帳のパスを渡して外側から検査させる(台帳の未完・欠番、理由なしの優先度落とし)。違反を解消してから次工程へ。
 
 ## やらないこと
 
