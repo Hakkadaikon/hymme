@@ -15,6 +15,7 @@ test-design・loop-engineering・formal-verification のいずれでも、成果
 
 - **test-design**: 0段の台帳(`T-ID`)が「何を保証するか」の一覧そのもの。テストコードの `it`/`describe` 名は
   この `T-ID` の振る舞いを説明し、実装の内部手順(呼び出し順序、変数名)をなぞらない。
+  superpowers:writing-plans の Task に書くテスト名も同じ規範に従う(plan は git 管理下)。
   [`good-test-principles`](../good-test-principles/SKILL.md) の「観察可能な振る舞い」もこの原則の実装面での具体化。
 - **loop-engineering**: TLA+ の `Inv`/disjunct 名や EARS の管理番号(`S-001` 等)を本体コード・テスト名・
   コミットに漏らさない(既存規範)のは、これらが「Why not のための内部識別子」であって、コードが
@@ -24,6 +25,7 @@ test-design・loop-engineering・formal-verification のいずれでも、成果
   「Lean で証明した」という手法の存在(How の手段)はコミットやドキュメントに書かない
   ([`formal-verification/SKILL.md`](../formal-verification/SKILL.md) の裏方規範)。証明そのものは
   How の説明ではなく Why not(なぜこの実装で安全と言えるか)の裏付けとして機能する。
+- **superpowers の spec / plan**(`docs/superpowers/`): git 管理下ドキュメント。What(要件・受け入れ条件・テスト名・テストコード)を書き、How の手段(TLA+/Lean)と管理番号は書かない([`stealth-artifacts.md`](stealth-artifacts.md))。
 
 ## 判定に迷ったとき
 

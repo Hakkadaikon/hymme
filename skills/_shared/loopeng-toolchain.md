@@ -9,7 +9,7 @@ loopeng-* 各スキルが呼ぶ外部コマンドと駆動装置。未導入な�
   Makefile 本体・Python オラクル(`trace_to_gherkin.py`/`tla_mutate_oracle.py` 等)・テンプレートはこのプラグインの
   `loopeng/` 配下に同梱されている。fish 関数を使う場合は `LOOPENG_HOME` をこのプラグインの `loopeng/` へ向ける。
 - 0 段ゲート(`hooks/loopeng-extract-gate.sh`)はこのプラグインの `hooks/hooks.json` で PreToolUse として配布される。
-  プラグインを有効化していれば追加設定なしで効く。
+  プラグインを有効化していれば追加設定なしで効き、subagent(hymme:modeler)の Bash にも効く。台帳は cwd 相対の `tasks/loopeng/` を見るので、worktree 内で回すなら台帳もその worktree に置く。
 - Gherkin ランナー(`cucumber-js` / `godog` 等)と要求トレーサビリティのツールは同梱しない。必要になったプロジェクトで個別に入れる。
   トレーサビリティ表を CI ゲート化するなら **OpenFastTrace**(被覆未達で非ゼロ終了)か **Doorstop**(`uv pip install doorstop`)。
 

@@ -1,9 +1,12 @@
-# 並列 subagent 委譲の落とし穴(3スキル共通)
+# 並列 subagent 委譲の落とし穴(hymme の差分)
 
-formal-verification(証明探索)・loop-engineering(モデル検査/mutation)・test-design
-(テスト実装)はいずれも重い作業を複数 subagent に並列で投げることを勧める。
-並列化で実際に踏んだ落とし穴と、最初から守る規範をここに集約する。
-各スキルからはこの1枚を参照する(規範を3箇所に複製しない)。
+**REQUIRED BACKGROUND:** 並列委譲の基底は superpowers:dispatching-parallel-agents(独立作業だけを並列にする、1応答で複数 dispatch、自己完結した prompt、戻ったら統合検証)。この文書はその上に、hymme の重い検証作業(証明探索・モデル検査/mutation・SDD 外のテスト実装)と diff-review の観点 agent で実際に踏んだ落とし穴だけを足す。基底の内容は繰り返さない。
+
+**並列にしてよい対象、してはいけない対象:**
+
+- superpowers:subagent-driven-development の implementer は**常に直列**(superpowers 側の規範。implementer の並列 dispatch は禁止)。hymme はこれを変えない。
+- hymme が並列にするのは**検証ワーカー**(hymme:prover / hymme:modeler、SDD 外で台帳からテストを書く subagent)と diff-review の観点 agent。成果物は `tasks/fv/`・`tasks/loopeng/` か作業ツリー上の未コミット差分で、本流へはコミットしない。
+- 検証ワーカーはレビュアーを自分で呼ばない(SDD の「worker は subagent を生まない」と同じ規範)。コンプライアンスレビュー(hymme:*-reviewer)は呼び出し元(コントローラ)が dispatch する。
 
 原則は1つ。**並列化してよいのは「ファイル競合のない独立作業」だけ。共有リソースを
 触る工程は1本に直列化する。** 共有リソースとは git の index・結線/集約ファイル
@@ -16,7 +19,7 @@ formal-verification(証明探索)・loop-engineering(モデル検査/mutation)�
   それぞれ `git add`/`git commit` すると、別ファイルを触っていても片方の add が
   他方の commit に混入する(`git commit -a` 的な全ステージ拾いで顕在化)。
   → 並列 subagent には「**コミットせず**変更を worktree に残すだけ」と指示し、
-  結線・コミットは後続の専用 subagent が1本でまとめて行う。どうしても並列で
+  結線・コミットは後続の専用 subagent が1本でまとめて行う。(SDD の implementer は直列に走るので各自コミットしてよい。「コミットしない」は並列ワーカーだけの規範。)どうしても並列で
   コミットするなら各自 `git worktree` で別ツリーを使う(重いので通常は不要)。
 - **結線・集約ファイル(ランナー/ビルド定義/カタログ/トレーサビリティ表)を触る
   工程も1本に絞る**。実装は最大並列、結線は1 subagent、最後に台帳更新、の
@@ -53,6 +56,7 @@ formal-verification(証明探索)・loop-engineering(モデル検査/mutation)�
 来ることもある。**通知を「進捗」と読まない。** 成果物(生成ファイルのサイズ/
 タイムスタンプ・git log・期待ディレクトリの存在)を真とし、通知は補助とする。
 
+- **成果物と報告はファイルで受け渡す。** dispatch prompt に前タスクの経緯・会話履歴を貼らず、ワーカーには入力ファイルのパスを渡し、出力もファイル(台帳・spec・report)に書かせて短い状態だけ返させる(SDD の brief/report 方式と同じ)。親の文脈に残るのはパスと数行の状態のみ。進捗判定は上記どおり成果物の実在で行い、通知は補助。
 - 長時間ファイルを生成しない subagent は stall を疑い、能動的に成果物の有無を
   確認して、止まっていれば kill して再投下する。「通知が来ない=作業中」と解釈しない。
 - 数千秒・tool 呼び出し三桁・同一 task-id の重複通知は、子 subagent 側の暴走の兆候。
