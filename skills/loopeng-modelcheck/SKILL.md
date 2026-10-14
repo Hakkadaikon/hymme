@@ -11,11 +11,13 @@ description: >
 
 # loopeng-modelcheck (中ループ: 設計を検査し、検査の強さ自体を検証する)
 
-`loop-middle SPEC=<Name>` を回す(駆動装置は [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md))。2段。
+`loop-middle SPEC=<Name>` を回す(駆動装置は [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md))。3段。
 **前提**: `tasks/loopeng/<Name>.tla` / `<Name>.cfg` があること。無ければ **loopeng-formalize** へ戻る。
 
 1. **model-check**: TLC が `Inv` を全到達状態で検査。`No error` なら設計は不変条件を守る。反例が出たら穴 → 内ループ(**loopeng-gherkin**)へ。
 2. **mutation oracle**: spec に機械的ミューテーションを注入し、TLC が検出(killed)するか確認する。
+
+3. **文面の往復確認**: `No error` かつ真の survivor 0 になったら、`Inv`・temporal 性質・`Next` の各 disjunct を独立した読み手に平文へ戻させ、EARS と突き合わせる。検査が緑でも、式が要件と違うことを言っていれば何も保証しない。手順と判定は [`../_shared/roundtrip-faithfulness.md`](../_shared/roundtrip-faithfulness.md)。読み手の dispatch はコントローラが行う(modeler は入力ファイルを作るところまで)。
 
 **survivor が出たら spec が弱い。** 「kills every mutant」相当になるまで回す。これが「検証器を検証する」上位ループ。
 
@@ -32,4 +34,4 @@ description: >
 ## 次の工程
 
 - 反例が出た → **loopeng-gherkin** で Gherkin へ機械変換し、設計を直して外/中ループへ戻す。
-- `No error` かつ真の survivor 0 → 設計は固まった。loopeng-gherkin で正常系の受け入れシナリオを足す。modeler として委譲されていたなら、ここで成果物のパスと状態を報告して終わる。レビュアーの dispatch はコントローラの仕事(loop-engineering の完了前ゲート)。
+- `No error` かつ真の survivor 0 かつ往復確認の全行が `full`(または理由付き `partial`)→ 設計は固まった。loopeng-gherkin で正常系の受け入れシナリオを足す。modeler として委譲されていたなら、ここで成果物のパスと状態を報告して終わる。レビュアーの dispatch はコントローラの仕事(loop-engineering の完了前ゲート)。
