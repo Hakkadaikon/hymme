@@ -6,14 +6,14 @@ TLC が `No error` を出し、Lean が `sorry` 無しで通っても、それ�
 
 ## 手順
 
-担当: 手順 1・4 は式を書いた側(modeler / prover に委譲していればそのワーカー、していなければコントローラ)。手順 2・3・5 はコントローラ。ワーカーは読み手を dispatch しない。
+担当: 手順 1・4 と、手順 5 の源泉の修正・再検査は式を書いた側(modeler / prover に委譲していればそのワーカー、していなければコントローラ)。手順 2・3 と、手順 5 でワーカーへ差し戻す判断はコントローラ。ワーカーは読み手を dispatch しない。
 
-1. **読み手の入力を作って保存する**: `tasks/{loopeng,fv}/<Name>.roundtrip-input.md` に**形式文面だけ**を写す。
-   - TLA+: `Inv`・temporal 性質、各 `Next` disjunct の本体、それらが参照する演算子定義。
+1. **読み手の入力を作って保存する**: `tasks/{loopeng,fv}/<Name>.faithfulness-input.md` に**形式文面だけ**を写す。
+   - TLA+: `Init`・`Inv`・temporal 性質、各 `Next` disjunct の本体、それらが参照する演算子定義。
    - Lean: 各定理の文面(`theorem` から `:=` まで)と、文面が参照する `def`/`structure` の推移閉包。たどるのはプロジェクト内で定義したものまでで、`Nat`・`List` など Lean core や Mathlib の定義は名前だけ書く。**証明本体は入れない**(カーネルが検査済みで意味に影響しない。意味に影響しうるのは文面と、文面が参照する定義の中身)。
    - コメント・docstring・要件文・EARS・カタログの性質文は入れない(読み手が式でなく説明文を読んで一致と判断してしまう)。
 2. **読み手を dispatch する**: fresh context の subagent(general-purpose で足りる)に入力ファイルだけを渡し、各式を「何を主張しているか」の平文に言い直させる。前提が何を要求するかも書かせる。
-3. **判定する**: 言い直しを元の要件(EARS 行・性質カタログ行)と1対1で突き合わせ、`tasks/{loopeng,fv}/<Name>.roundtrip.md` に表で記録する。
+3. **判定する**: 言い直しを元の要件(EARS 行・性質カタログ行)と1対1で突き合わせ、`tasks/{loopeng,fv}/<Name>.faithfulness.md` に表で記録する。
 
    | 要件 | 式 | 読み手の言い直し | 判定 | 理由 / 直し方 |
    |------|----|------------------|------|---------------|
@@ -25,13 +25,13 @@ TLC が `No error` を出し、Lean が `sorry` 無しで通っても、それ�
    - `vacuous`: 前提が充足不能、または前件が一度も成り立たず、空成立している
    - `missing`: 対応する式が無い
 4. **空成立を機械で確かめる**(含意・前提付きの式ごと):
-   - Lean: 前提を全部満たす具体例を `example : ∃ s, <前提> := ⟨<値>, by decide⟩` 等で示す。示せなければ `vacuous`。
-   - TLA+: 含意 `P => Q` の前件について、`~P` を一時的な INVARIANT にして TLC を回し(`tasks/loopeng/MC<Name>.tla` に `EXTENDS <Name>` して `NotP == ~P` を定義し、`MC<Name>.cfg` の INVARIANT に `NotP` を書く。本体の `.tla` は触らない。確認後に MC ファイルは消す)、反例(=`P` が成り立つ到達状態)が出ることを確認する。反例が出なければ前件は一度も成り立たず `vacuous`。
+   - Lean: 前提を全部満たす具体例を `example : ∃ s, <前提> := ⟨<値>, by decide⟩` 等で示す。示せなければ `vacuous`。`example` は Lean ソースに残し、判定表の理由欄に名前を書く。
+   - TLA+: 含意 `P => Q` の前件について、`~P` を一時的な INVARIANT にして TLC を回し(`tasks/loopeng/MC<Name>.tla` に `EXTENDS <Name>` して `NotP == ~P` を定義し、`MC<Name>.cfg` の INVARIANT に `NotP` を書く。本体の `.tla` は触らない。確認後に MC ファイルは消す)、反例(=`P` が成り立つ到達状態)が出ることを確認する。TLC の出力は `tasks/loopeng/<Name>.reach.log` に残し、判定表の理由欄にどの前件の証跡かを1行書く。反例が出なければ前件は一度も成り立たず `vacuous`。
 5. `mismatch`・`vacuous`・`missing` があれば源泉(EARS・モデル・定理)を直し、検査と往復確認をやり直す。`partial` は理由欄が埋まっていれば残してよい。
 
 ## 終了条件
 
-全要件の行が `full`、または理由付きの `partial` になっている。読み手の入力ファイルと判定表が `tasks/` に残っている(reviewer が両方を開いて確かめる)。
+全要件の行が `full`、または理由付きの `partial` になっている。読み手の入力ファイル・判定表・空成立の証跡(TLA+ は `<Name>.reach.log`、Lean は `example`)が `tasks/` に残っている(reviewer がすべて開いて確かめる)。
 
 ## 実行時の注意
 

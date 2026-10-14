@@ -24,7 +24,7 @@ description: >
 
 `loop-middle` が回すのは上の2段まで。両方が緑になったら3段目に進む。3段目の入力ファイルと前件到達の証跡は式を書いた側(委譲していれば modeler)が作り、読み手の dispatch と判定はコントローラが行う。
 
-3. **文面の往復確認**: `Inv`・temporal 性質・`Next` の各 disjunct を独立した読み手に平文へ戻させ、EARS と突き合わせる。検査が緑でも、式が要件と違うことを言っていれば何も保証しない。手順・担当・判定は [`../_shared/roundtrip-faithfulness.md`](../_shared/roundtrip-faithfulness.md)。
+3. **文面の往復確認**: `Init`・`Inv`・temporal 性質・`Next` の各 disjunct を独立した読み手に平文へ戻させ、EARS と突き合わせる。検査が緑でも、式が要件と違うことを言っていれば何も保証しない。手順・担当・判定は [`../_shared/roundtrip-faithfulness.md`](../_shared/roundtrip-faithfulness.md)。
 
 動かないとき(TMPDIR/JDK 即死、TLC スクラッチ、トレース形式の罠)はまず [`references/troubleshooting.md`](references/troubleshooting.md)。
 
