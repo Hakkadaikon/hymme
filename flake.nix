@@ -22,7 +22,7 @@
       # Versions/hashes pinned via nix-prefetch-url; bump both together.
       tla2tools = pkgs.fetchurl {
         url = "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar";
-        hash = "sha256-nie14Zpprh9Wqr+EA6btVZjb+m5jiQjlJ4rDlzbBVD0=";
+        hash = "sha256-D1bWqBM2jEgAjfvssjpzq0OkpeG/CfAmeCpnSqnUs8k=";
       };
       tlaplus = pkgs.runCommand "tlaplus-1.8.0" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
         mkdir -p $out/share/tlaplus $out/bin
@@ -34,10 +34,10 @@
       '';
 
       apalacheSrc = pkgs.fetchurl {
-        url = "https://github.com/apalache-mc/apalache/releases/download/v0.47.2/apalache-0.47.2.tgz";
-        hash = "sha256-3i6K5MuzjXS9Mpy3fmQzKJ8qFJ0ebSy8UQVajKgLL7Q=";
+        url = "https://github.com/apalache-mc/apalache/releases/download/v0.62.4/apalache-0.62.4.tgz";
+        hash = "sha256-t4G1O7oy+sFKwuArAzLh3C7cZMt7hQwGCNgULMeqLvQ=";
       };
-      apalache = pkgs.runCommand "apalache-0.47.2" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
+      apalache = pkgs.runCommand "apalache-0.62.4" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
         mkdir -p $out
         tar xzf ${apalacheSrc} -C $out --strip-components=1
         # The shipped bin/apalache-mc launcher needs a JRE on PATH and JAVA_HOME.
