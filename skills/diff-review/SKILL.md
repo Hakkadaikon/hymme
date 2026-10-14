@@ -49,13 +49,14 @@ manifest はメインセッションで **1 回だけ**実行し、出力を次�
 ### レンズ registry
 
 - **既定**(無指定時に適用): `design`(設計・可読性)/ `test`(テスト設計・網羅性)
-- **オプション**(指定時のみ適用): `security`(セキュリティ / OWASP Top 10)/ `docs`(ドキュメント整合)/ `performance`(計算量・N+1・データサイズ)/ `compat`(互換性・移行安全)/ `ops`(可観測性・運用)/ `concurrency`(並行性)/ `spec`(仕様一致)/ `fresh-eyes`(初見)
-- キーワード対応: 「設計」「可読性」→ `design`、「テスト」→ `test`、「セキュリティ」「security」→ `security`、「ドキュメント」「docs」→ `docs`、「パフォーマンス」「性能」→ `performance`、「互換」「マイグレーション」「移行」→ `compat`、「運用」「ログ」「可観測性」→ `ops`、「並行」「排他」「race」→ `concurrency`、「仕様」「要件」「依頼どおり」→ `spec`、「初見」「fresh eyes」→ `fresh-eyes`
+- **オプション**(指定時のみ適用): `security`(セキュリティ / OWASP Top 10)/ `docs`(ドキュメント整合)/ `performance`(計算量・N+1・データサイズ)/ `compat`(互換性・移行安全)/ `ops`(可観測性・運用)/ `concurrency`(並行性)/ `spec`(仕様一致)/ `conformance`(不変条件・性質を実装が全経路で守るかの証明試行)/ `fresh-eyes`(初見)
+- キーワード対応: 「設計」「可読性」→ `design`、「テスト」→ `test`、「セキュリティ」「security」→ `security`、「ドキュメント」「docs」→ `docs`、「パフォーマンス」「性能」→ `performance`、「互換」「マイグレーション」「移行」→ `compat`、「運用」「ログ」「可観測性」→ `ops`、「並行」「排他」「race」→ `concurrency`、「仕様」「要件」「依頼どおり」→ `spec`、「適合」「不変条件」「性質を守っているか」「conformance」→ `conformance`、「初見」「fresh eyes」→ `fresh-eyes`
 
 適用ルール:
 
 - **追加指定**(例: 「〇〇観点も見て」): 既定レンズに**加えて**指定レンズを適用する
 - **絞り込み指定**(例: 「〇〇だけ」「〇〇のみで」): 指定レンズだけを適用する
+- `conformance` を適用するときは、性質一覧の場所(依頼文・spec・`tasks/loopeng/`・`tasks/fv/` のどれか)を agent prompt の「ユーザーの依頼」に含める
 - registry に無い観点を指定されたら、その観点名で agent を 1 体起動し一般知識でレビューさせる
 
 ### 並列起動
