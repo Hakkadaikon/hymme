@@ -5,7 +5,7 @@ description: >
   TLA+ spec(<Name>.tla / <Name>.cfg)と Gherkin の骨格(<Name>.feature)に落とす。
   「EARS に落として」「状態モデルを作って」「TLA+ spec を書いて」「要求を形式化」と言われたとき、
   または loop-engineering ルーターから外ループとして委譲されたときに使用する。
-  前提: loopeng-extract の抽出台帳(tasks/loopeng/<Name>.extract.md)が完成(全 ID `[x]`・欠番なし)していること。
+  前提: loopeng-extract の抽出台帳(tasks/loopeng/<Name>.extract.md)が完成(全 ID `[x]`・欠番なし・閉じる前のチェックが全項目埋まっている)していること。
   無ければ先に loopeng-extract へ戻る。通常は loop-engineering ルーターの判断を通ってから使う。
 ---
 

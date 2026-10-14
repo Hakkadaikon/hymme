@@ -5,7 +5,7 @@ description: >
   採番チェックリスト台帳へ網羅的に抜き出し、トレーサビリティ・マトリクスを立てる。
   「要件を抽出して」「仕様から要件に落として」「抽出台帳」「トレーサビリティ」と言われたとき、
   または loop-engineering ルーターから 0 段として委譲されたときに使用する。
-  後続の loopeng-formalize(EARS/TLA+)はこの台帳が完成(全 ID `[x]`・欠番なし)してからでないと進めない。
+  後続の loopeng-formalize(EARS/TLA+)はこの台帳が完成(全 ID `[x]`・欠番なし・閉じる前のチェックが全項目埋まっている)してからでないと進めない。
   通常は loop-engineering ルーターの判断(2 問ゲート)を通ってから使う。
 ---
 
@@ -36,7 +36,7 @@ description: >
 
 ## 採番チェックリスト方式(毎ループの必須ゲート)
 
-> **STOP**: この台帳を完成させるまで外ループ(loopeng-formalize)へ進むな。[`assets/extract-template.md`](assets/extract-template.md) を `tasks/loopeng/<Name>.extract.md` にコピーして埋めることから始める。`loop-outer`/`loop-middle`/`loop-inner` は PreToolUse hook([`hooks/loopeng-extract-gate.sh`](../../hooks/loopeng-extract-gate.sh))が台帳を検査し、台帳なし・`[ ]` 残り・`S-NNN` 欠番のいずれかで**機械的にブロック**する。頭の中抽出・後埋めは hook で弾かれる。
+> **STOP**: この台帳を完成させるまで外ループ(loopeng-formalize)へ進むな。[`assets/extract-template.md`](assets/extract-template.md) を `tasks/loopeng/<Name>.extract.md` にコピーして埋めることから始める。`loop-outer`/`loop-middle`/`loop-inner` は PreToolUse hook([`hooks/loopeng-extract-gate.sh`](../../hooks/loopeng-extract-gate.sh))が台帳を検査し、台帳なし・`[ ]` 残り・`S-NNN` 欠番のいずれかで**機械的にブロック**する。頭の中抽出・後埋めは hook で弾かれる。hook が見るのは「## 台帳」節だけなので、閉じる前のチェック(信頼境界・STRIDE・CWE)は自分で確かめる。
 
 頭の中でやると漏れる。**消し込み可能なワークシート**に落とす。1ファイルで完結させる。
 
