@@ -26,7 +26,7 @@ superpowers の `using-superpowers` と hymme の `using-hymme` はどちらも�
 検証系は「入口ルーター + 工程スキル」の構成をとる。ルーターが局面を判定し、対応する工程スキルへ振り分ける。
 
 - **loop-engineering**：自然言語の要求を TLA+ で検査可能な設計へ厳密化する 3 重ループの入口ルーター。
-  - **loopeng-extract**(0 段)：仕様・要求から要件を網羅抽出する。信頼境界ごとに STRIDE の6観点(入力のパースがあれば CWE Top 25 も)で異常系の要件を突き合わせる。
+  - **loopeng-extract**(0 段)：仕様・要求から要件を網羅抽出する。信頼境界ごとに STRIDE の6観点(入力のパースや長さ・オフセットの算術があれば CWE Top 25 も)で異常系の要件を突き合わせる。
   - **loopeng-formalize**(外)：EARS 記法と状態/ドメインモデルへ構造化し、TLA+ spec に落とす。
   - **loopeng-modelcheck**(中)：TLC でモデル検査し、spec 自体を mutation oracle で点検する。最後に、不変条件の文面を独立した読み手に平文へ戻させ、要件と一致するか(向きの取り違え・空成立が無いか)を確かめる。
   - **loopeng-gherkin**(内)：反例トレースを Gherkin の受け入れ仕様に落とす。
