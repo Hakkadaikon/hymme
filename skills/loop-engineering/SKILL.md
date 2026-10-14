@@ -65,7 +65,7 @@ flowchart TD
 
 | 順 | スキル | やること | 出口条件 |
 | --- | --- | --- | --- |
-| 0 | **loopeng-extract** | 元仕様から要件を採番チェックリスト台帳へ網羅抽出、トレーサビリティ表を立てる | 全 `S-ID` が `[x]`・欠番なし |
+| 0 | **loopeng-extract** | 元仕様から要件を採番チェックリスト台帳へ網羅抽出、トレーサビリティ表を立てる | 全 `S-ID` が `[x]`・欠番なし、閉じる前のチェック(信頼境界・STRIDE・CWE)が全項目埋まる |
 | 1 | **loopeng-formalize** | EARS + 状態/ドメインモデル → `<Name>.tla`/`.cfg` | 全 EARS 行が spec の disjunct/Inv に対応 |
 | 2 | **loopeng-modelcheck** | TLC で全到達状態を検査 + spec 自体を mutation testing | `No error` かつ真の survivor 0、文面の往復確認が終了条件を満たす([`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md)) |
 | 3 | **loopeng-gherkin** | 反例 → Gherkin 機械変換、正常系シナリオ追加 | 反例が尽き「テスト」列が埋まる |
