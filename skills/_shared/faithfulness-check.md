@@ -31,7 +31,7 @@ TLC が `No error` を出し、Lean が `sorry` 無しで通っても、それ�
 
 ## 終了条件
 
-全要件の行が `full`、または理由付きの `partial` になっている。読み手の入力ファイル・判定表・空成立の証跡(TLA+ は `<Name>.reach.log`、Lean は `<定理名>_satisfiable`)が `tasks/` に残っている(reviewer がすべて開いて確かめる)。
+全要件の行が `full`、または理由付きの `partial` になっている。読み手の入力ファイルと判定表が `tasks/` に残っている。含意・前提付きの式があるなら、空成立の証跡(TLA+ は `<Name>.reach.log`、Lean は `<定理名>_satisfiable`)も残っている。reviewer はこれらを開いて確かめる。この終了条件の本文はここだけに置き、各スキルと reviewer はここを参照する。
 
 ## 実行時の注意
 

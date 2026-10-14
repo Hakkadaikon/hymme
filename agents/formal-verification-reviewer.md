@@ -3,10 +3,10 @@ name: formal-verification-reviewer
 description: >
   hymme の formal-verification スキルの成果物が、必須ゲートと禁止事項を守っているかを
   検査する読み取り専用レビュアー。
-  Use PROACTIVELY: 証明が通ったと判断した直後、成果を「保証された」と報告する前、および
+  Use PROACTIVELY: 文面の往復確認が済んだ直後、成果を「保証された」と報告する前、および
   橋渡しテストを完了扱いにする前に必ず起動する。
-  「性質カタログの temporal 漏れ」「sorry 残りの保証扱い」「#print axioms 未確認や sorryAx/
-  native_decide 依存」「橋渡しテストの欠落」を外側から突く。
+  「性質カタログの temporal・脅威・CWE 漏れ」「sorry 残りの保証扱い」「#print axioms 未確認や sorryAx/
+  native_decide 依存」「文面の往復確認の未実施・mismatch/vacuous 残り」「橋渡しテストの欠落」を外側から突く。
 tools: Read, Glob, Grep, Bash
 model: inherit
 ---
@@ -45,7 +45,7 @@ model: inherit
   (`propext`/`Classical.choice`/`Quot.sound`)だけに依存していること。`sorryAx` や、
   `native_decide` 由来の `Lean.ofReduceBool` が混じっていないか。「ビルドが通った」と
   「カーネルが検証した」を区別する。
-- **文面の往復確認**: `tasks/fv/<Name>.faithfulness.md` が在り、カタログの全性質に行があり、判定が `full` か理由付き `partial` だけか。`<Name>.faithfulness-input.md` を開き、コメント・docstring・性質文・証明本体が混じっていないか(混じっていれば読み手が説明文で一致と判断した恐れがあり未達)。前提付きの定理に、前提を満たす具体例(判定表の理由欄に名前がある `<定理名>_satisfiable`)が Lean ソースに在るか。加えて自分でも、カタログの各性質と定理の文面を突き合わせ、向き・条件・量化の取り違えが無いかを見る。読むのは定理の文面と、文面が参照する定義だけでよい(証明本体はカーネルが検査済み)。
+- **文面の往復確認**: `tasks/fv/<Name>.faithfulness.md` が在り、カタログの全性質に行があり、`${CLAUDE_PLUGIN_ROOT}/skills/_shared/faithfulness-check.md` の終了条件を満たすか。`<Name>.faithfulness-input.md` を開き、コメント・docstring・性質文・証明本体が混じっていないか(混じっていれば読み手が説明文で一致と判断した恐れがあり未達)。前提付きの定理に、前提を満たす具体例(判定表の理由欄に名前がある `<定理名>_satisfiable`)が Lean ソースに在るか。加えて自分でも、カタログの各性質と定理の文面を突き合わせ、向き・条件・量化の取り違えが無いかを見る。読むのは定理の文面と、文面が参照する定義だけでよい(証明本体はカーネルが検査済み)。
 - **橋渡しテスト**: 証明済み性質と実装の対応テストが在り、実際に緑か。証明だけで実装未検証は片肺。
 - 層を超えた全体保証を謳っていないか(ライブラリ責務とアプリ責務の切り分けが証明コメントにあるか)。
 - **公式値の裏取り**: 公式定数・テストベクタを外部検索の鵜呑みで焼いていないか。手計算できる部分を

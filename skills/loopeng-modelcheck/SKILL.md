@@ -2,7 +2,7 @@
 name: loopeng-modelcheck
 description: >
   loop-engineering の中ループ(設計検証)。TLC で TLA+ spec をモデル検査し、さらに spec 自体へ
-  機械的ミューテーションを注入して「検査の強さ」を mutation oracle で検証し、最後に初期状態・不変条件・遷移の文面を
+  機械的ミューテーションを注入して「検査の強さ」を mutation oracle で検証し、最後に初期状態・不変条件・temporal 性質・遷移の文面を
   独立した読み手に平文へ戻させて要件と突き合わせる。
   「モデル検査して」「TLC を回して」「spec の mutation」「survivor を潰して」と言われたとき、
   または loop-engineering ルーターから中ループとして委譲されたときに使用する。
@@ -38,4 +38,4 @@ description: >
 
 - 反例が出た → **loopeng-gherkin** で Gherkin へ機械変換し、設計を直して外/中ループへ戻す。
 - `No error` かつ真の survivor 0 → modeler として委譲されていたなら、往復確認の入力ファイルと前件到達の証跡を作り、成果物のパスと状態を報告して終わる。読み手とレビュアーの dispatch はコントローラの仕事。
-- 往復確認の全行が `full`(または理由付き `partial`)→ 設計は固まった。loopeng-gherkin で正常系の受け入れシナリオを足す。
+- 往復確認が共有手順の終了条件を満たした → 設計は固まった。loopeng-gherkin で正常系の受け入れシナリオを足す。
