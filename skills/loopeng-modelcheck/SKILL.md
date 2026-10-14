@@ -2,7 +2,7 @@
 name: loopeng-modelcheck
 description: >
   loop-engineering の中ループ(設計検証)。TLC で TLA+ spec をモデル検査し、さらに spec 自体へ
-  機械的ミューテーションを注入して「検査の強さ」を mutation oracle で検証し、最後に不変条件の文面を
+  機械的ミューテーションを注入して「検査の強さ」を mutation oracle で検証し、最後に初期状態・不変条件・遷移の文面を
   独立した読み手に平文へ戻させて要件と突き合わせる。
   「モデル検査して」「TLC を回して」「spec の mutation」「survivor を潰して」と言われたとき、
   または loop-engineering ルーターから中ループとして委譲されたときに使用する。
@@ -24,7 +24,7 @@ description: >
 
 `loop-middle` が回すのは上の2段まで。両方が緑になったら3段目に進む。3段目の入力ファイルと前件到達の証跡は式を書いた側(委譲していれば modeler)が作り、読み手の dispatch と判定はコントローラが行う。
 
-3. **文面の往復確認**: `Init`・`Inv`・temporal 性質・`Next` の各 disjunct を独立した読み手に平文へ戻させ、EARS と突き合わせる。検査が緑でも、式が要件と違うことを言っていれば何も保証しない。手順・担当・判定は [`../_shared/roundtrip-faithfulness.md`](../_shared/roundtrip-faithfulness.md)。
+3. **文面の往復確認**: `Init`・`Inv`・temporal 性質・`Next` の各 disjunct と、それらが参照する演算子定義を独立した読み手に平文へ戻させ、EARS と突き合わせる。検査が緑でも、式が要件と違うことを言っていれば何も保証しない。手順・担当・判定は [`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md)。
 
 動かないとき(TMPDIR/JDK 即死、TLC スクラッチ、トレース形式の罠)はまず [`references/troubleshooting.md`](references/troubleshooting.md)。
 

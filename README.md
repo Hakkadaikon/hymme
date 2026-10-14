@@ -28,13 +28,13 @@ superpowers の `using-superpowers` と hymme の `using-hymme` はどちらも�
 - **loop-engineering**：自然言語の要求を TLA+ で検査可能な設計へ厳密化する 3 重ループの入口ルーター。
   - **loopeng-extract**(0 段)：仕様・要求から要件を網羅抽出する。信頼境界ごとに STRIDE の6観点(入力のパースや長さ・オフセットの算術があれば CWE Top 25 も)で異常系の要件を突き合わせる。
   - **loopeng-formalize**(外)：EARS 記法と状態/ドメインモデルへ構造化し、TLA+ spec に落とす。
-  - **loopeng-modelcheck**(中)：TLC でモデル検査し、spec 自体を mutation oracle で点検する。最後に、不変条件の文面を独立した読み手に平文へ戻させ、要件と一致するか(向きの取り違え・空成立が無いか)を確かめる。
+  - **loopeng-modelcheck**(中)：TLC でモデル検査し、spec 自体を mutation oracle で点検する。最後に、初期状態・不変条件・遷移の文面を独立した読み手に平文へ戻させ、要件と一致するか(向きの取り違え・空成立が無いか)を確かめる。
   - **loopeng-gherkin**(内)：反例トレースを Gherkin の受け入れ仕様に落とす。
 - **test-design**：テスト設計・既存テストレビューの入口ルーター。
   - **test-extract**(0 段)：テストすべき振る舞いを網羅抽出し、台帳にする。
   - **test-catalog**：手法カタログ(索引専用)。各振る舞いへ、同値分割・状態遷移・mutation testing・TDDサイクルなど個別スキル化された40のテスト技法から手法を割り当てる。
   - **test-verify**：実装への橋渡し・実行ゲート・回帰固定を行う。
-- **formal-verification**：雑な仕様を Lean 4 の形式仕様へ落とし込み、証明で検証し(proof-repair ループ)、証明済みの性質を test-first 実装へ橋渡しする。証明が通った後、定理の文面を独立した読み手に平文へ戻させて性質カタログと突き合わせ、通っても要件と違うことを言う定理を落とす。
+- **formal-verification**：雑な仕様を Lean 4 の形式仕様へ落とし込み、証明で検証し(proof-repair ループ)、証明済みの性質を test-first 実装へ橋渡しする。証明が通った後、定理の文面を独立した読み手に平文へ戻させて性質カタログと突き合わせ、通っても要件と違うことを言う定理を見つけて直す。
 
 開発ワークフロースキル。
 
