@@ -10,7 +10,7 @@ TLC が `No error` を出し、Lean が `sorry` 無しで通っても、それ�
 
 1. **読み手の入力を作って保存する**: `tasks/{loopeng,fv}/<Name>.roundtrip-input.md` に**形式文面だけ**を写す。
    - TLA+: `Inv`・temporal 性質、各 `Next` disjunct の本体、それらが参照する演算子定義。
-   - Lean: 各定理の文面(`theorem` から `:=` まで)と、文面が参照する `def`/`structure` の推移閉包。**証明本体は入れない**(カーネルが検査済みで意味に影響しない。意味に影響しうるのは文面と、文面が参照する定義の中身)。
+   - Lean: 各定理の文面(`theorem` から `:=` まで)と、文面が参照する `def`/`structure` の推移閉包。たどるのはプロジェクト内で定義したものまでで、`Nat`・`List` など Lean core や Mathlib の定義は名前だけ書く。**証明本体は入れない**(カーネルが検査済みで意味に影響しない。意味に影響しうるのは文面と、文面が参照する定義の中身)。
    - コメント・docstring・要件文・EARS・カタログの性質文は入れない(読み手が式でなく説明文を読んで一致と判断してしまう)。
 2. **読み手を dispatch する**: fresh context の subagent(general-purpose で足りる)に入力ファイルだけを渡し、各式を「何を主張しているか」の平文に言い直させる。前提が何を要求するかも書かせる。
 3. **判定する**: 言い直しを元の要件(EARS 行・性質カタログ行)と1対1で突き合わせ、`tasks/{loopeng,fv}/<Name>.roundtrip.md` に表で記録する。
@@ -26,7 +26,7 @@ TLC が `No error` を出し、Lean が `sorry` 無しで通っても、それ�
    - `missing`: 対応する式が無い
 4. **空成立を機械で確かめる**(含意・前提付きの式ごと):
    - Lean: 前提を全部満たす具体例を `example : ∃ s, <前提> := ⟨<値>, by decide⟩` 等で示す。示せなければ `vacuous`。
-   - TLA+: 含意 `P => Q` の前件について、`~P` を一時的な INVARIANT にして TLC を回し、反例(=`P` が成り立つ到達状態)が出ることを確認する。反例が出なければ前件は一度も成り立たず `vacuous`。
+   - TLA+: 含意 `P => Q` の前件について、`~P` を一時的な INVARIANT にして TLC を回し(`tasks/loopeng/MC<Name>.tla` に `EXTENDS <Name>` して `NotP == ~P` を定義し、`MC<Name>.cfg` の INVARIANT に `NotP` を書く。本体の `.tla` は触らない。確認後に MC ファイルは消す)、反例(=`P` が成り立つ到達状態)が出ることを確認する。反例が出なければ前件は一度も成り立たず `vacuous`。
 5. `mismatch`・`vacuous`・`missing` があれば源泉(EARS・モデル・定理)を直し、検査と往復確認をやり直す。`partial` は理由欄が埋まっていれば残してよい。
 
 ## 終了条件

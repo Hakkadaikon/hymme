@@ -24,6 +24,8 @@
 | S-003    | R-3        | Inv: c <= N  | test_caps_at_n      |
 ```
 
+「閉じる前のチェック」の信頼境界は「無し: 外部入力を受けない内部カウンタ」、CWE は「パース無し: 入力を持たない」と書く。
+
 全 ID `[x]`・欠番なし → 0段を閉じて外ループへ。
 
 ## 1. 外ループ: EARS + モデル → spec
@@ -51,12 +53,14 @@ NEXT Next
 INVARIANT Inv
 ```
 
-## 2. 中ループ: model-check + mutation
+## 2. 中ループ: model-check + mutation + 文面の往復確認
 
 `loop-middle SPEC=Counter`。
 
 - model-check: `No error`(c は 0..3 で Inv を守る)。
 - mutation oracle: `c < N`→`c <= N` の変異を注入すると c=N+1 に到達でき Inv 違反 → TLC が killed(捕まえる)。これで「上限ガードが効いている」ことが spec レベルで実証される。survivor が equivalent だけになったら閉じる。
+
+- 文面の往復確認: `Init`・`Inc`・`Inv` だけ(コメントの `\* S-00x` は消す)を `Counter.roundtrip-input.md` に写し、別の subagent に平文へ戻させる。言い直し「c は 0 で始まる」「c が N 未満のときだけ 1 増やす」「c は常に N 以下」を R-1〜R-3 と突き合わせ、`Counter.roundtrip.md` に 3 行とも `full` と記録する。含意の不変条件が無いので空成立の確認は要らない。
 
 わざとガードを `c < N+1` に弱めて回すと反例が出る → 内ループへ。
 

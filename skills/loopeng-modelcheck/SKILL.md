@@ -22,7 +22,7 @@ description: >
 
 > survivor の大半は **equivalent-mutant**(kill 不能)。見分け方・判定手順・打ち切り基準は [`references/mutation-oracle.md`](references/mutation-oracle.md)。「真の安全性 survivor が 0」で打ち切ってよい。
 
-`loop-middle` が回すのは上の2段まで。両方が緑になったら、最後に3段目をコントローラが行う。
+`loop-middle` が回すのは上の2段まで。両方が緑になったら3段目に進む。3段目の入力ファイルと前件到達の証跡は式を書いた側(委譲していれば modeler)が作り、読み手の dispatch と判定はコントローラが行う。
 
 3. **文面の往復確認**: `Inv`・temporal 性質・`Next` の各 disjunct を独立した読み手に平文へ戻させ、EARS と突き合わせる。検査が緑でも、式が要件と違うことを言っていれば何も保証しない。手順・担当・判定は [`../_shared/roundtrip-faithfulness.md`](../_shared/roundtrip-faithfulness.md)。
 

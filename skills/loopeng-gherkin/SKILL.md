@@ -17,7 +17,7 @@ description: >
 
 - 初期状態 = `Given`、各アクション = `When`、変化した変数 = `Then becomes ...`。
 - この feature は「起きてはならない」失敗例。設計を直して反例が消えるまで外(**loopeng-formalize**)/中(**loopeng-modelcheck**)ループへ戻す。
-- 設計が固まったら、正の受け入れシナリオ(EARS 正常系)を `.feature` に足し、実装の受け入れテストにする。
+- 設計が固まったら(反例が消え、`tasks/loopeng/<Name>.roundtrip.md` の全行が `full` か理由付き `partial` になったら)、正の受け入れシナリオ(EARS 正常系)を `.feature` に足し、実装の受け入れテストにする。
   トレーサビリティ・マトリクスの「テスト」列へ消し込む。TLC 反例由来は機械変換で消し込み不要(1反例=1 feature)。「テスト」列が空の event/state 系 EARS 正常系=このループの漏れ。
 
 > 生成 `.feature` を実行可能テストにする配線(言語別 OSS ランナー、C の例外、緑/赤での生死実証)は [`references/gherkin-runners.md`](references/gherkin-runners.md)。

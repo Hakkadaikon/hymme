@@ -55,7 +55,7 @@ IaC は厳密であってほしいので**動的側面は積極的に**このル
 flowchart TD
     SPEC[元仕様<br/>RFC / 標準 / NL] --> L0[0. loopeng-extract<br/>採番台帳 + トレーサビリティ表]
     L0 -->|要件| L1[1. loopeng-formalize<br/>EARS + モデル → Name.tla]
-    L1 -->|spec| L2[2. loopeng-modelcheck<br/>TLC + mutation oracle]
+    L1 -->|spec| L2[2. loopeng-modelcheck<br/>TLC + mutation oracle<br/>+ 文面の往復確認]
     L2 -->|反例トレース| L3[3. loopeng-gherkin<br/>反例 → 失敗する Gherkin]
     L3 -->|設計を直して| L1
     L2 -.->|critical な実装片| LEAN[formal-verification<br/>Lean 4 で証明]
