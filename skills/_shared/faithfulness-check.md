@@ -9,7 +9,7 @@ TLC が `No error` を出し、Lean が `sorry` 無しで通っても、それ�
 担当: 手順 1・4 と、手順 5 の源泉の修正・再検査は式を書いた側(modeler / prover に委譲していればそのワーカー、していなければコントローラ)。手順 2・3 と、手順 5 でワーカーへ差し戻す判断はコントローラ。ワーカーは読み手を dispatch しない。
 
 1. **読み手の入力を作って保存する**: `tasks/{loopeng,fv}/<Name>.faithfulness-input.md` に**形式文面だけ**を写す。
-   - TLA+: `Init`・`Inv`・temporal 性質、各 `Next` disjunct の本体、それらが参照する演算子定義。
+   - TLA+: `Init`・`Inv`・temporal 性質、各 `Next` disjunct の本体、それらが参照する演算子定義。temporal 性質があるなら公平性条件(`WF_`/`SF_`)を含む `Spec` も写す(公平性の仮定の下での主張かを読み手が判断できるように)。
    - Lean: 各定理の文面(`theorem` から `:=` まで)と、文面が参照する `def`/`structure` の推移閉包。たどるのはプロジェクト内で定義したものまでで、`Nat`・`List` など Lean core や Mathlib の定義は名前だけ書く。**証明本体は入れない**(カーネルが検査済みで意味に影響しない。意味に影響しうるのは文面と、文面が参照する定義の中身)。
    - コメント・docstring・要件文・EARS・カタログの性質文は入れない(読み手が式でなく説明文を読んで一致と判断してしまう)。
 2. **読み手を dispatch する**: fresh context の subagent(general-purpose で足りる)に入力ファイルだけを渡し、各式を「何を主張しているか」の平文に言い直させる。前提が何を要求するかも書かせる。
@@ -26,12 +26,12 @@ TLC が `No error` を出し、Lean が `sorry` 無しで通っても、それ�
    - `missing`: 対応する式が無い
 4. **空成立を機械で確かめる**(含意・前提付きの式ごと):
    - Lean: 前提を全部満たす具体例を、名前付きの定理 `theorem <定理名>_satisfiable : ∃ s, <前提> := ⟨<値>, by decide⟩` 等で示す。示せなければ `vacuous`。この定理は Lean ソースに残し、判定表の理由欄にその名前を書く。
-   - TLA+: 含意 `P => Q` の前件について、`~P` を一時的な INVARIANT にして TLC を回し(`tasks/loopeng/MC<Name>.tla` に `EXTENDS <Name>` して前件ごとに `NotP1 == ~P1` のように名前を分けて定義し、`MC<Name>.cfg` の INVARIANT に1つずつ書いて1本ずつ回す。本体の `.tla` は触らない。確認後に MC ファイルは消す)、反例(=`P` が成り立つ到達状態)が出ることを確認する。TLC の出力は前件ごとに `tasks/loopeng/<Name>.reach.log` へ追記し(上書きしない)、判定表の理由欄にどの前件の証跡かを1行書く。反例が出なければ前件は一度も成り立たず `vacuous`。
+   - TLA+: 含意 `P => Q` と leads-to `P ~> Q` の前件について、`~P` を一時的な INVARIANT にして TLC を回し(`tasks/loopeng/MC<Name>.tla` に `EXTENDS <Name>` して前件ごとに `NotP1 == ~P1` のように名前を分けて定義し、`<Name>.cfg` を `MC<Name>.cfg` に写して `CONSTANT`・`INIT`/`NEXT`(または `SPECIFICATION`)を引き継ぎ、INVARIANT 行だけを1つずつ差し替えて1本ずつ回す。本体の `.tla` は触らない。確認後に MC ファイルは消す)、反例(=`P` が成り立つ到達状態)が出ることを確認する。TLC の出力は前件ごとに `tasks/loopeng/<Name>.reach.log` へ追記し(上書きしない)、判定表の理由欄にどの前件の証跡かを1行書く。反例が出なければ前件は一度も成り立たず `vacuous`。
 5. `mismatch`・`vacuous`・`missing` があれば源泉(EARS・モデル・定理)を直し、検査と往復確認をやり直す。`partial` は理由欄が埋まっていれば残してよい。
 
 ## 終了条件
 
-全要件の行が `full`、または理由付きの `partial` になっている。読み手の入力ファイルと判定表が `tasks/` に残っている。含意・前提付きの式があるなら、空成立の証跡(TLA+ は `<Name>.reach.log`、Lean は `<定理名>_satisfiable`)も残っている。reviewer はこれらを開いて確かめる。この終了条件の本文はここだけに置き、各スキルと reviewer はここを参照する。
+全要件の行が `full`、または理由付きの `partial` になっている。読み手の入力ファイルと判定表が `tasks/` に残っている。含意・前提付きの式があるなら、空成立の証跡(TLA+ は `<Name>.reach.log`、Lean は `<定理名>_satisfiable`)も残っている。reviewer はこれらを開いて確かめる。`partial` が残った性質は、完了の報告で「保証された」「設計が検証された」に含めず、未保証の範囲として明示する。この終了条件の本文はここだけに置き、各スキルと reviewer はここを参照する。
 
 ## 実行時の注意
 

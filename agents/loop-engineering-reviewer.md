@@ -39,7 +39,7 @@ model: inherit
 - トレーサビリティ表が条項→要件→形式手法→テストまで埋まっている。逆抽出時は「現状コード」と
   「本来の仕様(要人間確認)」が別列に分かれているか。
 - `.tla`/`.feature` を手編集して源泉(EARS+モデル)と乖離させていないか。
-- 「設計が固まった」と言っているなら `tasks/loopeng/<Name>.faithfulness.md` が在り、全 EARS 行に判定があり、`${CLAUDE_PLUGIN_ROOT}/skills/_shared/faithfulness-check.md` の終了条件を満たすか。`<Name>.faithfulness-input.md` にコメント・EARS 文・要件文が混じっていないか。含意の不変条件それぞれに、前件が到達しうる証跡(前件の否定を一時 INVARIANT にした TLC の反例。`tasks/loopeng/<Name>.reach.log`)があるか。
+- 「設計が固まった」と言っているなら `tasks/loopeng/<Name>.faithfulness.md` が在り、全 EARS 行に判定があり、`${CLAUDE_PLUGIN_ROOT}/skills/_shared/faithfulness-check.md` の終了条件を満たすか。`<Name>.faithfulness-input.md` にコメント・EARS 文・要件文が混じっていないか。含意の不変条件と leads-to それぞれに、前件が到達しうる証跡(前件の否定を一時 INVARIANT にした TLC の反例。`tasks/loopeng/<Name>.reach.log`)があるか。
 - 台帳の「閉じる前のチェック」に信頼境界の列挙と STRIDE 6観点の行があり、各行が S-ID か「該当なし: 理由」で埋まっているか。信頼境界があるのに全観点が「該当なし」なら、理由が具体的か確かめる。CWE の行も同様に、カテゴリごとの S-ID か「該当なし: 理由」、または「パース・算術無し: 理由」で埋まっているか。信頼境界が無いなら STRIDE 6行は各行「該当なし: 信頼境界無し」でよい。
 - loopeng-gherkin まで進んでいる場合、`.feature` の正常系シナリオが test-design の T-ID 台帳へ転記されているか(出典欄に `.feature` 名があるか grep で確認)。未転記なら未達。
 - **本体への痕跡漏れ**(最重要): 本体ソース・コメント・テスト名・コミット・git 管理下ドキュメントに
