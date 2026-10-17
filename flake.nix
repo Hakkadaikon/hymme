@@ -40,6 +40,8 @@
       apalache = pkgs.runCommand "apalache-0.62.4" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
         mkdir -p $out
         tar xzf ${apalacheSrc} -C $out --strip-components=1
+        # The launcher's `#!/usr/bin/env bash` doesn't resolve in the nix sandbox.
+        patchShebangs $out/bin
         # The shipped bin/apalache-mc launcher needs a JRE on PATH and JAVA_HOME.
         wrapProgram $out/bin/apalache-mc \
           --prefix PATH : ${pkgs.jdk}/bin \
