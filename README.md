@@ -110,3 +110,5 @@ nixpkgs には TLA+ と Apalache の公式パッケージが無いため、flake
 
 - Gherkin ランナー：`cucumber-js`(npm)や `godog`(`go install`)。nixpkgs に無い。
 - 要求のトレーサビリティ用の `doorstop`：`uv pip install doorstop`。
+
+hymme 自体の開発では、`agents/*-reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。

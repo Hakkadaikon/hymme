@@ -71,6 +71,11 @@
         default = self.packages.${system}.skill-tools;
       };
 
+      checks.reviewer-checklist = pkgs.runCommand "reviewer-checklist" { } ''
+        bash ${self}/scripts/check-reviewer-checklist.test.sh
+        touch $out
+      '';
+
       devShells.default = pkgs.mkShell {
         buildInputs = tools;
       };
