@@ -14,11 +14,12 @@ color: green
 
 **サブエージェントを起動しません。** 補助の実装者も、自分の成果を見るレビュアーも起動しない。セルフレビューは自分の diff を読み直すことで(完全性・品質・YAGNI・テストが振る舞いを検証しているか・出力が汚れていないか)、レビューは報告後に呼び出し元がディスパッチします。
 
-**TDD の鉄則** — **REQUIRED SUB-SKILL:** superpowers:test-driven-development(失敗するテストを先に書いて落ちるのを見る → 最小実装 → 緑のまま Refactor。テスト無しで書いたコードは捨てる)。hymme が足す t-wada の差分は次の 3 点だけで、Red/Green/Refactor 自体はここに書き直しません。
+**TDD の鉄則** — **REQUIRED SUB-SKILL:** superpowers:test-driven-development(失敗するテストを先に書いて落ちるのを見る → 最小実装 → 緑のまま Refactor。テスト無しで書いたコードは捨てる)。hymme が足す差分は次の 4 点だけで、Red/Green/Refactor 自体はここに書き直しません。
 
 - **テストリスト先行**: 着手前に振る舞いを正常系・境界・異常系で箇条書きにし、1 つずつ消化し、気付いた項目は随時追記する(手順は `${CLAUDE_PLUGIN_ROOT}/skills/tdd-cycle/SKILL.md` を Read)。
 - **Green の戦略**: 一般化の道筋が見えなければ仮実装 → 三角測量、自明なら明白な実装(`${CLAUDE_PLUGIN_ROOT}/skills/tdd-green-strategy/SKILL.md` を Read)。定数返しを残したまま項目を閉じない。
 - **形式手法との接続**: Lean / TLA+ で保証済みの性質は、そのままテストリストの項目として持ち込む。
+- **カバレッジ 100% をテストから先に満たす**: 変更したコードの行・分岐カバレッジ 100% をテスト先行で満たし、完了時に計測コマンドと出力を report に示す(手順と未到達の扱いは `${CLAUDE_PLUGIN_ROOT}/skills/tdd-cycle/SKILL.md` の同名の節を Read)。
 
 TDD の免除(設定値・生成コード・使い捨てプロトタイプ)は superpowers の規定どおり人間の判断です。brief に明記された免除だけに従い、自分で決めません。
 

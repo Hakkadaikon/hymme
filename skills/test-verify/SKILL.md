@@ -2,7 +2,7 @@
 name: test-verify
 description: >
   test-design の橋渡しと固定の工程。手法割り当て済みの T-ID 台帳を実装(superpowers:writing-plans の Task → SDD implementer の TDD、
-  または hymme:coder)へ渡し、実行ゲート(網羅逆引き・緑・flaky・mutation)で
+  または hymme:coder)へ渡し、実行ゲート(網羅逆引き・緑・カバレッジ・flaky・mutation)で
   完了を検証し、緑にしたテストを回帰として CI に固定する。
   「テストの実装に渡して」「テストが全部書けたか確認して」「回帰に固定して」と言われたとき、
   または test-design ルーターから最終工程として委譲されたときに使用する。
@@ -29,8 +29,9 @@ description: >
 
 1. **網羅(取りこぼし無し)**: 台帳の全 `T-ID` について、対応するテスト名が実在のテストファイル内に見つかることを grep で1行ずつ逆引きする。緑チェックはスイートの健全性を見るだけで、implementer が一部 `T-ID` を実装し忘れても「全緑」になる。存在チェックは緑チェックと別物として必ず回す。
 2. **緑**: 全テスト緑・型検査クリーンは基底規範の対象。実行は修正範囲に絞る(`test-targeted` スキルの絞り込み運用)。
-3. **flaky**: 性質ベースやメタモルフィック、並行を含むテストは seed を変えて複数回(最低でも数十回、または CI の連続成功)走っても落ちない。1回の緑では flaky は見えない。要因別の封じ込めは値の非決定性([`../flakiness-value/SKILL.md`](../flakiness-value/SKILL.md))と協調の非決定性([`../flakiness-concurrency/SKILL.md`](../flakiness-concurrency/SKILL.md))。
-4. **強さ(critical のみ)**: 金額、セキュリティ、状態遷移など critical な `T-ID` は、緑に加えて mutation([`../mutation-testing/SKILL.md`](../mutation-testing/SKILL.md))を回し、survived がアサーション不足として残っていないことを確認する。全部に回すのは過剰(YAGNI)。
+3. **カバレッジ**: 変更したコードの行(C0)と分岐(C1)のカバレッジが 100% であることを、計測コマンドの生出力で示す。未到達の扱いと除外の条件は [`../tdd-cycle/SKILL.md`](../tdd-cycle/SKILL.md) の「カバレッジ 100% をテストから先に満たす」に従う。
+4. **flaky**: 性質ベースやメタモルフィック、並行を含むテストは seed を変えて複数回(最低でも数十回、または CI の連続成功)走っても落ちない。1回の緑では flaky は見えない。要因別の封じ込めは値の非決定性([`../flakiness-value/SKILL.md`](../flakiness-value/SKILL.md))と協調の非決定性([`../flakiness-concurrency/SKILL.md`](../flakiness-concurrency/SKILL.md))。
+5. **強さ(critical のみ)**: 金額、セキュリティ、状態遷移など critical な `T-ID` は、緑に加えて mutation([`../mutation-testing/SKILL.md`](../mutation-testing/SKILL.md))を回し、survived がアサーション不足として残っていないことを確認する。全部に回すのは過剰(YAGNI)。
 
 台帳の `T-ID` は、貼ったログ中の該当テスト名の緑に対応して初めて閉じる。
 
@@ -39,7 +40,7 @@ description: >
 実行ゲートを通った緑は、その場限りでは守られ続けない。次の変更で黙って赤化しないよう継続実行に載せて初めて「テストが守られる」状態になる。
 
 - 緑にしたテスト群を CI の継続実行対象に入れる([`../process-static/SKILL.md`](../process-static/SKILL.md) の CI 自動実行)。
-- critical な `T-ID` は mutation やカバレッジを CI ゲートにし、下限を割る変更をマージさせない。
+- 変更したコードの行・分岐カバレッジ 100% を CI ゲートにし(差分カバレッジ)、割る変更をマージさせない。critical な `T-ID` は mutation もゲートにする。
 - 以後バグが出たら、その欠陥を再現する最小テストを1本固定して回帰へ積む([`../levels-operational/SKILL.md`](../levels-operational/SKILL.md) の回帰テスト)。台帳には新しい `T-ID` として追記する。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
