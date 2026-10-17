@@ -7,6 +7,16 @@ worth anything must FAIL (find a counterexample / invariant violation) on the
 mutant. A mutant that still passes is a "survivor": the spec is too weak to
 distinguish correct behaviour from that bug -- the oracle reports it.
 
+Only a property violation (or a timeout) counts as "killed". A mutant that TLC
+rejects as unparsable is "invalid" (it tested nothing), and one that stops on a
+TLC runtime error ("Successor state is not completely specified", exceptions)
+is "unverified": re-check it with a semantic variant before trusting it
+(skills/loopeng-modelcheck/references/mutation-oracle.md).
+
+Exit: 0 = no survivors and nothing unverified, 1 = survivors, 2 = the baseline
+spec doesn't pass, 3 = no survivors but nothing to trust yet (some mutants
+are unverified, or no valid mutant was killed).
+
 Usage:
     tla_mutate_oracle.py <spec.tla> [--cfg spec.cfg] [--workers N]
 
@@ -37,10 +47,16 @@ MUTATIONS = [
 ]
 
 
-def run_tlc(spec_path, cfg, workers, timeout=600):
-    """Return (passed, output). passed=True means TLC found no violation.
+PARSE_FAIL = re.compile(r"Parsing or semantic analysis failed|\*\*\* ?Parse Error ?\*\*\*|Semantic errors|Fatal errors while parsing")
+VIOLATION = re.compile(r"\b(is|was|were) violated\b")
 
-    A TLC run that exceeds `timeout` counts as NOT passed (killed): a mutant
+
+def run_tlc(spec_path, cfg, workers, timeout=600):
+    """Return (kind, output): kind is one of
+    "pass" (no error), "violation" (an invariant/property is violated),
+    "invalid" (parse/semantic error), "error" (other TLC error), "timeout".
+
+    A TLC run that exceeds `timeout` counts as killed: a mutant
     that diverges the state space no longer behaves like the correct spec, so
     the design distinguishes it. This also stops one runaway mutant (e.g. a
     sign flip that loops forever in Nat) from hanging the whole oracle.
@@ -64,11 +80,16 @@ def run_tlc(spec_path, cfg, workers, timeout=600):
             capture_output=True, text=True, timeout=timeout,
         )
     except subprocess.TimeoutExpired:
-        return False, f"TLC timed out after {timeout}s (treated as killed)"
+        return "timeout", f"TLC timed out after {timeout}s (treated as killed)"
     out = proc.stdout + proc.stderr
-    # TLC exits non-zero on a violation; "No error" appears on a clean run.
-    passed = proc.returncode == 0 and "Error:" not in out
-    return passed, out
+    if PARSE_FAIL.search(out):
+        return "invalid", out
+    if VIOLATION.search(out):
+        return "violation", out
+    # TLC exits non-zero on any error; "No error" appears on a clean run.
+    if proc.returncode == 0 and "Error:" not in out:
+        return "pass", out
+    return "error", out
 
 
 def apply_one_mutation(src, name, pat, repl):
@@ -100,13 +121,13 @@ def main():
     src = open(spec).read()
 
     # Sanity: the unmutated spec must pass, else mutation results are meaningless.
-    base_pass, base_out = run_tlc(spec, cfg, args.workers)
-    if not base_pass:
+    base_kind, base_out = run_tlc(spec, cfg, args.workers)
+    if base_kind != "pass":
         print("BASELINE FAILS -- fix the spec before mutation testing:\n")
         print(base_out[-2000:])
         return 2
 
-    survivors, killed, total = [], 0, 0
+    survivors, unverified, killed, invalid, total = [], [], 0, 0, 0
     base_dir = os.path.dirname(spec)
     for name, pat, repl in MUTATIONS:
         for label, mutated in apply_one_mutation(src, name, pat, repl):
@@ -120,21 +141,37 @@ def main():
                 tf.write(re.sub(r"^----+ MODULE \w+", f"---- MODULE {mod}", mutated, count=1))
                 mut_path = tf.name
             try:
-                passed, _ = run_tlc(mut_path, cfg, args.workers, args.mut_timeout)
+                kind, _ = run_tlc(mut_path, cfg, args.workers, args.mut_timeout)
             finally:
                 os.unlink(mut_path)
-            if passed:
+            if kind == "pass":
                 survivors.append(label)  # spec did NOT catch the bug
                 print(f"  SURVIVOR  {label}")
+            elif kind == "invalid":
+                invalid += 1  # mutant doesn't parse: it tested nothing
+                print(f"  invalid   {label}")
+            elif kind == "error":
+                unverified.append(label)  # stopped on a TLC error, not on a property
+                print(f"  UNVERIFIED {label}")
             else:
                 killed += 1
                 print(f"  killed    {label}")
 
-    print(f"\nmutants: {total}  killed: {killed}  survivors: {len(survivors)}")
+    print(f"\nmutants: {total}  killed: {killed}  survivors: {len(survivors)}"
+          f"  unverified: {len(unverified)}  invalid: {invalid}")
+    if unverified:
+        print("stopped on a TLC error, not a property -- re-check with a semantic variant:",
+              ", ".join(unverified))
     if survivors:
         print("spec is TOO WEAK to catch:", ", ".join(survivors))
         return 1
-    print("spec kills every mutant -- design invariants are tight.")
+    if unverified:
+        print("no survivors, but the unverified mutants above are not evidence yet.")
+        return 3
+    if killed == 0:
+        print("no valid mutant was killed -- nothing was tested.")
+        return 3
+    print("spec kills every valid mutant -- design invariants are tight.")
     return 0
 
 
