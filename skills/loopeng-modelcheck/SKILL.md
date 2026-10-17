@@ -15,10 +15,11 @@ description: >
 `loop-middle SPEC=<Name>` を回す(駆動装置は [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md))。
 **前提**: `tasks/loopeng/<Name>.tla` / `<Name>.cfg` があること。無ければ **loopeng-formalize** へ戻る。
 
+0. **静的検査**: TLC の前に `loopeng/bin/tla_lint.sh` が SANY で構文・意味解析し、spec に `@type:` 注釈があれば Apalache で型検査する。`loop-middle` は自動で通し、`tlc` を直接叩く経路は hook(`hooks/loopeng-lint-gate.sh`)が止める。エラーが出たら spec を直してから先へ進む。
 1. **model-check**: TLC が `Inv` を全到達状態で検査。`No error` なら設計は不変条件を守る。反例が出たら穴 → 内ループ(**loopeng-gherkin**)へ。
-2. **mutation oracle**: spec に機械的ミューテーションを注入し、TLC が検出(killed)するか確認する。
+2. **mutation oracle**: spec に機械的ミューテーションを注入し、TLC が検出(killed)するか確認する。killed は性質違反(とタイムアウト)だけで、構文エラーの mutant は invalid、TLC の実行時エラーで止まった mutant は unverified として別に数える。unverified は意味の通る書き換えで再検査するまで証拠にしない。
 
-**survivor が出たら spec が弱い。** 「kills every mutant」相当になるまで回す。これが「検証器を検証する」上位ループ。
+**survivor が出たら spec が弱い。** 真の survivor が 0 になり、unverified を全件、意味の通る書き換えで再検査し終えるまで回す。oracle の出力文言や終了コードは完了の判定に使わない(equivalent や再検査済みの unverified が残っていても、oracle はそれを知らないため)。これが「検証器を検証する」上位ループ。
 
 > survivor の大半は **equivalent-mutant**(kill 不能)。見分け方・判定手順・打ち切り基準は [`references/mutation-oracle.md`](references/mutation-oracle.md)。「真の安全性 survivor が 0」で打ち切ってよい。
 
@@ -37,5 +38,5 @@ description: >
 ## 次の工程
 
 - 反例が出た → **loopeng-gherkin** で Gherkin へ機械変換し、設計を直して外/中ループへ戻す。
-- `No error` かつ真の survivor 0 → modeler として委譲されていたなら、往復確認の入力ファイルと前件到達の証跡を作り、成果物のパスと状態を報告して終わる。読み手とレビュアーの dispatch はコントローラの仕事。
+- `No error` かつ真の survivor 0、unverified を再検査済み → modeler として委譲されていたなら、往復確認の入力ファイルと前件到達の証跡を作り、成果物のパスと状態を報告して終わる。読み手とレビュアーの dispatch はコントローラの仕事。
 - 往復確認が共有手順の終了条件を満たした → 設計は固まった。loopeng-gherkin で正常系の受け入れシナリオを足す。

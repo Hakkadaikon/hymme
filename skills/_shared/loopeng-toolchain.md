@@ -8,6 +8,7 @@ loopeng-* 各スキルが呼ぶ外部コマンドと駆動装置。未導入な�
   `make -f <このプラグインの loopeng ディレクトリ>/Makefile.loopeng loop-outer SPEC=<Name>` を直接叩いてもよい)。
   Makefile 本体・Python オラクル(`trace_to_gherkin.py`/`tla_mutate_oracle.py` 等)・テンプレートはこのプラグインの
   `loopeng/` 配下に同梱されている。fish 関数を使う場合は `LOOPENG_HOME` をこのプラグインの `loopeng/` へ向ける。
+- 静的検査(`loopeng/bin/tla_lint.sh <spec.tla>`): SANY の構文・意味解析と、`@type:` 注釈がある spec の Apalache 型検査。SANY はエラーでも exit 0 を返すので出力で判定する。`loop-middle` / `loop-inner` は `lint` ターゲットで先に通し、`tlc` / `java ... tlc2.TLC` を直接叩く Bash は静的検査ゲート(`hooks/loopeng-lint-gate.sh`)が通らなければ止める。スクリプトの中から呼ぶ `tlc` は hook から見えないので、oracle は構文エラーの mutant を自前で invalid に分ける。
 - 0 段ゲート(`hooks/loopeng-extract-gate.sh`)はこのプラグインの `hooks/hooks.json` で PreToolUse として配布される。
   プラグインを有効化していれば追加設定なしで効き、subagent(hymme:modeler)の Bash にも効く。台帳は cwd 相対の `tasks/loopeng/` を見るので、worktree 内で回すなら台帳もその worktree に置く。
 - Gherkin ランナー(`cucumber-js` / `godog` 等)と要求トレーサビリティのツールは同梱しない。必要になったプロジェクトで個別に入れる。

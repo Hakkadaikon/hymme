@@ -106,9 +106,11 @@ nix profile install .#skill-tools # または profile にインストール
 nixpkgs には TLA+ と Apalache の公式パッケージが無いため、flake は固定したリリース成果物を取得して JRE でラップする。
 バージョンを上げるときは `flake.nix` の URL とハッシュを揃えて更新する。
 
+TLC を回す前に、`loopeng/bin/tla_lint.sh` で SANY の構文・意味解析と、`@type:` 注釈がある spec の Apalache 型検査を通す。`loop-middle` / `loop-inner` は `lint` ターゲットで自動的に通す。`tlc` を直接叩いた Bash が止められたら、PreToolUse の hook(`hooks/loopeng-lint-gate.sh`)が spec のエラーを見つけている。表示されたエラーを直してから回し直す。
+
 次のものは含めていない(必要になったプロジェクトで個別に入れる)。
 
 - Gherkin ランナー：`cucumber-js`(npm)や `godog`(`go install`)。nixpkgs に無い。
 - 要求のトレーサビリティ用の `doorstop`：`uv pip install doorstop`。
 
-hymme 自体の開発では、`agents/*-reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。
+hymme 自体の開発では、`agents/*-reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)も走らせる。
