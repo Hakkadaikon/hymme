@@ -78,6 +78,12 @@
         touch $out
       '';
 
+      checks.loopeng-lint = pkgs.runCommand "loopeng-lint" { nativeBuildInputs = [ tlaplus apalache pkgs.python3 ]; } ''
+        cp -r ${self} src && chmod -R u+w src
+        bash src/scripts/loopeng-lint.test.sh
+        touch $out
+      '';
+
       devShells.default = pkgs.mkShell {
         buildInputs = tools;
       };
