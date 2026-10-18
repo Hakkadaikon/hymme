@@ -100,7 +100,7 @@
         touch $out
       '';
 
-      checks.loopeng-lint = pkgs.runCommand "loopeng-lint" { nativeBuildInputs = [ tlaplus apalache pkgs.python3 ]; } ''
+      checks.loopeng-lint = pkgs.runCommand "loopeng-lint" { nativeBuildInputs = [ tlaplus apalache pkgs.python3 pkgs.git ]; } ''
         cp -r ${self} src && chmod -R u+w src
         bash src/scripts/loopeng-lint.test.sh
         touch $out

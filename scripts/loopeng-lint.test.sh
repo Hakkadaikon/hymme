@@ -96,4 +96,74 @@ oracle 3 Exc  'invalid: [1-9]'
 # ベースラインが通らない spec では mutation を回さない
 oracle 2 Undef ''
 
+# 並列に回しても、変異ごとの結果と集計は1本ずつ回したときと同じ
+results() { # results <spec> <jobs>: 変異ごとの判定行(並び順込み)と集計行
+  (cd "$tmp" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" "$1.tla" --jobs "$2" --mut-timeout 20 2>&1) |
+    grep -E '^  (killed|SURVIVOR|invalid|UNVERIFIED) |^mutants:' || true
+}
+serial="$(results Good 1)"
+parallel="$(results Good 4)"
+if [ -n "$serial" ] && [ "$serial" = "$parallel" ]; then
+  ok 'oracle --jobs 4 matches --jobs 1'
+else
+  ng 'oracle --jobs 4 differs from --jobs 1'
+  diff <(echo "$serial") <(echo "$parallel") | head -10
+fi
+if [ -e "$tmp/states" ]; then ng 'oracle left a states/ directory next to the spec'; else ok 'oracle keeps TLC scratch out of the spec directory'; fi
+
+# 違反のたびに TLC が書く *_TTrace_* も spec の隣に残さない
+if ls "$tmp"/*_TTrace_* >/dev/null 2>&1; then ng 'oracle left *_TTrace_* files next to the spec'; else ok 'oracle leaves no *_TTrace_* files'; fi
+
+# --since: 変えた行だけに変異を入れる
+mkdir -p "$tmp/since"
+cp "$tmp/Good.tla" "$tmp/Good.cfg" "$tmp/since/"
+g() { git -C "$tmp/since" -c user.email=t@t -c user.name=t "$@"; }
+g init -q
+g add Good.tla Good.cfg
+g commit -q -m base
+since() { # since <want-exit> <want-mutants|-> [説明]: --since HEAD の終了コードと変異の数
+  local got=0 out
+  out="$(cd "$tmp/since" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" Good.tla --since HEAD --mut-timeout 20 2>&1)" || got=$?
+  if [ "$got" -eq "$1" ] && { [ "$2" = - ] || grep -qE "^mutants: $2 " <<<"$out"; }; then
+    ok "oracle --since ${3:-HEAD} -> exit $got, $2 mutants"
+  else
+    ng "oracle --since ${3:-HEAD}: exit $got (want $1), want $2 mutants"
+    grep -E '^mutants:|changed|since|Error|error' <<<"$out" || true
+  fi
+}
+since 0 0 '(no change)'
+# ユーザーの git 設定で色や外部 diff が付いても、変えた行を読める
+g config color.ui always
+# Next の行だけを変える: 4か所に変異が入る。x < 1 の上限は Inv より狭いので、上限を緩める変異は
+# 生き残る(survivor ありの終了コード 1 が正しい)
+sed -i "s/^Next == .*/Next == x < 1 \/\\\\ x' = x + 1/" "$tmp/since/Good.tla"
+since 1 4 '(Next changed, color.ui=always)'
+# 4か所とも Next の行に入っている
+next_ok="$({ cd "$tmp/since" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" Good.tla --since HEAD --mut-timeout 20 2>&1 || true; } |
+  python3 -c 'import re,sys; src=open(sys.argv[1]).read(); lo=src.index("Next =="); hi=src.index("\n",lo)
+offs=[int(m) for m in re.findall(r"^  (?:killed|SURVIVOR|invalid|UNVERIFIED)\s+\S+@(\d+)\s*$", sys.stdin.read(), re.M)]
+print("yes" if len(offs)==4 and all(lo<=o<hi for o in offs) else "no")' "$tmp/since/Good.tla")"
+if [ "$next_ok" = yes ]; then ok 'oracle --since mutates only the Next line'; else ng 'oracle --since mutated outside the Next line'; fi
+# 行を消しただけなら、変異を入れる行は無い
+g checkout -q -- Good.tla
+sed -i '/^Inv == /d' "$tmp/since/Good.tla"
+printf 'INIT Init\nNEXT Next\n' >"$tmp/since/Good.cfg"
+since 0 0 '(a line deleted)'
+g checkout -q -- Good.tla Good.cfg
+# git 管理外の spec は、全行を変えた行として扱う(何も回さずに合格にしない)
+sed 's/MODULE Good/MODULE New/' "$tmp/since/Good.tla" >"$tmp/since/New.tla"
+cp "$tmp/since/Good.cfg" "$tmp/since/New.cfg"
+got=0
+out="$(cd "$tmp/since" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" New.tla --since HEAD --mut-timeout 20 2>&1)" || got=$?
+if grep -qE '^mutants: 5 ' <<<"$out"; then ok 'oracle --since treats an untracked spec as all new'; else ng "oracle --since on an untracked spec: exit $got"; grep -E '^mutants:' <<<"$out" || true; fi
+# リビジョンが無い、git の外: ベースラインを回す前に、専用の終了コード 4 で止める
+bad() { # bad <説明> <dir> <rev>
+  local got=0
+  (cd "$2" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" Good.tla --since "$3" --mut-timeout 20 >/dev/null 2>&1) || got=$?
+  if [ "$got" -eq 4 ]; then ok "oracle --since $1 -> 4"; else ng "oracle --since $1: exit $got (want 4)"; fi
+}
+bad 'with a missing revision' "$tmp/since" no-such-rev
+mkdir -p "$tmp/nogit" && cp "$tmp/Good.tla" "$tmp/Good.cfg" "$tmp/nogit/"
+bad 'outside git' "$tmp/nogit" HEAD
+
 exit "$fail"
