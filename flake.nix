@@ -78,6 +78,12 @@
         touch $out
       '';
 
+      checks.test-design-extract-gate = pkgs.runCommand "test-design-extract-gate" { nativeBuildInputs = [ pkgs.python3 pkgs.git ]; } ''
+        cp -r ${self} src && chmod -R u+w src
+        HOME=$TMPDIR bash src/scripts/test-design-extract-gate.test.sh
+        touch $out
+      '';
+
       checks.loopeng-lint = pkgs.runCommand "loopeng-lint" { nativeBuildInputs = [ tlaplus apalache pkgs.python3 ]; } ''
         cp -r ${self} src && chmod -R u+w src
         bash src/scripts/loopeng-lint.test.sh

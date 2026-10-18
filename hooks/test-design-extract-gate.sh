@@ -6,6 +6,9 @@
 # 残っていれば exit 2 でブロックする。
 # 加えて tasks/loopeng/ に .feature があるのに台帳へ1件も転記されていなければブロックする
 # (loopeng-gherkin の成果物が test-design 側で握りつぶされるのを防ぐ)。
+# 台帳は、書こうとしているファイルが属する git リポジトリの tasks/ から探す(無ければ cwd)。
+# 台帳に「テスト対象: <glob> ...」の行があれば、その台帳は一致するテストファイルにだけ効く。
+# この行が無い台帳は、すべてのテストファイルに効く。
 # PreToolUse(matcher: Write|Edit)。stdin に hook の JSON。
 set -euo pipefail
 
@@ -19,6 +22,27 @@ case "$file_path" in
   *) exit 0 ;;
 esac
 
+# ファイルの属するリポジトリへ移る。まだ無いディレクトリは、存在する祖先から探す。
+abs="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$file_path")"
+dir="$(dirname "$abs")"
+while [ ! -d "$dir" ]; do dir="$(dirname "$dir")"; done
+root="$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null || pwd -P)"
+cd "$root"
+rel="$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1]))' "$abs")"
+
+# in_scope <台帳>: 台帳の「テスト対象:」(全角コロン可)の glob に rel が一致するか。
+# glob はリポジトリのルートからの相対パス。行が無い、またはテンプレートのまま(< を含む)
+# なら未記入として全ファイルを対象にする。
+in_scope() {
+  python3 - "$1" "$rel" <<'PY'
+import fnmatch, re, sys
+ledger, rel = sys.argv[1], sys.argv[2]
+values = [m.group(1) for m in map(re.compile(r"^テスト対象[:：](.*)").match, open(ledger, encoding="utf-8")) if m]
+globs = [g for v in values if "<" not in v for g in v.split()]
+sys.exit(0 if not globs or any(fnmatch.fnmatch(rel, g) for g in globs) else 1)
+PY
+}
+
 ledger_dir="tasks/test-design"
 [ -d "$ledger_dir" ] || exit 0
 
@@ -29,6 +53,7 @@ ledgers="$(find "$ledger_dir" -maxdepth 1 -name '*.md' 2>/dev/null || true)"
 block() { echo "test-design 0段ゲート: $1" >&2; exit 2; }
 
 for ledger in $ledgers; do
+  in_scope "$ledger" || continue
   # 「## 台帳」以降だけを対象にする(テンプレ見出しの例を拾わないため)
   body="$(awk '/^## 台帳/{f=1;next} /^## /{if(f)exit} f' "$ledger")"
   [ -n "$body" ] || continue
