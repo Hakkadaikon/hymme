@@ -48,7 +48,16 @@
           --set JAVA_HOME ${pkgs.jdk}
       '';
 
+      # The loop oracles and lint (loopeng/bin) as commands on PATH, so a
+      # repository can call them without pointing at a versioned plugin cache.
+      loopengTools = pkgs.runCommand "hymme-loopeng-tools" { buildInputs = [ pkgs.python3 pkgs.bashNonInteractive ]; } ''
+        mkdir -p $out/bin
+        install -m 755 ${./loopeng/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps}.py ${./loopeng/bin}/tla_lint.sh $out/bin/
+        patchShebangs $out/bin
+      '';
+
       tools = [
+        loopengTools
         tlaplus
         apalache
         pkgs.gnumake
@@ -62,7 +71,7 @@
     in
     {
       packages = {
-        inherit tlaplus apalache;
+        inherit tlaplus apalache loopengTools;
         # Named `skill-tools` (not `tools`) so it shows a distinct profile entry
         # from dotfiles' own `tools`, which lets `nix profile upgrade skill-tools`
         # target it by name.
@@ -81,6 +90,13 @@
       checks.test-design-extract-gate = pkgs.runCommand "test-design-extract-gate" { nativeBuildInputs = [ pkgs.python3 pkgs.git ]; } ''
         cp -r ${self} src && chmod -R u+w src
         HOME=$TMPDIR bash src/scripts/test-design-extract-gate.test.sh
+        touch $out
+      '';
+
+      # Runs against the whole skill-tools env on purpose: the tools must be on
+      # the PATH a user gets, next to the sany they call.
+      checks.loopeng-tools = pkgs.runCommand "loopeng-tools" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+        bash ${self}/scripts/loopeng-tools.test.sh ${self.packages.${system}.skill-tools}/bin
         touch $out
       '';
 
