@@ -21,6 +21,8 @@ description: >
 - **実装の駆動**: superpowers のワークフロー下では、台帳の `T-ID` 行と `.feature` シナリオから superpowers:writing-plans の各 Task の「Write the failing test」を書き、そのテスト名を台帳の「テスト」列に転記する(`T-xxx` は plan に書かない)。実装は superpowers:subagent-driven-development の implementer(hymme:coder か superpowers 既定)が **REQUIRED SUB-SKILL:** superpowers:test-driven-development で1テストずつ消化する。plan の無い単発タスクなら T-ID リストをそのままテストリストとして hymme:coder に直接渡す。
 - **設計に状態遷移、並行、順序があるとき**: テストで全 interleaving は踏めない。`loop-engineering`(TLA+)で設計をモデル検査し、反例を Gherkin の受け入れシナリオに落としてから、その述語をテストへ移す。
 - **critical なアルゴリズムやセキュリティ性質**: 通常テストより強い保証が要るなら `formal-verification`(Lean 4)で証明し、証明済み述語を property-based test([`../generative-property/SKILL.md`](../generative-property/SKILL.md))の property として叩く。証明は implementer にやらせず、コントローラが hymme:prover を別 dispatch する。
+- **`[~]` の行(設計の直し待ち)**: plan では1つの Task にまとめ、ほかの Task に混ぜない。ほかの行のテストとも、全状態を探索するような広いテストとも共有させない。共有すると、直し待ちの振る舞いまで期待値として固まる。行が `[x]` に戻るまで、その Task を完了にしない。
+- **端から端まで通す Task を早めに置く**: Task をモジュールごとに分けるだけにしない。受け入れシナリオ1本を、フェイクの部品で端から端まで通す Task を早い順番に置く。部品どうしの噛み合わせの誤りを最後まで持ち越さない。
 - 検証ワーカーの並列委譲(SDD 外のみ)は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) の落とし穴に従う。
 
 ## 2. 実行ゲート(自己申告を信用しない)
