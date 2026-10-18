@@ -46,6 +46,11 @@ lint 1 TyBad
 lint 2 Missing
 lint 2 Good "$tmp/nosany"
 lint 2 Typed "$tmp/stub:$PATH"
+# grep が無い PATH では判定できないので、通さずに exit 2
+mkdir -p "$tmp/nogrep"
+for c in bash cat dirname basename tail mktemp rm; do ln -s "$(command -v "$c")" "$tmp/nogrep/$c"; done
+ln -s "$(command -v sany)" "$tmp/nogrep/sany"
+lint 2 Undef "$tmp/nogrep"
 
 gate() { # gate <want-exit> <command> [PATH] [raw-payload]
   local got=0 payload

@@ -13,6 +13,10 @@ set -uo pipefail
 
 spec="${1:-}"
 [ -n "$spec" ] && [ -f "$spec" ] || { echo "tla_lint: no such spec: ${spec:-<none>}" >&2; exit 2; }
+# 判定に使うコマンドが無いと、エラーを見逃して通してしまう。先に確かめる。
+for c in grep dirname basename mktemp tail; do
+  command -v "$c" >/dev/null 2>&1 || { echo "tla_lint: \`$c\` が PATH に無い" >&2; exit 2; }
+done
 dir="$(cd "$(dirname "$spec")" && pwd)"
 base="$(basename "$spec")"
 
