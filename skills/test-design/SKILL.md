@@ -35,7 +35,7 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 
 | 順 | スキル | やること | 出口条件 |
 | --- | --- | --- | --- |
-| 1 | **test-extract** | テストすべき振る舞いを T-ID 採番台帳(`tasks/test-design/<対象名>.md`)へ網羅抽出。レビュー時は既存テストを右側に埋めて両向きに読む | 全 `T-ID` が `[x]`・欠番なし・機械確認の証跡提示 |
+| 1 | **test-extract** | テストすべき振る舞いを T-ID 採番台帳(`tasks/test-design/<対象名>.md`)へ網羅抽出。レビュー時は既存テストを右側に埋めて両向きに読む | 全 `T-ID` が `[x]`(直し待ちの `[~]` は test-extract 手順5の例外)・欠番なし・機械確認の証跡提示 |
 | 2 | **test-catalog** | 各 T-ID に手法を割り当て、その手法の reference だけを開く | 全 T-ID に「手法名 + reference ファイル名」が埋まる |
 | 3 | **test-verify** | plan の Task(SDD implementer の TDD)または hymme:coder へ橋渡し。実行ゲート(superpowers:verification-before-completion + 網羅逆引き・カバレッジ・flaky・mutation)→ 回帰として CI に固定 | 全 T-ID が実行ログの緑に対応し、CI に載る |
 
