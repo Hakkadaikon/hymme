@@ -6,6 +6,7 @@
 #
 # Run from the directory holding your spec, e.g.:
 #   make -f $LOOPENG_HOME/Makefile.loopeng loop-middle SPEC=Counter
+#   make -f $LOOPENG_HOME/Makefile.loopeng loop-middle SPEC=Counter MUT_ARGS="--since HEAD"
 #
 # LOOPENG_HOME / TLA_JAR / APALACHE_BIN come from conf.d/loopeng.fish.
 
@@ -48,9 +49,11 @@ check-spec: lint
 	$(TLC) -deadlock $(TLA)
 
 MUT_TIMEOUT ?= 60
+# Extra oracle flags, e.g. MUT_ARGS="--since HEAD" or MUT_ARGS="--jobs 4".
+MUT_ARGS ?=
 mutate: lint
 	@echo "== mutation oracle: $(TLA) =="
-	@rc=0; python3 $(BIN)/tla_mutate_oracle.py $(TLA) --mut-timeout $(MUT_TIMEOUT) || rc=$$?; \
+	@rc=0; python3 $(BIN)/tla_mutate_oracle.py $(TLA) --mut-timeout $(MUT_TIMEOUT) $(MUT_ARGS) || rc=$$?; \
 	if [ $$rc -eq 3 ]; then echo "WARNING: unverified mutants remain -- re-check them before calling the spec tight"; \
 	elif [ $$rc -ne 0 ]; then exit $$rc; fi
 
