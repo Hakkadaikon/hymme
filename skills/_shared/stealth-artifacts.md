@@ -18,7 +18,7 @@ hymme の3行はいずれも `tasks/todo.md` と同じエリアで作り、`git 
 
 ### worktree と台帳
 
-superpowers は実装を worktree で行う(superpowers:using-git-worktrees)。`tasks/` は git 管理外なので worktree 間を移動しない。規則: **台帳は作業が起きる worktree の `tasks/` に置く**(hook も cwd 相対で `tasks/` を見る)。brainstorming / writing-plans 段(worktree 作成前)で作った台帳は、SDD の Setup で worktree を作った直後にコントローラが `tasks/` ごと worktree へコピーする(`cp -r`、git 外)。コピーしないと worktree 内に台帳が無く、hook は「台帳なし」として素通りするので implementer への安全網が効かない。ブランチを終えて worktree を消すとき、台帳はマージも移動もしない。トレーサビリティは表に出た結果(テスト名・spec の受け入れ条件)に引き継がれて残る。次の作業で台帳が要れば、その worktree で作り直す。
+superpowers は実装を worktree で行う(superpowers:using-git-worktrees)。`tasks/` は git 管理外なので worktree 間を移動しない。規則: **台帳は作業が起きる worktree の `tasks/` に置く**(hook も cwd 相対で `tasks/` を見る)。brainstorming / writing-plans 段(worktree 作成前)で作った台帳は、SDD の Setup で worktree を作った直後にコントローラが `tasks/` ごと worktree へコピーする(`cp -r`、git 外)。コピーしないと worktree 内に台帳が無く、hook は「台帳なし」として素通りするので implementer への安全網が効かない。worktree の担当へ渡す指示が参照する設計文書も、worktree の中から読めるもの(コミット済みか、`tasks/` ごとコピーしたもの)に限る。ブランチを終えて worktree を消すとき、台帳はマージも移動もしない。トレーサビリティは表に出た結果(テスト名・spec の受け入れ条件)に引き継がれて残る。次の作業で台帳が要れば、その worktree で作り直す。
 
 ## git 管理下ドキュメントに手法の存在を書かない(loop-engineering 系 / formal-verification)
 

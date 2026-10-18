@@ -43,6 +43,8 @@ IaC は厳密であってほしいので**動的側面は積極的に**このル
 
 両方 yes を通った要件だけ工程へ進む。導入・学習コストは判断材料に入れない。**判断材料はあくまで上の2問。**
 
+工程へ進むと決めたら、外部ライブラリやブラウザなど実物の振る舞いに頼る前提を、形式化を深める前に小さな spike で確かめる。崩れると spec と台帳の一部がやり直しになる。
+
 ## superpowers ワークフロー上の位置
 
 - **入口は superpowers:brainstorming の Architectural パス。** アプローチを選び設計セクションの承認を得た後、spec(`docs/superpowers/specs/`)を書き上げる**前**に2問ゲートを掛ける。yes/yes なら 0→3 段をここで回し、固めた設計と正常系シナリオを spec の要件・受け入れ条件に**手法名なしで**書く(「TLA+ で検証した」とは書かない。[`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。これは設計の検証であって実装行為ではなく、成果物は git 管理外の `tasks/loopeng/` にしか置かない。Bounded パスの途中で2問ゲートが yes/yes になったら、それは brainstorming の言う隠れた複雑さであり、パスを Architectural に上げる。
