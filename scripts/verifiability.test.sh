@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # verifiability.py(検証容易性の指標)と hooks/verifiability-gate.sh の回帰テスト。
 # 要: lizard を import できる python3 が PATH にあること(flake の checks が用意する)。
+# hook に渡すコマンド文字列は $ や ` をそのまま含めるため、シングルクォートで書く
+# shellcheck disable=SC2016
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -9,9 +11,18 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
-ok() { echo "ok   $1"; }
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    ok) printf '合格   %s\n' "$2" ;;
+    ng) printf '不合格 %s\n' "$2" ;;
+    exit) printf '%s: exit %s(期待 %s)' "$2" "$3" "$4" ;;
+    lacks) printf "%s: 出力に '%s' が無い" "$2" "$3" ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+ok() { msg ok "$1"; }
 ng() {
-  echo "FAIL $1"
+  msg ng "$1"
   fail=1
 }
 
@@ -268,10 +279,10 @@ run() { # run <want-exit> <ledger> [want-substring]
   local got=0
   (cd "$tmp" && python3 "$root/loopeng/bin/verifiability.py" "tasks/verifiability/$2.md") >"$tmp/out" 2>&1 || got=$?
   if [ "$got" -ne "$1" ]; then
-    ng "$2: exit $got (want $1)"
+    ng "$(msg exit "$2" "$got" "$1")"
     cat "$tmp/out"
   elif [ -n "${3:-}" ] && ! grep -qF -- "$3" "$tmp/out"; then
-    ng "$2: output lacks '$3'"
+    ng "$(msg lacks "$2" "$3")"
     cat "$tmp/out"
   else
     ok "$2 -> $got${3:+ ($3)}"
@@ -282,26 +293,26 @@ cp "$tmp/tasks/verifiability/Good.md" "$tmp/tasks/verifiability/NoReview.md"
 sed -i.bak 's/- \[x\] レビュー合格/- [ ] レビュー合格/' "$tmp/tasks/verifiability/NoReview.md"
 printf '# 検証容易性台帳: NoCodeNoReview\n\n## 対象\n\n対象コード無し: 設計のみ\n' >"$tmp/tasks/verifiability/NoCodeNoReview.md"
 
-run 0 Good "PASS"
+run 0 Good "合格"
 run 1 Ccn "CCN 11 > 10"
 run 1 Nloc "> 50"
 run 1 Args "引数 6 > 5"
-run 0 ArgsOk "PASS src/rules.py::A.check"
-run 0 Suffix "PASS src/rules.py::ok"
+run 0 ArgsOk "合格 src/rules.py::A.check"
+run 0 Suffix "合格 src/rules.py::ok"
 run 2 Ambiguous "Class.method"
-run 1 Method "module-level CACHE"
-run 1 Method "エラーを真偽値に畳む: line"
-run 1 JsFold "catch/recover returns a bool"
+run 1 Method "モジュール変数 CACHE"
+run 1 Method "エラーを真偽値に畳む: 96 行目"
+run 1 JsFold "catch/recover が真偽値を返す"
 run 1 Kotlin ".kt は測れない"
 run 0 KotlinWaived "例外"
-run 1 WaiveOther "FAIL src/rules.py::stamped"
+run 1 WaiveOther "不合格 src/rules.py::stamped"
 run 1 WaiveWrongMetric "CCN 12 > 10"
 run 2 UnknownMetric "速度"
 run 2 NoFile "ファイルが無い"
 run 2 NoSection "## 対象"
-run 1 Alias "imported t"
+run 1 Alias "import した t"
 run 1 SelfFn "引数 6 > 5"
-run 0 JavaDot "PASS src/Rules.java::Rules.check"
+run 0 JavaDot "合格 src/Rules.java::Rules.check"
 run 2 Outside "相対パス"
 run 2 DotDot "相対パス"
 run 2 Symlink "相対パス"
@@ -322,7 +333,7 @@ gate() { # gate <want-exit> <command> [cwd]
   printf '{"tool_input":{"command":%s}}' "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$2")" |
     (cd "${3:-$tmp}" && PATH="$tmp/bin:$PATH" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
   if [ "$got" -eq "$1" ]; then ok "gate '$2' -> $got"; else
-    ng "gate '$2': exit $got (want $1)"
+    ng "$(msg exit "gate '$2'" "$got" "$1")"
     cat "$tmp/gate.out"
   fi
 }
@@ -443,8 +454,8 @@ gate 0 'loop-middle SPEC=NoCodeTmpl'
 # hook 入力の cwd を作業ディレクトリとして使う
 got=0
 printf '{"cwd":"%s","tool_input":{"command":"lake build"}}' "$tmp/tasks/fv/Fold" | (cd / && PATH="$tmp/bin:$PATH" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-if [ "$got" -eq 2 ]; then ok "gate uses the payload cwd"; else
-  ng "payload cwd: exit $got"
+if [ "$got" -eq 2 ]; then ok "gate は入力の cwd を使う"; else
+  ng "$(msg exit "入力の cwd" "$got" 2)"
   cat "$tmp/gate.out"
 fi
 gate 0 'echo loop-middle SPEC=Ccn'
@@ -456,15 +467,15 @@ mkdir -p "$tmp/nobin"
 for c in bash cat grep awk sed head cut dirname basename python3; do ln -s "$(command -v "$c")" "$tmp/nobin/$c"; done
 got=0
 printf '{"tool_input":{"command":"loop-middle SPEC=Good"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-if [ "$got" -eq 2 ] && grep -q 'verifiability.py' "$tmp/gate.out"; then ok "gate blocks without verifiability.py"; else
-  ng "gate without tool: exit $got"
+if [ "$got" -eq 2 ] && grep -q 'verifiability.py' "$tmp/gate.out"; then ok "verifiability.py が無ければ gate は止める"; else
+  ng "$(msg exit "道具なしの gate" "$got" 2)"
   cat "$tmp/gate.out"
 fi
 # 写すコードが無い台帳は、計測の道具が無くても通す
 got=0
 printf '{"tool_input":{"command":"loop-middle SPEC=NoCodeNoReview"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-if [ "$got" -eq 0 ]; then ok "no-code ledger passes without verifiability.py"; else
-  ng "no-code without tool: exit $got"
+if [ "$got" -eq 0 ]; then ok "対象コード無しの台帳は verifiability.py が無くても通す"; else
+  ng "$(msg exit "道具なしの対象コード無し" "$got" 0)"
   cat "$tmp/gate.out"
 fi
 # 作業中のリポジトリに json.py があっても hook はそれを読み込まない
@@ -476,15 +487,16 @@ rm "$tmp/json.py"
 mkdir -p "$tmp/nopy"
 for c in bash cat grep awk sed head cut dirname basename; do ln -s "$(command -v "$c")" "$tmp/nopy/$c"; done
 for c in "2 loop-middle SPEC=Good" "0 ls -la"; do
-  set -- $c
+  read -ra words <<<"$c"
+  set -- "${words[@]}"
   got=0
   printf '{"tool_input":{"command":"%s"}}' "${*:2}" | (cd "$tmp" && PATH="$tmp/nopy" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ]; then ok "no python3: '${*:2}' -> $got"; else
-    ng "no python3 '${*:2}': exit $got (want $1)"
+  if [ "$got" -eq "$1" ]; then ok "python3 なし: '${*:2}' -> $got"; else
+    ng "$(msg exit "python3 なし '${*:2}'" "$got" "$1")"
     cat "$tmp/gate.out"
   fi
 done
 
-python3 loopeng/bin/verifiability.py --selfcheck >/dev/null && ok "--selfcheck" || ng "--selfcheck"
+if python3 loopeng/bin/verifiability.py --selfcheck >/dev/null; then ok "--selfcheck"; else ng "--selfcheck"; fi
 
 exit "$fail"

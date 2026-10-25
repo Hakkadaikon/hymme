@@ -17,6 +17,25 @@ import re
 import shlex
 import sys
 
+# BLOCK の理由文(verifiability-gate.sh がそのまま表示する)。hook は python3 -I で動くので表はこのファイルに置く
+MESSAGES = {
+    "var_name": "名前 {name!r} は変数で、実行前には決まらない。名前を直接書く",
+    "bad_name": "名前 {name!r} に使えない文字がある(英数字と _ だけにする)",
+    "bad_quote": "コマンドのクォートを読めない",
+    "python_heredoc": "python に流した heredoc の中の検証の入口は読めない。入口のコマンドを直接実行する",
+    "python_c": "python3 -c の中から検証の入口を呼んでいる。入口のコマンドを直接実行する",
+    "python_stdin": "python の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する",
+    "shell_stdin": "{base} の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する",
+    "hidden": "{base} の中の検証の入口は読めない。入口のコマンドを直接実行する",
+    "var_cd": "変数を含む cd の先は決まらないので、lake build の台帳を特定できない。パスを直接書く",
+}
+
+
+def msg(code, **kw):
+    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    return MESSAGES[code].format(**kw)
+
+
 LOOP = re.compile(r"loop-(outer|middle|inner)")
 # an entry point as it would be run, not merely mentioned (git commit -m "... lake ..." is text)
 RUNS_ENTRY = re.compile(
@@ -92,9 +111,9 @@ class Gate:
         if re.fullmatch(r"[A-Za-z0-9_]+", name):
             self.lines.append(f"OK\t{root}\t{name}\t{entry}")
         elif "$" in name:
-            self.block(f"名前 {name!r} は変数で、実行前には決まらない。名前を直接書く")
+            self.block(msg("var_name", name=name))
         else:
-            self.block(f"名前 {name!r} に使えない文字がある(英数字と _ だけにする)")
+            self.block(msg("bad_name", name=name))
 
     def block(self, why):
         self.lines.append(f"BLOCK\t{why}")
@@ -114,7 +133,7 @@ class Gate:
                     seg.append(tok)
         except ValueError:
             if RUNS_ENTRY.search(text):
-                self.block("コマンドのクォートを読めない")
+                self.block(msg("bad_quote"))
             return
         if seg:
             yield op, seg
@@ -136,7 +155,7 @@ class Gate:
             if FEEDS_SHELL.search(opening) and depth < 4:
                 self.parse(body, cwd, dict(env), depth + 1)
             elif FEEDS_PYTHON.search(opening) and (RUNS_ENTRY.search(body) or LOOP.search(body)):
-                self.block("python に流した heredoc の中の検証の入口は読めない。入口のコマンドを直接実行する")
+                self.block(msg("python_heredoc"))
             elif not m.group("q") and depth < 4:  # an unquoted heredoc still expands $(…) and `…`
                 for _, _, sub in substitutions(body, quotes=False):
                     self.parse(sub, cwd, dict(env), depth + 1)
@@ -197,7 +216,7 @@ class Gate:
                         opt, rest = rest[0], rest[1:]
                         if opt == "-c":
                             if RUNS_ENTRY.search(" ".join(rest[:1])) or LOOP.search(" ".join(rest[:1])):
-                                self.block("python3 -c の中から検証の入口を呼んでいる。入口のコマンドを直接実行する")
+                                self.block(msg("python_c"))
                             rest, inline = [], True
                             break
                         if opt == "-m":
@@ -207,7 +226,7 @@ class Gate:
                             rest = rest[1:]
                     # python reading its stdin (… | python3, python3 -): the script is not visible here
                     if not inline and rest[:1] in ([], ["-"]) and (RUNS_ENTRY.search(feed) or LOOP.search(feed)):
-                        self.block("python の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する")
+                        self.block(msg("python_stdin"))
                     toks = rest
                 elif base in SHELLS:
                     rest = toks[1:]
@@ -222,11 +241,11 @@ class Gate:
                         RUNS_ENTRY.search(feed) or LOOP.search(feed)
                     ):
                         # a shell reading its stdin (echo … | bash): the script is not visible here
-                        self.block(f"{base} の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する")
+                        self.block(msg("shell_stdin", base=base))
                     toks = []
                 elif base in ("eval", "xargs", "parallel", "watch"):
                     if RUNS_ENTRY.search(raw) or LOOP.search(raw):
-                        self.block(f"{base} の中の検証の入口は読めない。入口のコマンドを直接実行する")
+                        self.block(msg("hidden", base=base))
                     toks = []
                 else:
                     break
@@ -279,7 +298,7 @@ class Gate:
                 while known != "/" and not os.path.isdir(os.path.join(known, "tasks", "fv")):
                     known = os.path.dirname(known)
                 if os.path.isdir(os.path.join(known, "tasks", "fv")):  # this repository verifies under tasks/fv
-                    self.block("変数を含む cd の先は決まらないので、lake build の台帳を特定できない。パスを直接書く")
+                    self.block(msg("var_cd"))
                 return
             here = cwd
             for i, a in enumerate(args):

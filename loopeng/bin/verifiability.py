@@ -37,6 +37,42 @@ from pathlib import Path
 
 import lizard
 
+MESSAGES = {
+    "usage": "使い方: verifiability.py <台帳.md>  (台帳の中のパスは cwd からの相対)\n"
+    "       verifiability.py --selfcheck\n"
+    "exit: 0 全対象が合格か例外、1 指標が不合格、2 台帳の誤り(節が無い、関数が無い、例外に理由が無い)",
+    "no_section": "{path}: 「## 対象」節が無い",
+    "no_targets": "{path}: 「## 対象」に `- path::function` も「対象コード無し: 理由」も無い",
+    "bad_metric": "例外 {target}: 指標 {metric!r} は {metrics} のどれでもない",
+    "no_reason": "例外 {target} {metric}: 理由が無い",
+    "no_function": "{path}: 関数 {name} が見つからない",
+    "ambiguous": "{path}: {name} が複数ある({hits})。Class.method の形で指定する"
+    "(Go の型違いの同名メソッドとオーバーロードは区別できないので、判定を別名の関数に切り出す)",
+    "no_file": "{path}: ファイルが無い",
+    "bad_path": "{path}: リポジトリ直下からの相対パスで、その配下の通常ファイルを書く",
+    "unmeasurable": "{suffix} は測れない(モデル側でどう扱うかを例外に書き、目で確かめる)",
+    "no_suffix": "拡張子なし",
+    "module_var": "モジュール変数 {name}",
+    "imported": "import した {name}",
+    "line": "{no} 行目",
+    "catch_bool": "catch/recover が真偽値を返す",
+    "over_limit": "{metric} {value} > {limit}",
+    "finding": "{metric}: {items}",
+    "waived": "{problem} (例外: {reason})",
+    "result": "{verdict} {target}  [CCN {ccn}, NLOC {nloc}, 引数 {args}]",
+    "pass": "合格",
+    "fail": "不合格",
+    "no_code": "合格 対象コード無し: {reason}",
+    "error": "エラー: {error}",
+    "selfcheck_ok": "自己検査 合格",
+}
+
+
+def msg(code, **kw):
+    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    return MESSAGES[code].format(**kw)
+
+
 LIMITS = {"CCN": 10, "NLOC": 50, "引数": 5}
 SIDE = "副作用"
 FOLD = "エラーを真偽値に畳む"
@@ -64,7 +100,8 @@ SIDE_PATTERNS = {
     r"\bDate\.now\b|\bnew Date\s*\(|\bMath\.random\b",
     ".go": r"\b(os|io|ioutil|net|http|log|fmt|rand|syscall)\.|\btime\.(Now|Since|Sleep)\b",
     ".rs": r"\b(std::(fs|io|net|env|process|time)|println!|eprintln!|rand::|SystemTime::now|Instant::now)",
-    ".java": r"\bSystem\.(out|err|currentTimeMillis|nanoTime|getenv)\b|\bnew (File|Random|Socket)\b|\bLocalDateTime\.now\b",
+    ".java": r"\bSystem\.(out|err|currentTimeMillis|nanoTime|getenv)\b|\bnew (File|Random|Socket)\b|"
+    r"\bLocalDateTime\.now\b",
 }
 SIDE_PATTERNS[".ts"] = SIDE_PATTERNS[".tsx"] = SIDE_PATTERNS[".jsx"] = SIDE_PATTERNS[".js"]
 FOLD_PATTERN = (
@@ -86,13 +123,13 @@ def read_ledger(path):
     text = Path(path).read_text()
     targets = section(text, "対象")
     if targets is None:
-        raise LedgerError(f"{path}: 「## 対象」節が無い")
+        raise LedgerError(msg("no_section", path=path))
     no_code = re.search(r"^対象コード無し(?:\(実装後\))?[:：]\s*(\S.*)$", targets, re.M)
     items = re.findall(r"^- (\S+?)::(\S+)", targets, re.M)
     if no_code and not items:
         return "no-code", no_code.group(1), {}
     if not items:
-        raise LedgerError(f"{path}: 「## 対象」に `- path::function` も「対象コード無し: 理由」も無い")
+        raise LedgerError(msg("no_targets", path=path))
     waivers = {}
     for line in (section(text, "例外") or "").splitlines():
         m = re.match(r"^- (\S+?::\S+)\s+(\S+?)[:：]\s*(.*)$", line)
@@ -100,9 +137,9 @@ def read_ledger(path):
             continue
         target, metric, reason = m.groups()
         if metric not in METRICS:
-            raise LedgerError(f"例外 {target}: 指標 {metric!r} は {', '.join(METRICS)} のどれでもない")
+            raise LedgerError(msg("bad_metric", target=target, metric=metric, metrics=", ".join(METRICS)))
         if not reason.strip():
-            raise LedgerError(f"例外 {target} {metric}: 理由が無い")
+            raise LedgerError(msg("no_reason", target=target, metric=metric))
         waivers[(target, metric)] = reason.strip()
     return "targets", items, waivers
 
@@ -124,12 +161,9 @@ def find_function(path, name):
         want = name.replace(".", "::")
         hits = [f for f in info.function_list if f.name in (name, want) or re.split(r"\.|::", f.name)[-1] == name]
     if not hits:
-        raise LedgerError(f"{path}: 関数 {name} が見つからない")
+        raise LedgerError(msg("no_function", path=path, name=name))
     if len(hits) > 1:
-        raise LedgerError(
-            f"{path}: {name} が複数ある({', '.join(f.name for f in hits)})。Class.method の形で指定する"
-            "(Go の型違いの同名メソッドとオーバーロードは区別できないので、判定を別名の関数に切り出す)"
-        )
+        raise LedgerError(msg("ambiguous", path=path, name=name, hits=", ".join(f.name for f in hits)))
     return hits[0]
 
 
@@ -168,9 +202,10 @@ def python_findings(tree, start_line):
     params = {x.arg for x in a.posonlyargs + a.args + a.kwonlyargs + [a.vararg, a.kwarg] if x}
     assigned = {n.id for n in ast.walk(func) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
     used = {n.id for n in ast.walk(func) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)} - params - assigned
-    side = [f"module-level {n}" for n in sorted(used & mutable)] + [f"imported {n}" for n in sorted(used & imported)]
+    side = [msg("module_var", name=n) for n in sorted(used & mutable)]
+    side += [msg("imported", name=n) for n in sorted(used & imported)]
     fold = [
-        f"line {h.lineno}"
+        msg("line", no=h.lineno)
         for h in ast.walk(func)
         if isinstance(h, ast.ExceptHandler)
         and any(
@@ -192,11 +227,11 @@ def is_method(source, line):
 def measure(path, name):
     path = Path(path)
     if not path.exists():
-        raise LedgerError(f"{path}: ファイルが無い")
+        raise LedgerError(msg("no_file", path=path))
     # the hook runs this on any ledger; keep it to regular files under the ledger's root (no /dev/zero, no ..)
     root = Path.cwd().resolve()
     if path.is_absolute() or root not in path.resolve().parents or not path.resolve().is_file():
-        raise LedgerError(f"{path}: リポジトリ直下からの相対パスで、その配下の通常ファイルを書く")
+        raise LedgerError(msg("bad_path", path=path))
     f = find_function(path, name)
     source = path.read_text()
     body = "\n".join(source.splitlines()[f.start_line - 1 : f.end_line])
@@ -205,10 +240,10 @@ def measure(path, name):
         params = params[1:]
     m = {"CCN": f.cyclomatic_complexity, "NLOC": f.nloc, "引数": len(params)}
     if path.suffix not in SIDE_PATTERNS:
-        unmeasured = [f"{path.suffix or '拡張子なし'} は測れない(モデル側でどう扱うかを例外に書き、目で確かめる)"]
+        unmeasured = [msg("unmeasurable", suffix=path.suffix or msg("no_suffix"))]
         return {**m, SIDE: unmeasured, FOLD: unmeasured}
     side = sorted(set(x.group(0).strip() for x in re.finditer(SIDE_PATTERNS[path.suffix], body)))
-    fold = ["catch/recover returns a bool"] if path.suffix != ".py" and re.search(FOLD_PATTERN, body) else []
+    fold = [msg("catch_bool")] if path.suffix != ".py" and re.search(FOLD_PATTERN, body) else []
     if path.suffix == ".py":
         pside, pfold = python_findings(ast.parse(source), f.start_line)
         side += pside
@@ -225,34 +260,35 @@ def evaluate(items, waivers):
         problems = []
         for k, limit in LIMITS.items():
             if m[k] > limit:
-                problems.append((k, f"{k} {m[k]} > {limit}"))
-        if m[SIDE]:
-            problems.append((SIDE, f"{SIDE}: {', '.join(m[SIDE])}"))
-        if m[FOLD]:
-            problems.append((FOLD, f"{FOLD}: {', '.join(m[FOLD])}"))
-        open_problems = [(k, msg) for k, msg in problems if (target, k) not in waivers]
-        waived = [f"{msg} (例外: {waivers[(target, k)]})" for k, msg in problems if (target, k) in waivers]
-        verdict = "FAIL" if open_problems else "PASS"
+                problems.append((k, msg("over_limit", metric=k, value=m[k], limit=limit)))
+        for k in (SIDE, FOLD):
+            if m[k]:
+                problems.append((k, msg("finding", metric=k, items=", ".join(m[k]))))
+        open_problems = [(k, p) for k, p in problems if (target, k) not in waivers]
+        waived = [msg("waived", problem=p, reason=waivers[(target, k)]) for k, p in problems if (target, k) in waivers]
+        verdict = msg("fail") if open_problems else msg("pass")
         failed |= bool(open_problems)
-        summary = f"CCN {m['CCN']}, NLOC {m['NLOC']}, 引数 {m['引数']}"
-        lines.append(f"{verdict} {target}  [{summary}]")
-        lines += [f"    {msg}" for _, msg in open_problems] + [f"    {w}" for w in waived]
+        lines.append(msg("result", verdict=verdict, target=target, ccn=m["CCN"], nloc=m["NLOC"], args=m["引数"]))
+        lines += [f"    {p}" for _, p in open_problems] + [f"    {w}" for w in waived]
     return (1 if failed else 0), lines
 
 
 def _selfcheck():
     """assert-based check of the ledger parser and the Python findings. Run: --selfcheck"""
     src = "S = {}\ndef f(x):\n    try:\n        return x in S\n    except KeyError:\n        return False\n"
-    assert python_findings(ast.parse(src), 2) == (["module-level S"], ["line 5"]), python_findings(ast.parse(src), 2)
+    assert python_findings(ast.parse(src), 2) == (["モジュール変数 S"], ["5 行目"]), python_findings(ast.parse(src), 2)
     assert python_findings(ast.parse("def g(S):\n    return S\n"), 1) == ([], [])
-    src = "import re\nfrom time import time as now\nP = re.compile('x')\nC: dict = {}\ndef h(x):\n    return P.match(x) and now() in C\n"
-    assert python_findings(ast.parse(src), 5) == (["module-level C", "imported now"], []), python_findings(
+    src = (
+        "import re\nfrom time import time as now\nP = re.compile('x')\nC: dict = {}\n"
+        "def h(x):\n    return P.match(x) and now() in C\n"
+    )
+    assert python_findings(ast.parse(src), 5) == (["モジュール変数 C", "import した now"], []), python_findings(
         ast.parse(src), 5
     )
     src = "import time as t\nS = {}\ndef k(x, /):\n    S = set()\n    return x in S and t.time()\n"
-    assert python_findings(ast.parse(src), 3) == (["imported t"], []), python_findings(ast.parse(src), 3)
+    assert python_findings(ast.parse(src), 3) == (["import した t"], []), python_findings(ast.parse(src), 3)
     assert section("## 対象\n- a::b\n## 例外\n", "対象").strip() == "- a::b"
-    print("selfcheck OK")
+    print(msg("selfcheck_ok"))
 
 
 def main():
@@ -260,16 +296,16 @@ def main():
         _selfcheck()
         return 0
     if len(sys.argv) != 2:
-        print(__doc__, file=sys.stderr)
+        print(msg("usage"), file=sys.stderr)
         return 2
     try:
         kind, items, waivers = read_ledger(sys.argv[1])
         if kind == "no-code":
-            print(f"PASS 対象コード無し: {items}")
+            print(msg("no_code", reason=items))
             return 0
         code, lines = evaluate(items, waivers)
     except (LedgerError, OSError, SyntaxError) as e:
-        print(f"ERROR: {e}", file=sys.stderr)
+        print(msg("error", error=e), file=sys.stderr)
         return 2
     print("\n".join(lines))
     return code
