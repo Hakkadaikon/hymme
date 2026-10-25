@@ -12,6 +12,9 @@
 # PreToolUse(matcher: Write|Edit)。stdin に hook の JSON。
 set -euo pipefail
 
+# 途中で cd しても切り出した .py を見失わないよう、hook の置き場所を先に絶対パスにする
+here="$(cd "$(dirname "$0")" && pwd)"
+
 payload="$(cat)"
 file_path="$(printf '%s' "$payload" | python3 -I -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null || true)"
 [ -n "$file_path" ] || exit 0
@@ -34,13 +37,7 @@ rel="$(python3 -I -c 'import os,sys; print(os.path.relpath(sys.argv[1]))' "$abs"
 # glob はリポジトリのルートからの相対パス。行が無い、またはテンプレートのまま(< を含む)
 # なら未記入として全ファイルを対象にする。
 in_scope() {
-  python3 -I - "$1" "$rel" <<'PY'
-import fnmatch, re, sys
-ledger, rel = sys.argv[1], sys.argv[2]
-values = [m.group(1) for m in map(re.compile(r"^テスト対象[:：](.*)").match, open(ledger, encoding="utf-8")) if m]
-globs = [g for v in values if "<" not in v for g in v.split()]
-sys.exit(0 if not globs or any(fnmatch.fnmatch(rel, g) for g in globs) else 1)
-PY
+  python3 -I "$here/ledger_covers.py" "$1" "$rel"
 }
 
 ledger_dir="tasks/test-design"
