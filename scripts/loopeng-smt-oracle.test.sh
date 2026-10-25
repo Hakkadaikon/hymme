@@ -8,9 +8,18 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
-ok() { echo "ok   $1"; }
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    ok) printf '合格   %s\n' "$2" ;;
+    ng) printf '不合格 %s\n' "$2" ;;
+    exit_ne) printf '%s: exit %s(期待 %s)\n' "$2" "$3" "$4" ;;
+    lacks) printf "%s: 出力に '%s' が無い\n" "$2" "$3" ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+ok() { msg ok "$1"; }
 ng() {
-  echo "FAIL $1"
+  msg ng "$1"
   fail=1
 }
 
@@ -53,10 +62,10 @@ run() { # run <want-exit> <model> [want-substring]
   local got=0
   python3 loopeng/bin/smt_oracle.py "$tmp/$2.py" >"$tmp/out" 2>&1 || got=$?
   if [ "$got" -ne "$1" ]; then
-    ng "$2: exit $got (want $1)"
+    ng "$(msg exit_ne "$2" "$got" "$1")"
     cat "$tmp/out"
   elif [ -n "${3:-}" ] && ! grep -qF -- "$3" "$tmp/out"; then
-    ng "$2: output lacks '$3'"
+    ng "$(msg lacks "$2" "$3")"
     cat "$tmp/out"
   else
     ok "$2 -> $got${3:+ ($3)}"
@@ -64,30 +73,37 @@ run() { # run <want-exit> <model> [want-substring]
 }
 
 run 0 good "ClampInRange: HOLDS"
+run 0 good "壊した版は捕まった"
 run 1 wrong "x = -"
-run 1 unguarded "not load-bearing"
-run 1 nobroken "no broken variant"
+run 1 wrong "期待は HOLDS"
+run 1 unguarded "効いていない"
+run 1 nobroken "壊した版が無い"
 run 0 alive "x = 19"
 run 1 dead "HOLDS"
 run 2 badexpect "MAYBE"
 run 2 crash "model blew up"
 run 1 mixed "Ok: HOLDS"
 run 1 mixed "Bad: VIOLATED"
-run 2 nokey "needs name, expect and claim"
-run 2 empty "nothing to check"
-run 2 pybool "z3 Bool expression"
+run 2 nokey "name・expect・claim が要る"
+run 2 empty "検査する性質を1件も返さない"
+run 2 pybool "z3 の Bool 式"
 run_t() { # run_t <want-exit> <model> <want-substring>  (Z3 を 200ms で打ち切る: 線形の性質は解け、非線形は決めきれない)
   local got=0
   python3 loopeng/bin/smt_oracle.py --timeout 200 "$tmp/$2.py" >"$tmp/out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ] && grep -qF -- "$3" "$tmp/out"; then ok "$2 -> $got ($3)"; else
-    ng "$2: exit $got (want $1)"
+  if [ "$got" -ne "$1" ]; then
+    ng "$(msg exit_ne "$2" "$got" "$1")"
     cat "$tmp/out"
+  elif ! grep -qF -- "$3" "$tmp/out"; then
+    ng "$(msg lacks "$2" "$3")"
+    cat "$tmp/out"
+  else
+    ok "$2 -> $got ($3)"
   fi
 }
 run_t 3 unknown "UNKNOWN"
 run_t 1 unknownmixed "Bad: VIOLATED"
-run_t 1 brokenunknown "not load-bearing"
+run_t 1 brokenunknown "効いていない"
 
-python3 loopeng/bin/smt_oracle.py --selfcheck >/dev/null && ok "--selfcheck" || ng "--selfcheck"
+if python3 loopeng/bin/smt_oracle.py --selfcheck >/dev/null; then ok "--selfcheck"; else ng "--selfcheck"; fi
 
 exit "$fail"

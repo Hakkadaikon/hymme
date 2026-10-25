@@ -15,7 +15,7 @@ spec に機械的ミューテーション(`<`→`\leq`、`=`→`#`、`/\`→`\/`
 - `invalid`: 構文・意味エラーで TLC が spec を読めなかった。何も検査していないので、killed にも survivor にも数えない。
 - `UNVERIFIED`: TLC の実行時エラー(`Successor state is not completely specified`、例外)で止まった。`x' = c` を `x' # c` にした変異で多い。性質が区別したかは分からないので、意味の通る書き換えで再検査する(下の「意味の通る書き換えで再検査する」)。
 
-末尾の要約行は `mutants / killed / survivors / unverified / invalid` を並べる。終了コードは survivor ありで 1、ベースラインが通らないと 2、survivor が 0 でも unverified が残るか killed が 0 件(何も検査していない)だと 3 になる。`--since` で変えた行に変異の入る箇所が無ければ 0、`--since` の変更を読めない(git の外、リビジョンが無い)ときは、ベースラインを回す前に 4 で止まる。`loop-middle` は 3 を警告として表示して先へ進む。unverified が残っていれば「tight」とは報告しない。
+末尾の要約行は `mutants / killed / survivors / unverified / invalid` を並べる。終了コードは survivor ありで 1、ベースラインが通らないと 2、survivor が 0 でも unverified が残るか killed が 0 件(何も検査していない)だと 3 になる。`--since` で変えた行に変異の入る箇所が無ければ 0、`--since` の変更を読めない(git の外、リビジョンが無い)ときは、ベースラインを回す前に 4 で止まる。`loop-middle` は 3 を警告として表示して先へ進む。unverified が残っていれば「締まっている(tight)」とは報告しない。要約行の項目名と変異ごとの判定語(`killed` など)は、テストと文書が目印として読むので英語のまま出る。
 
 ## 速さ: 並列と差分
 

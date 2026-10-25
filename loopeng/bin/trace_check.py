@@ -58,6 +58,44 @@ CFG_KEYWORDS = {
     "ALIAS",
 }
 
+MESSAGES = {
+    "description": "実システムのログ(JSONL)が TLA+ spec の許す振る舞いかを TLC で判定する",
+    "help_help": "この使い方を表示して終わる",
+    "help_spec": "判定に使う spec(.tla)",
+    "help_log": "観測状態を1行に1つ並べたログ(.jsonl)",
+    "help_cfg": "CONSTANT の値を持つ TLC の設定(既定: <spec>.cfg)",
+    "help_timeout": "TLC を打ち切る秒数(既定: 600)",
+    "help_all": "各ステップを独立に判定し、不一致を全件出す",
+    "control_char": "文字列 {v!r} は TLA+ の文字列で表せない制御文字を含む",
+    "bad_field": "レコードのフィールド {k!r} が TLA+ の識別子でない",
+    "no_tla_form": "{v!r} に対応する TLA+ の値が無い(浮動小数と null は表せない)",
+    "not_json": "{no} 行目: JSON でない({err})",
+    "not_object": "{no} 行目: 変数を並べた JSON オブジェクトでない",
+    "no_states": "ログに状態が無い",
+    "unknown_vars": "{name} の変数でない: {unknown}(spec の変数: {variables})",
+    "all_partial": (
+        "--all は全行に全変数が要る({variables})。{no} 行目に欠けがある。--all を外せば見えない変数を spec に選ばせる"
+    ),
+    "no_tlc": "tlc が PATH に無い(hymme の skill-tools を入れる)",
+    "timeout": "TLC が {timeout} 秒で終わらなかった。ログを短くするか、観測する変数を増やす",
+    "tlc_failed": "生成した trace spec で TLC が失敗した:\n{tail}",
+    "mismatch_init": "不一致: {no} 行目は {name} の初期状態ではない",
+    "mismatch_step": "不一致: {no} 行目は {pno} 行目の後に {name} が許す遷移ではない",
+    "state_line": "  {no} 行目: {obj}",
+    "mismatch_count": "{states} 状態中 {count} 件の不一致",
+    "ok": "適合: {log} の全 {states} 状態が {name} の振る舞い",
+    "ok_all": "適合: {log} の全 {states} 状態が {name} の振る舞い(各ステップを独立に判定)",
+    "no_variable": "{spec}: VARIABLE 宣言が無い",
+    "error": "エラー: {e}",
+    "selfcheck_ok": "自己検査 合格",
+    "selfcheck_accepted": "自己検査 不合格: {v!r} を受け付けた",
+}
+
+
+def msg(code, **kw):
+    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    return MESSAGES[code].format(**kw)
+
 
 class InputError(Exception):
     pass
@@ -70,7 +108,7 @@ def to_tla(v):
         return str(v)
     if isinstance(v, str):
         if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", v):
-            raise InputError(f"string {v!r} has a control character TLA+ strings cannot escape")
+            raise InputError(msg("control_char", v=v))
         return json.dumps(v, ensure_ascii=False)  # \" \\ \n \t \r mean the same in TLA+
     if isinstance(v, list):
         return "<<" + ", ".join(to_tla(x) for x in v) + ">>"
@@ -81,9 +119,9 @@ def to_tla(v):
             return "[x \\in {} |-> 0]"
         for k in v:
             if not re.fullmatch(r"[A-Za-z_]\w*", k):
-                raise InputError(f"record field {k!r} is not a TLA+ identifier")
+                raise InputError(msg("bad_field", k=k))
         return "[" + ", ".join(f"{k} |-> {to_tla(x)}" for k, x in v.items()) + "]"
-    raise InputError(f"no TLA+ form for {v!r} (floats and null have none)")
+    raise InputError(msg("no_tla_form", v=v))
 
 
 def strip_comments(text):
@@ -120,12 +158,12 @@ def read_trace(path):
         try:
             obj = json.loads(line)
         except json.JSONDecodeError as e:
-            raise InputError(f"line {no}: not JSON ({e.msg})")
+            raise InputError(msg("not_json", no=no, err=e.msg)) from None
         if not isinstance(obj, dict):
-            raise InputError(f"line {no}: expected a JSON object of variables")
+            raise InputError(msg("not_object", no=no))
         steps.append((no, obj))
     if not steps:
-        raise InputError("the log has no states")
+        raise InputError(msg("no_states"))
     return steps
 
 
@@ -133,7 +171,9 @@ def observed_variables(spec_name, variables, steps):
     observed = sorted({k for _, obj in steps for k in obj})
     unknown = [k for k in observed if k not in variables]
     if unknown:
-        raise InputError(f"not variables of {spec_name}: {', '.join(unknown)} (spec has {', '.join(variables)})")
+        raise InputError(
+            msg("unknown_vars", name=spec_name, unknown=", ".join(unknown), variables=", ".join(variables))
+        )
     return observed
 
 
@@ -184,10 +224,7 @@ def step_module(spec_name, variables, steps):
     observed_variables(spec_name, variables, steps)
     partial = [no for no, obj in steps if set(obj) != set(variables)]
     if partial:
-        raise InputError(
-            f"--all needs every variable on every line ({', '.join(variables)}); "
-            f"line {partial[0]} lacks some. Drop --all to let the spec choose hidden variables"
-        )
+        raise InputError(msg("all_partial", variables=", ".join(variables), no=partial[0]))
     bind = "\n".join(f"    /\\ {v} = {PREFIX}Trace[{PREFIX}k].{v}" for v in variables)
     nxt = " /\\ ".join(f"{v}' = {PREFIX}Trace[{PREFIX}k + 1].{v}" for v in variables)
     return f"""{module_head(spec_name, "k", steps)}
@@ -204,7 +241,7 @@ def step_module(spec_name, variables, steps):
 def tlc_command():
     if shutil.which("tlc"):
         return ["tlc"]
-    raise InputError("tlc is not on PATH (install the hymme skill-tools)")
+    raise InputError(msg("no_tlc"))
 
 
 def run_tlc(spec, name, module, cfg_body, extra, timeout):
@@ -230,28 +267,29 @@ def run_tlc(spec, name, module, cfg_body, extra, timeout):
         try:
             res = subprocess.run(cmd, cwd=work, capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
-            raise InputError(f"TLC did not finish in {timeout}s; shorten the log or observe more variables")
+            raise InputError(msg("timeout", timeout=timeout)) from None
         dump = work / "states.dump"
         return res.stdout + res.stderr, dump.read_text() if dump.exists() else ""
 
 
 def tlc_failure(out):
     tail = "\n".join(out.strip().splitlines()[-25:])
-    return InputError(f"TLC failed on the generated trace spec:\n{tail}")
+    return InputError(msg("tlc_failed", tail=tail))
+
+
+def state_line(no, obj):
+    return msg("state_line", no=no, obj=json.dumps(obj, ensure_ascii=False))
 
 
 def mismatch_init(name, steps):
     no, obj = steps[0]
-    return f"MISMATCH: line {no} is not an initial state of {name}\n  line {no}: {json.dumps(obj, ensure_ascii=False)}"
+    return msg("mismatch_init", no=no, name=name) + "\n" + state_line(no, obj)
 
 
 def mismatch_step(name, steps, k):
     """Step from the k-th to the (k+1)-th state (1-based)."""
     (pno, pobj), (no, obj) = steps[k - 1], steps[k]
-    return (
-        f"MISMATCH: line {no} is not a step {name} allows after line {pno}\n"
-        f"  line {pno}: {json.dumps(pobj, ensure_ascii=False)}\n  line {no}: {json.dumps(obj, ensure_ascii=False)}"
-    )
+    return "\n".join([msg("mismatch_step", no=no, pno=pno, name=name), state_line(pno, pobj), state_line(no, obj)])
 
 
 def check_all(spec, name, variables, steps, constants, log, timeout):
@@ -279,8 +317,8 @@ def check_all(spec, name, variables, steps, constants, log, timeout):
         mismatch_step(name, steps, k) for k in sorted(bad_steps)
     ]
     if lines:
-        return 1, "\n".join(lines) + f"\n{len(lines)} mismatch(es) in {len(steps)} states"
-    return 0, f"OK: all {len(steps)} states of {log} are a behavior of {name} (each step checked on its own)"
+        return 1, "\n".join(lines) + "\n" + msg("mismatch_count", states=len(steps), count=len(lines))
+    return 0, msg("ok_all", log=log, states=len(steps), name=name)
 
 
 def check(spec, log, cfg=None, timeout=600, all_steps=False):
@@ -290,7 +328,7 @@ def check(spec, log, cfg=None, timeout=600, all_steps=False):
     text = spec.read_text()
     variables = spec_variables(text)
     if not variables:
-        raise InputError(f"{spec}: no VARIABLE declaration")
+        raise InputError(msg("no_variable", spec=spec))
     steps = read_trace(log)
     cfg = Path(cfg) if cfg else spec.with_suffix(".cfg")
     constants = cfg_constants(cfg.read_text()) if cfg.exists() else ""
@@ -300,7 +338,7 @@ def check(spec, log, cfg=None, timeout=600, all_steps=False):
     cfg_body = f"{constants}\nINIT {PREFIX}Init\nNEXT {PREFIX}Next\nINVARIANT {PREFIX}NotDone\nCHECK_DEADLOCK FALSE\n"
     out, dump = run_tlc(spec, name, module, cfg_body, [], timeout)
     if f"Invariant {PREFIX}NotDone is violated" in out:
-        return 0, f"OK: all {len(steps)} states of {log} are a behavior of {name}"
+        return 0, msg("ok", log=log, states=len(steps), name=name)
     if "No error has been found" not in out:
         raise tlc_failure(out)
     reached = [int(n) for n in re.findall(rf"{PREFIX}i = (\d+)", dump)]
@@ -317,7 +355,7 @@ def _selfcheck():
     for bad in (1.5, None, {"not-ident": 1}):
         try:
             to_tla(bad)
-            raise AssertionError(f"accepted {bad!r}")
+            raise AssertionError(msg("selfcheck_accepted", v=bad))
         except InputError:
             pass
     src = "VARIABLES a, \\* note\n  b,\n  c\n(* VARIABLE hidden *)\nVARIABLE d\nfoo == a"
@@ -326,29 +364,30 @@ def _selfcheck():
     assert cfg_constants(cfg) == "CONSTANTS\n  N = 3\n  M = 2\nCONSTANT K = 1", cfg_constants(cfg)
     try:
         trace_module("S", ["x"], [(1, {"y": 1})])
-        raise AssertionError("accepted an unknown variable")
+        raise AssertionError(msg("selfcheck_accepted", v={"y": 1}))
     except InputError as e:
         assert "y" in str(e)
-    print("selfcheck OK")
+    print(msg("selfcheck_ok"))
 
 
 def main():
     if sys.argv[1:] == ["--selfcheck"]:
         _selfcheck()
         return 0
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("spec")
-    ap.add_argument("log")
-    ap.add_argument("--cfg", help="TLC config holding the CONSTANT values (default: <spec>.cfg)")
-    ap.add_argument("--timeout", type=int, default=600)
-    ap.add_argument("--all", action="store_true", help="judge each step on its own and report every mismatch")
+    ap = argparse.ArgumentParser(description=msg("description"), add_help=False)
+    ap.add_argument("-h", "--help", action="help", help=msg("help_help"))
+    ap.add_argument("spec", help=msg("help_spec"))
+    ap.add_argument("log", help=msg("help_log"))
+    ap.add_argument("--cfg", help=msg("help_cfg"))
+    ap.add_argument("--timeout", type=int, default=600, help=msg("help_timeout"))
+    ap.add_argument("--all", action="store_true", help=msg("help_all"))
     args = ap.parse_args()
     try:
-        code, msg = check(args.spec, args.log, args.cfg, args.timeout, args.all)
+        code, out = check(args.spec, args.log, args.cfg, args.timeout, args.all)
     except (InputError, OSError) as e:
-        print(f"ERROR: {e}", file=sys.stderr)
+        print(msg("error", e=e), file=sys.stderr)
         return 2
-    print(msg)
+    print(out)
     return code
 
 

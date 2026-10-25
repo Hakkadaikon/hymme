@@ -43,6 +43,53 @@ import subprocess
 import sys
 import tempfile
 
+# 要約行の mutants:/killed:/... と変異ごとの判定語(killed/SURVIVOR/invalid/UNVERIFIED)は
+# テストと skills/loopeng-modelcheck/references/mutation-oracle.md が目印として読むので訳さない。
+MESSAGES = {
+    "description": (
+        "TLA+ spec の mutation oracle。spec に小さな変異を入れて TLC を回し、"
+        "spec が変異を検出(killed)できるかを調べる。"
+        "終了コード: 0 = survivor も unverified も無い(--since で変えた行に変異箇所が無いときも 0)、"
+        "1 = survivor あり、2 = 変異前の spec が通らない、"
+        "3 = survivor は無いが unverified が残るか killed が 0 件、4 = --since の変更を読めない"
+    ),
+    "help_spec": ".tla spec のパス",
+    "help_cfg": "TLC の設定ファイル(省略時は <spec>.cfg があれば使う)",
+    "help_workers": "1 回の TLC のワーカー数(既定は auto。--jobs 1 のときだけ効く)",
+    "help_mut_timeout": "変異 1 つあたりの TLC のタイムアウト秒(既定 60)",
+    "help_jobs": "同時に回す変異の数(既定: このプロセスが使える CPU の数)",
+    "help_since": "この git リビジョンから変えた行だけに変異を入れる",
+    "no_tlc": "エラー: PATH に `tlc` が無く、java + TLA_JAR の代替も無い",
+    "timeout": "TLC が {timeout} 秒でタイムアウトした(killed として扱う)",
+    "since_bad_rev": "--since {rev}: git リポジトリの外か、そのリビジョンが無い",
+    "since_diff_failed": "--since {rev}: git diff に失敗した: {err}",
+    "no_spec": "エラー: spec が無い: {spec}",
+    "error": "エラー: {err}",
+    "workers_ignored": "注意: --jobs {jobs} では --workers {workers} を無視する(各 TLC は 1 ワーカー)",
+    "baseline_fails": "変異前の spec が通らない。mutation testing の前に spec を直す:\n",
+    "since_mutating": "{rev} から変えた {lines} 行にある {sites} か所に変異を入れる",
+    "mutant": "  {kind:<9} {label}",
+    "timeouts": (
+        "警告: --jobs {jobs} で {n} 個の変異がタイムアウトした。タイムアウトは killed に数える。"
+        "--jobs を下げるか --mut-timeout を延ばして回し直してから、その killed を信じる。"
+    ),
+    "summary": (
+        "\nmutants: {total}  killed: {killed}  survivors: {survivors}  unverified: {unverified}  invalid: {invalid}"
+    ),
+    "unverified": "性質ではなく TLC のエラーで止まった。意味の通る書き換えで再検査する: {labels}",
+    "too_weak": "spec が弱く、次の変異を検出できない: {labels}",
+    "unverified_only": "survivor は無いが、上の unverified の変異はまだ証拠にならない。",
+    "no_sites": "{rev} から変えた行に変異を入れる箇所が無い。",
+    "nothing_killed": "有効な変異が 1 つも killed にならなかった。何も検査していない。",
+    "tight": "spec は有効な変異をすべて検出した。設計の不変条件は十分に締まっている。",
+}
+
+
+def msg(code, **kw):
+    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    return MESSAGES[code].format(**kw)
+
+
 # (name, pattern, replacement) -- each flips one operator to inject a bug.
 MUTATIONS = [
     ("lt->le", re.compile(r"(?<![<>=/\\])<(?![<>=])"), "\\\\leq"),
@@ -78,7 +125,7 @@ def run_tlc(spec_path, cfg, workers, timeout=600):
     elif jar and shutil.which("java"):
         cmd = ["java", "-cp", jar, "tlc2.TLC"]
     else:
-        sys.exit("error: no `tlc` wrapper on PATH and no java+TLA_JAR fallback")
+        sys.exit(msg("no_tlc"))
     # Each run gets its own scratch directory: TLC's default (states/ next to
     # the spec) would be shared by mutants running at the same time.
     metadir = tempfile.mkdtemp(prefix="tlc-states-")
@@ -96,7 +143,7 @@ def run_tlc(spec_path, cfg, workers, timeout=600):
             timeout=timeout,
         )
     except subprocess.TimeoutExpired:
-        return "timeout", f"TLC timed out after {timeout}s (treated as killed)"
+        return "timeout", msg("timeout", timeout=timeout)
     finally:
         shutil.rmtree(metadir, ignore_errors=True)
     out = proc.stdout + proc.stderr
@@ -139,13 +186,13 @@ def changed_lines(spec, rev):
     """1-based line numbers of `spec` added or changed since git revision `rev`.
     A spec git does not track yet is new: every line counts as changed."""
     if git(spec, "rev-parse", "--verify", "--quiet", rev + "^{commit}").returncode != 0:
-        raise SinceError(f"--since {rev}: not a git repository, or no such revision")
+        raise SinceError(msg("since_bad_rev", rev=rev))
     name = os.path.basename(spec)
     if git(spec, "ls-files", "--error-unmatch", "--", name).returncode != 0:
         return set(range(1, len(open(spec).read().splitlines()) + 1))
     diff = git(spec, "diff", "--no-color", "--no-ext-diff", "-U0", rev, "--", name)
     if diff.returncode != 0:
-        raise SinceError(f"--since {rev}: git diff failed: {diff.stderr.strip()}")
+        raise SinceError(msg("since_diff_failed", rev=rev, err=diff.stderr.strip()))
     out = diff.stdout
     lines = set()
     for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", out, re.M):
@@ -179,20 +226,18 @@ def run_mutant(spec, mutated, cfg, workers, timeout):
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("spec", help="path to the .tla spec")
-    ap.add_argument("--cfg", help="TLC config (defaults to <spec>.cfg if present)")
-    ap.add_argument("--workers", default=None, help="TLC workers per run (default auto; only with --jobs 1)")
-    ap.add_argument("--mut-timeout", type=int, default=60, help="per-mutant TLC timeout in seconds (default 60)")
-    ap.add_argument(
-        "--jobs", type=int, default=usable_cpus(), help="mutants run at once (default: CPUs this process may use)"
-    )
-    ap.add_argument("--since", metavar="REV", help="mutate only the lines changed since this git revision")
+    ap = argparse.ArgumentParser(description=msg("description"))
+    ap.add_argument("spec", help=msg("help_spec"))
+    ap.add_argument("--cfg", help=msg("help_cfg"))
+    ap.add_argument("--workers", default=None, help=msg("help_workers"))
+    ap.add_argument("--mut-timeout", type=int, default=60, help=msg("help_mut_timeout"))
+    ap.add_argument("--jobs", type=int, default=usable_cpus(), help=msg("help_jobs"))
+    ap.add_argument("--since", metavar="REV", help=msg("help_since"))
     args = ap.parse_args()
 
     spec = os.path.abspath(args.spec)
     if not os.path.isfile(spec):
-        sys.exit(f"error: no such spec: {spec}")
+        sys.exit(msg("no_spec", spec=spec))
     cfg = args.cfg or (spec[:-4] + ".cfg" if spec.endswith(".tla") else None)
     if cfg and not os.path.isfile(cfg):
         cfg = None
@@ -204,22 +249,22 @@ def main():
         try:
             changed = changed_lines(spec, args.since)
         except SinceError as e:
-            print(f"error: {e}")
+            print(msg("error", err=e))
             return 4
     if args.workers is not None and args.jobs > 1:
-        print(f"note: --workers {args.workers} is ignored with --jobs {args.jobs} (each TLC run uses 1)")
+        print(msg("workers_ignored", workers=args.workers, jobs=args.jobs))
 
     # Sanity: the unmutated spec must pass, else mutation results are meaningless.
     base_kind, base_out = run_tlc(spec, cfg, args.workers or "auto")
     if base_kind != "pass":
-        print("BASELINE FAILS -- fix the spec before mutation testing:\n")
+        print(msg("baseline_fails"))
         print(base_out[-2000:])
         return 2
 
     mutants = [m for name, pat, repl in MUTATIONS for m in apply_one_mutation(src, name, pat, repl)]
     if changed is not None:
         mutants = [m for m in mutants if line_of(src, m[0]) in changed]
-        print(f"mutating {len(mutants)} sites on {len(changed)} lines changed since {args.since}")
+        print(msg("since_mutating", sites=len(mutants), lines=len(changed), rev=args.since))
 
     # With several mutants at once, give each TLC one worker.
     workers = 1 if args.jobs > 1 else (args.workers or "auto")
@@ -227,45 +272,48 @@ def main():
         kinds = list(pool.map(lambda m: run_mutant(spec, m[1], cfg, workers, args.mut_timeout), mutants))
 
     survivors, unverified, killed, invalid, total = [], [], 0, 0, len(mutants)
-    for (label, _), kind in zip(mutants, kinds):
+    for (label, _), kind in zip(mutants, kinds, strict=True):
         if kind == "pass":
             survivors.append(label)  # spec did NOT catch the bug
-            print(f"  SURVIVOR  {label}")
+            print(msg("mutant", kind="SURVIVOR", label=label))
         elif kind == "invalid":
             invalid += 1  # mutant doesn't parse: it tested nothing
-            print(f"  invalid   {label}")
+            print(msg("mutant", kind="invalid", label=label))
         elif kind == "error":
             unverified.append(label)  # stopped on a TLC error, not on a property
-            print(f"  UNVERIFIED {label}")
+            print(msg("mutant", kind="UNVERIFIED", label=label))
         else:
             killed += 1
-            print(f"  killed    {label}")
+            print(msg("mutant", kind="killed", label=label))
 
     timeouts = sum(1 for k in kinds if k == "timeout")
     if timeouts and args.jobs > 1:
-        print(
-            f"warning: {timeouts} mutants timed out with --jobs {args.jobs}; a timeout counts as killed. "
-            "Rerun them with a lower --jobs or a longer --mut-timeout before trusting those kills."
-        )
+        print(msg("timeouts", n=timeouts, jobs=args.jobs))
     print(
-        f"\nmutants: {total}  killed: {killed}  survivors: {len(survivors)}"
-        f"  unverified: {len(unverified)}  invalid: {invalid}"
+        msg(
+            "summary",
+            total=total,
+            killed=killed,
+            survivors=len(survivors),
+            unverified=len(unverified),
+            invalid=invalid,
+        )
     )
     if unverified:
-        print("stopped on a TLC error, not a property -- re-check with a semantic variant:", ", ".join(unverified))
+        print(msg("unverified", labels=", ".join(unverified)))
     if survivors:
-        print("spec is TOO WEAK to catch:", ", ".join(survivors))
+        print(msg("too_weak", labels=", ".join(survivors)))
         return 1
     if unverified:
-        print("no survivors, but the unverified mutants above are not evidence yet.")
+        print(msg("unverified_only"))
         return 3
     if total == 0 and args.since:
-        print(f"no mutation sites on the lines changed since {args.since}.")
+        print(msg("no_sites", rev=args.since))
         return 0
     if killed == 0:
-        print("no valid mutant was killed -- nothing was tested.")
+        print(msg("nothing_killed"))
         return 3
-    print("spec kills every valid mutant -- design invariants are tight.")
+    print(msg("tight"))
     return 0
 
 

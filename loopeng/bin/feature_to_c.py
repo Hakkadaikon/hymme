@@ -48,6 +48,20 @@ import json
 import re
 import sys
 
+MESSAGES = {
+    "unknown_value": "変数 {var!r} の値 {val!r} が対応表に無い(vars.{var}.values に足す)",
+    "unknown_action": "シナリオ {name!r} のアクション {act!r} が対応表に無い(actions か param_actions に足す)",
+    "need_map": "--map <mapping.json> が要る(--example で見本を出せる)",
+    "no_scenarios": "// シナリオを 1 つも読めなかった",
+    "selfcheck_ok": "自己検査 合格",
+}
+
+
+def msg(code, **kw):
+    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    return MESSAGES[code].format(**kw)
+
+
 STATE_RE = re.compile(r"^\s*(Given|When|Then|And|But|Scenario|Feature|Background)\b(.*)$")
 ASSIGN_RE = re.compile(r"^([A-Za-z_]\w*)\s+becomes\s+(\S+)$")  # "frag becomes TEXT"
 
@@ -56,7 +70,7 @@ def cval(mapping, var, val):
     spec = mapping["vars"][var]
     values = spec["values"]
     if val not in values:
-        raise SystemExit(f"unknown value {val!r} for var {var!r} (add it to vars.{var}.values)")
+        raise SystemExit(msg("unknown_value", val=val, var=var))
     return spec["field"], values[val]
 
 
@@ -77,7 +91,7 @@ def emit_scenario(mapping, name, steps):
             elif act in actions:
                 out.append(f"    {actions[act]}")
             else:
-                raise SystemExit(f"unknown action {act!r} in scenario {name!r} (add it to actions or param_actions)")
+                raise SystemExit(msg("unknown_action", act=act, name=name))
         elif kind in ("Then", "And", "But"):
             m = ASSIGN_RE.match(text.strip())
             if not m:
@@ -175,11 +189,11 @@ def main():
         mapping = json.load(open(args[i + 1]))
         del args[i : i + 2]
     if mapping is None:
-        raise SystemExit("need --map <mapping.json> (or --example to print one)")
+        raise SystemExit(msg("need_map"))
     src = open(args[0]).read() if args else sys.stdin.read()
     scenarios = parse(src)
     if not scenarios:
-        print("// no scenarios parsed", file=sys.stderr)
+        print(msg("no_scenarios"), file=sys.stderr)
         return 1
     sys.stdout.write(render(mapping, scenarios))
     return 0
@@ -218,7 +232,7 @@ Feature: x
     # an unmapped var must be skipped, not crash
     txt2 = render(mapping, parse("Feature: y\n  Scenario: s\n    When Inc\n    Then ghost becomes 9\n"))
     assert "ghost" not in txt2, txt2
-    print("selfcheck OK")
+    print(msg("selfcheck_ok"))
 
 
 if __name__ == "__main__":

@@ -19,6 +19,18 @@ the flat `name = value` form TLC prints; nested records pass through verbatim.
 import re
 import sys
 
+MESSAGES = {
+    "no_trace": "# 入力に反例トレースが無い",
+    "zero_states": "# トレースを読んだが状態が 0 個だった",
+    "selfcheck_ok": "自己検査 合格",
+}
+
+
+def msg(code, **kw):
+    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    return MESSAGES[code].format(**kw)
+
+
 STATE_RE = re.compile(r"^State (\d+):(?:\s*<([^>]*)>)?")
 # TLC prints state vars either flat (`x = 1`) or as conjuncts (`/\ x = 1`); accept both.
 ASSIGN_RE = re.compile(r"^(?:/\\\s*)?([A-Za-z_]\w*)\s*=\s*(.+)$")
@@ -76,12 +88,12 @@ def to_gherkin(states, name="Counterexample trace"):
 def main():
     text = open(sys.argv[1]).read() if len(sys.argv) > 1 else sys.stdin.read()
     if "Error:" not in text and "State 1:" not in text:
-        print("# no counterexample trace found in input", file=sys.stderr)
+        print(msg("no_trace"), file=sys.stderr)
         return 0
     states = parse_states(text)
     gherkin = to_gherkin(states)
     if gherkin is None:
-        print("# trace parsed to zero states", file=sys.stderr)
+        print(msg("zero_states"), file=sys.stderr)
         return 1
     sys.stdout.write(gherkin)
     return 0
@@ -108,7 +120,7 @@ y = TRUE
     gc = to_gherkin(conj)
     assert "Given x = 0" in gc, gc
     assert "Then x becomes 1" in gc, gc
-    print("selfcheck OK")
+    print(msg("selfcheck_ok"))
 
 
 if __name__ == "__main__":

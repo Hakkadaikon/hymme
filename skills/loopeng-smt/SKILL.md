@@ -51,7 +51,7 @@ def properties():
     ]
 ```
 
-この2本は緑になる。設定のルールが `weight > 30 かつ weight <= 25` のように満たせなければ、`...CanMatch` の性質に HOLDS が返り、期待 VIOLATED と食い違うので oracle は `<- expected VIOLATED` を付けて赤にする。これが、満たせる入力が無い(死んだ設定)という意味になる。
+この2本は緑になる。設定のルールが `weight > 30 かつ weight <= 25` のように満たせなければ、`...CanMatch` の性質に HOLDS が返り、期待 VIOLATED と食い違うので oracle は `<- 期待は VIOLATED` を付けて赤にする。これが、満たせる入力が無い(死んだ設定)という意味になる。
 
 ## 出口条件
 

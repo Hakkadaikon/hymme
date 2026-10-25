@@ -11,6 +11,14 @@
 # 1 行に複数の tlc があるときは最後の spec だけを検査する。
 set -euo pipefail
 
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    lint_failed) printf 'loopeng 静的検査ゲート: %s が静的検査を通らない。直してから TLC を回せ。\n' "$2" ;;
+    lint_unavailable) printf 'loopeng 静的検査ゲート: 静的検査を実行できなかった(spec の誤りではない)。TLC はそのまま通す。\n' ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
 payload="$(cat)"
 spec="$(printf '%s' "$payload" | python3 -I -c '
 import json, os, shlex, sys
@@ -69,12 +77,12 @@ out="$(bash "$lint" "$spec" 2>&1)" || rc=$?
 case "$rc" in
   0) exit 0 ;;
   1)
-    echo "loopeng 静的検査ゲート: $spec が静的検査を通らない。直してから TLC を回せ。" >&2
+    msg lint_failed "$spec" >&2
     printf '%s\n' "$out" >&2
     exit 2
     ;;
   *)
-    echo "loopeng 静的検査ゲート: 静的検査を実行できなかった(spec の誤りではない)。TLC はそのまま通す。" >&2
+    msg lint_unavailable >&2
     printf '%s\n' "$out" >&2
     exit 0
     ;;

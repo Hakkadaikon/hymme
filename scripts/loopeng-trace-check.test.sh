@@ -9,9 +9,21 @@ trap 'rm -rf "$tmp"' EXIT
 export TMPDIR="$tmp" _JAVA_OPTIONS="-Djava.io.tmpdir=$tmp"
 fail=0
 
-ok() { echo "ok   $1"; }
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    ok) printf '合格   %s\n' "$2" ;;
+    ng) printf '不合格 %s\n' "$2" ;;
+    want_exit) printf '%s: exit %s(期待 %s)\n' "$2" "$3" "$4" ;;
+    lacks) printf "%s: 出力に '%s' が無い\n" "$2" "$3" ;;
+    has) printf "%s: 出力に '%s' がある\n" "$2" "$3" ;;
+    left) printf '生成した _Trace モジュールが spec の隣に残った\n' ;;
+    not_left) printf '_Trace モジュールは spec の隣に残っていない\n' ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+ok() { msg ok "$1"; }
 ng() {
-  echo "FAIL $1"
+  msg ng "$1"
   fail=1
 }
 
@@ -51,28 +63,31 @@ jsonl unknown '{"count":0,"nosuch":1}'
 jsonl blank '{"count":0}' '' '{"count":1}'
 jsonl notjson '{"count":0}' 'count=1'
 
-run() { # run <want-exit> <jsonl> [want-substring]
-  local got=0
-  python3 loopeng/bin/trace_check.py "$tmp/Cap.tla" "$tmp/$2.jsonl" >"$tmp/out" 2>&1 || got=$?
-  if [ "$got" -ne "$1" ]; then
-    ng "$2: exit $got (want $1)"
+check() { # check <label> <want-exit> <want-substring> <trace_check.py の引数...>
+  local label="$1" want="$2" sub="$3" got=0
+  shift 3
+  python3 loopeng/bin/trace_check.py "$@" >"$tmp/out" 2>&1 || got=$?
+  if [ "$got" -ne "$want" ]; then
+    ng "$(msg want_exit "$label" "$got" "$want")"
     tail -20 "$tmp/out"
-  elif [ -n "${3:-}" ] && ! grep -qF "$3" "$tmp/out"; then
-    ng "$2: output lacks '$3'"
+  elif [ -n "$sub" ] && ! grep -qF -- "$sub" "$tmp/out"; then
+    ng "$(msg lacks "$label" "$sub")"
     tail -20 "$tmp/out"
   else
-    ok "$2 -> $got${3:+ ($3)}"
+    ok "$label -> $got${sub:+ ($sub)}"
   fi
 }
+run() { check "$2" "$1" "${3:-}" "$tmp/Cap.tla" "$tmp/$2.jsonl"; }             # run <want-exit> <jsonl> [want-substring]
+run_all() { check "--all $2" "$1" "$3" --all "$tmp/Cap.tla" "$tmp/$2.jsonl"; } # run_all <want-exit> <jsonl> <want-substring>
 
-run 0 good "OK"
-run 1 lost "line 3"
-run 0 partial "OK"
-run 1 over "line 5"
-run 1 badinit "line 1 is not an initial state"
+run 0 good "適合"
+run 1 lost "3 行目は"
+run 0 partial "適合"
+run 1 over "5 行目は"
+run 1 badinit "1 行目は Cap の初期状態ではない"
 run 2 unknown "nosuch"
-run 0 blank "OK"
-run 2 notjson "line 2"
+run 0 blank "適合"
+run 2 notjson "2 行目: JSON でない"
 
 # 隠れた変数の選び方で経路が分かれる: mode=1 の枝は 2 行目で行き止まるが、mode=2 の枝が最後まで届く
 cat >"$tmp/Step.tla" <<'EOF'
@@ -85,82 +100,46 @@ Next == x < 10 /\ x' = x + mode /\ UNCHANGED mode
 EOF
 printf '%s\n' '{"x":0}' '{"x":2}' '{"x":4}' >"$tmp/branch.jsonl"
 printf '%s\n' '{"x":0}' '{"x":2}' '{"x":3}' >"$tmp/branchbad.jsonl"
-for case in "0 branch OK" "1 branchbad line 3"; do
-  set -- $case
-  got=0
-  python3 loopeng/bin/trace_check.py "$tmp/Step.tla" "$tmp/$2.jsonl" >"$tmp/out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ] && grep -qF "${*:3}" "$tmp/out"; then ok "$2 -> $got"; else
-    ng "$2: exit $got"
-    tail -20 "$tmp/out"
-  fi
-done
+check branch 0 "適合" "$tmp/Step.tla" "$tmp/branch.jsonl"
+check branchbad 1 "3 行目は" "$tmp/Step.tla" "$tmp/branchbad.jsonl"
 
 # --all: 全変数を観測した行は、ステップごとに独立に判定してずれを全件出す
 jsonl two '{"count":0,"served":0,"log":[]}' \
   '{"count":1,"served":2,"log":[{"who":"a","ok":true}]}' \
   '{"count":2,"served":3,"log":[{"who":"a","ok":true},{"who":"b","ok":true}]}' \
   '{"count":1,"served":3,"log":[{"who":"a","ok":true},{"who":"b","ok":true}]}'
-got=0
-python3 loopeng/bin/trace_check.py --all "$tmp/Cap.tla" "$tmp/two.jsonl" >"$tmp/out" 2>&1 || got=$?
-if [ "$got" -eq 1 ] && grep -qF "line 2" "$tmp/out" && grep -qF "line 4" "$tmp/out" && ! grep -qF "line 3 " "$tmp/out"; then
-  ok "--all two -> 1 (line 2, line 4)"
-else
-  ng "--all two: exit $got"
-  cat "$tmp/out"
-fi
-run_all() { # run_all <want-exit> <jsonl> <want-substring>
-  local got=0
-  python3 loopeng/bin/trace_check.py --all "$tmp/Cap.tla" "$tmp/$2.jsonl" >"$tmp/out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ] && grep -qF -- "$3" "$tmp/out"; then ok "--all $2 -> $got ($3)"; else
-    ng "--all $2: exit $got"
-    cat "$tmp/out"
-  fi
-}
-run_all 0 good "OK"
-run_all 1 badinit "line 1 is not an initial state"
+run_all 1 two "2 行目は"
+run_all 1 two "4 行目は"
+if grep -qF "3 行目は" "$tmp/out"; then ng "$(msg has "--all two" "3 行目は")"; fi
+run_all 0 good "適合"
+run_all 1 badinit "1 行目は Cap の初期状態ではない"
 # 一部の変数しか無い行は独立判定できないので断る(既定のモードを使えと案内する)
-run_all 2 partial "every variable"
+run_all 2 partial "全行に全変数が要る"
 
 # 同じ状態が続く行は spec の振る舞い(stutter)として許す
 jsonl stutter '{"count":0}' '{"count":0}' '{"count":1}' '{"count":1}'
-run 0 stutter "OK"
+run 0 stutter "適合"
 jsonl stutterall '{"count":0,"served":0,"log":[]}' '{"count":0,"served":0,"log":[]}'
-run_all 0 stutterall "OK"
+run_all 0 stutterall "適合"
 # 1 行だけのログ: 初期状態なら適合、そうでなければ不一致
 jsonl one '{"count":0,"served":0,"log":[]}'
 jsonl onebad '{"count":2}'
-run 0 one "OK"
-run 1 onebad "line 1 is not an initial state"
+run 0 one "適合"
+run 1 onebad "1 行目は Cap の初期状態ではない"
 # 入力の誤りは exit 2
 printf '' >"$tmp/empty.jsonl"
-run 2 empty "no states"
+run 2 empty "ログに状態が無い"
 jsonl notobj '[1]'
-run 2 notobj "JSON object"
+run 2 notobj "JSON オブジェクトでない"
 run_all 2 unknown "nosuch"
 printf '%s\n' '---- MODULE NoVar ----' 'Init == TRUE' 'Next == TRUE' '====' >"$tmp/NoVar.tla"
-got=0
-python3 loopeng/bin/trace_check.py "$tmp/NoVar.tla" "$tmp/good.jsonl" >"$tmp/out" 2>&1 || got=$?
-[ "$got" -eq 2 ] && grep -qF "no VARIABLE" "$tmp/out" && ok "spec without VARIABLE -> 2" || {
-  ng "NoVar: exit $got"
-  cat "$tmp/out"
-}
+check "spec without VARIABLE" 2 "VARIABLE 宣言が無い" "$tmp/NoVar.tla" "$tmp/good.jsonl"
 # TLC 自体が失敗したら判定と取り違えず exit 2(CONSTANT が無い cfg、構文エラーの spec)
 printf 'INIT Init\nNEXT Next\n' >"$tmp/noconst.cfg"
-for mode in "" "--all"; do
-  got=0
-  python3 loopeng/bin/trace_check.py $mode --cfg "$tmp/noconst.cfg" "$tmp/Cap.tla" "$tmp/good.jsonl" >"$tmp/out" 2>&1 || got=$?
-  [ "$got" -eq 2 ] && grep -qF "TLC failed" "$tmp/out" && ok "TLC failure ${mode:-default} -> 2" || {
-    ng "TLC failure ${mode:-default}: exit $got"
-    cat "$tmp/out"
-  }
-done
+check "TLC failure default" 2 "TLC が失敗した" --cfg "$tmp/noconst.cfg" "$tmp/Cap.tla" "$tmp/good.jsonl"
+check "TLC failure --all" 2 "TLC が失敗した" --all --cfg "$tmp/noconst.cfg" "$tmp/Cap.tla" "$tmp/good.jsonl"
 printf '%s\n' '---- MODULE Broken ----' 'VARIABLE x' 'Init == x = = 0' "Next == x' = x" '====' >"$tmp/Broken.tla"
-got=0
-python3 loopeng/bin/trace_check.py "$tmp/Broken.tla" "$tmp/partial.jsonl" >"$tmp/out" 2>&1 || got=$?
-[ "$got" -eq 2 ] && ok "syntax error spec -> 2" || {
-  ng "Broken: exit $got"
-  cat "$tmp/out"
-}
+check "syntax error spec" 2 "" "$tmp/Broken.tla" "$tmp/partial.jsonl"
 # 非 ASCII の文字列は通す。spec が Integers を読まなくても、ログの負の数は TLC のエラーでなく不一致になる
 cat >"$tmp/Str.tla" <<'EOF2'
 ---- MODULE Str ----
@@ -171,25 +150,18 @@ Next == s' = "い" /\ UNCHANGED n
 EOF2
 printf '%s\n' '{"s":"あ","n":0}' '{"s":"い","n":0}' >"$tmp/str.jsonl"
 printf '%s\n' '{"s":"あ","n":0}' '{"s":"い","n":-1}' >"$tmp/neg.jsonl"
-for mode in "" "--all"; do
-  for c in "0 str OK" "1 neg line 2 is not a step"; do
-    set -- $c
-    got=0
-    python3 loopeng/bin/trace_check.py $mode "$tmp/Str.tla" "$tmp/$2.jsonl" >"$tmp/out" 2>&1 || got=$?
-    if [ "$got" -eq "$1" ] && grep -qF "${*:3}" "$tmp/out"; then ok "$2 ${mode:-default} -> $got"; else
-      ng "$2 ${mode:-default}: exit $got"
-      cat "$tmp/out"
-    fi
-  done
-done
+check "str default" 0 "適合" "$tmp/Str.tla" "$tmp/str.jsonl"
+check "neg default" 1 "2 行目は 1 行目の後に" "$tmp/Str.tla" "$tmp/neg.jsonl"
+check "str --all" 0 "適合" --all "$tmp/Str.tla" "$tmp/str.jsonl"
+check "neg --all" 1 "2 行目は 1 行目の後に" --all "$tmp/Str.tla" "$tmp/neg.jsonl"
 # --all: 長い値で TLC が状態を折り返しても、ずれを TLC のエラーと取り違えない
 long="$(python3 -c 'import json; print(json.dumps([{"who":"a","ok":True}]*40))')"
 printf '{"count":0,"served":0,"log":[]}\n{"count":0,"served":0,"log":%s}\n' "$long" >"$tmp/longv.jsonl"
-run_all 1 longv "line 2 is not a step"
+run_all 1 longv "2 行目は 1 行目の後に"
 
 # 生成した trace spec は spec の隣に残さない(tasks/loopeng を汚さない)
-if ls "$tmp" | grep -q '_Trace'; then ng "left a _Trace module next to the spec"; else ok "no _Trace module left behind"; fi
+if [ -n "$(find "$tmp" -maxdepth 1 -name '*_Trace*')" ]; then ng "$(msg left)"; else ok "$(msg not_left)"; fi
 
-python3 loopeng/bin/trace_check.py --selfcheck >/dev/null && ok "--selfcheck" || ng "--selfcheck"
+check "--selfcheck" 0 "" --selfcheck
 
 exit "$fail"

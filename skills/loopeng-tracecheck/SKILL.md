@@ -26,7 +26,7 @@ description: >
    - 全変数を毎行観測できる → `trace_check.py --all tasks/loopeng/<Name>.tla <run>.jsonl`。各ステップを独立に判定し、ずれを全件出す。行1が `Init` を満たすかも見る。
    - 一部の変数しか観測できない → `trace_check.py tasks/loopeng/<Name>.tla <run>.jsonl`。見えない変数は spec に選ばせ、最後の行まで届く振る舞いがあるかを判定する。報告は最初のずれ1件。
    - exit 0: ログ全体が spec の振る舞い。
-   - exit 1: `MISMATCH: line N` — その行への遷移を spec のどのアクションも説明できない。直前の行と並べて表示される。
+   - exit 1: `不一致: N 行目は …` — その行への遷移を spec のどのアクションも説明できない。直前の行と並べて表示される。
    - exit 2: 判定できなかった。ログか spec の誤り(spec に無い変数名・JSON でない行・TLC のエラー)、TLC の時間切れ、`tlc` が PATH に無い、のどれか。
 4. **ずれを判定する**: 出た行ごとに「実装の穴か、spec の書き漏れか」を決める。
    - 実装の穴: 失敗するシナリオ(loopeng-gherkin と同じ形)に固定してから実装を直す。
@@ -37,7 +37,7 @@ description: >
 ## 出口条件
 
 - 代表的な実ログ(正常系・高負荷・障害注入の各1本以上)が exit 0。
-- 出た `MISMATCH` は全件、実装修正か spec 修正のどちらかで閉じている。
+- 出た `不一致` は全件、実装修正か spec 修正のどちらかで閉じている。
 - ログ採取の仕組みを本体に残すなら、配管側に置き、管理番号・手法用語を書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
 
 ## やらないこと

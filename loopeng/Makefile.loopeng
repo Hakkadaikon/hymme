@@ -1,14 +1,14 @@
-# Loop engineering driver.  NL -> EARS+model -> TLA+ -> Gherkin, three loops.
+# ループエンジニアリングの駆動装置。自然言語 -> EARS + モデル -> TLA+ -> Gherkin の 3 重ループ。
 #
-#   loop-outer  scaffold a TLA+ spec + Gherkin feature from the templates
-#   loop-middle lint (SANY + Apalache typecheck), model-check (TLC), then mutation-test it
-#   loop-inner  replay a TLC counterexample as a Gherkin scenario
+#   loop-outer  テンプレートから TLA+ spec と Gherkin feature の雛形を作る
+#   loop-middle 静的検査(SANY + Apalache typecheck)、モデル検査(TLC)、mutation test を回す
+#   loop-inner  TLC の反例を Gherkin のシナリオに落とす
 #
-# Run from the directory holding your spec, e.g.:
+# spec のあるディレクトリで実行する。例:
 #   make -f $LOOPENG_HOME/Makefile.loopeng loop-middle SPEC=Counter
 #   make -f $LOOPENG_HOME/Makefile.loopeng loop-middle SPEC=Counter MUT_ARGS="--since HEAD"
 #
-# LOOPENG_HOME / TLA_JAR / APALACHE_BIN come from conf.d/loopeng.fish.
+# LOOPENG_HOME / TLA_JAR / APALACHE_BIN は conf.d/loopeng.fish が設定する。
 
 LOOPENG_HOME ?= $(HOME)/.config/loopeng
 BIN          := $(LOOPENG_HOME)/bin
@@ -25,16 +25,16 @@ TLC := $(if $(shell command -v tlc),tlc,java -cp $(TLA_JAR) tlc2.TLC)
 .PHONY: loop-outer loop-middle loop-inner lint check-spec mutate help
 
 help:
-	@sed -n 's/^# \{0,1\}//p' $(firstword $(MAKEFILE_LIST)) | sed -n '1,12p'
+	@sed -n 's/^# \{0,1\}//p' $(firstword $(MAKEFILE_LIST)) | sed -n '1,11p'
 
 ## outer: scaffold spec + feature from templates (won't clobber existing files)
 loop-outer:
 	@test -f $(TLA) || python3 -c "import string,sys; \
 		open('$(TLA)','w').write(string.Template(open('$(TMPL)/Spec.tla.tmpl').read())\
-		.safe_substitute(name='$(NAME)', vars='x'))" && echo "wrote $(TLA)" || echo "$(TLA) exists, kept"
+		.safe_substitute(name='$(NAME)', vars='x'))" && echo "$(TLA) を書いた" || echo "$(TLA) は既にあるので残した"
 	@test -f $(FEATURE) || python3 -c "import string; \
 		open('$(FEATURE)','w').write(string.Template(open('$(TMPL)/feature.tmpl').read())\
-		.safe_substitute(name='$(NAME)'))" && echo "wrote $(FEATURE)" || echo "$(FEATURE) exists, kept"
+		.safe_substitute(name='$(NAME)'))" && echo "$(FEATURE) を書いた" || echo "$(FEATURE) は既にあるので残した"
 
 ## middle: lint, model-check, then mutation-test the spec
 loop-middle: check-spec mutate
@@ -54,7 +54,7 @@ MUT_ARGS ?=
 mutate: lint
 	@echo "== mutation oracle: $(TLA) =="
 	@rc=0; python3 $(BIN)/tla_mutate_oracle.py $(TLA) --mut-timeout $(MUT_TIMEOUT) $(MUT_ARGS) || rc=$$?; \
-	if [ $$rc -eq 3 ]; then echo "WARNING: unverified mutants remain -- re-check them before calling the spec tight"; \
+	if [ $$rc -eq 3 ]; then echo "警告: unverified の変異が残っている。spec が締まっていると言う前に再検査する"; \
 	elif [ $$rc -ne 0 ]; then exit $$rc; fi
 
 ## inner: turn the latest TLC counterexample into a Gherkin scenario

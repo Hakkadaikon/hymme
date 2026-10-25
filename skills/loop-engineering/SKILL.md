@@ -83,7 +83,7 @@ flowchart TD
 | 2 | **loopeng-modelcheck** | TLC で全到達状態を検査 + spec 自体を mutation testing | `No error` かつ真の survivor 0、unverified を再検査済み、文面の往復確認が終了条件を満たす([`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md)) |
 | 3 | **loopeng-gherkin** | 反例 → Gherkin 機械変換、正常系シナリオ追加 | 反例が尽き「テスト」列が埋まる |
 | SMT | **loopeng-smt** | 状態を持たない判定を Z3 で全入力検査、性質ごとに壊した版で検査の効きを確認 | `smt_oracle.py` exit 0、witness 全件に要件側の判断 |
-| 実装後 | **loopeng-tracecheck** | 実システムの状態ログを spec に流し、許されない遷移を特定 | 代表ログが exit 0、`MISMATCH` が全件閉じる |
+| 実装後 | **loopeng-tracecheck** | 実システムの状態ログを spec に流し、許されない遷移を特定 | 代表ログが exit 0、`不一致` が全件閉じる |
 
 外 → 中 → 内 → 直して外へ、を反例と survivor が尽きるまで回す。前段の出口条件を満たさず次へ進まない(各スキルが前提として検査する)。
 

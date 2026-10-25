@@ -32,6 +32,24 @@ Override Model.normalize if your representation differs from TLC's text form.
 Run:  pytest --gherkin-terminal-reporter   (needs: pip install pytest-bdd)
 """
 
+MESSAGES = {
+    "then_mismatch": "{var}: 期待 {value!r}、実装の値 {actual!r}",
+    "unchanged_mismatch": "状態は変わらないはずだが {var} = {actual!r}(期待 {value!r})",
+    "step_unimplemented": "Model.step({action!r}): 実装につなぐ(Model を継承して step を書く)",
+    "selfcheck_ok": "自己検査 合格",
+    "usage": (
+        "pytest-bdd の step 定義。conftest.py で `from gherkin_steps import register_steps, Model` と"
+        " `register_steps()` を書き、Model を継承した `model` fixture を渡す。"
+        "詳しくはこのファイルの docstring。自己検査: gherkin_steps.py --selfcheck"
+    ),
+}
+
+
+def msg(code, **kw):
+    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    return MESSAGES[code].format(**kw)
+
+
 try:
     from pytest_bdd import given, parsers, then, when
 except ModuleNotFoundError:  # let --selfcheck run without the test deps installed
@@ -82,13 +100,13 @@ def register_steps():
     def then_becomes(expected, var, value):
         expected.vars[var] = value
         actual = expected.last.get(var)
-        assert actual == value, f"{var}: expected {value!r}, model produced {actual!r}"
+        assert actual == value, msg("then_mismatch", var=var, value=value, actual=actual)
 
     @then("the state is unchanged", stacklevel=2)
     def then_unchanged(expected):
         for var, value in expected.vars.items():
             actual = expected.last.get(var)
-            assert actual == value, f"state was meant to be unchanged but {var} = {actual!r} (expected {value!r})"
+            assert actual == value, msg("unchanged_mismatch", var=var, value=value, actual=actual)
 
 
 # --- the hook you implement per project --------------------------------------
@@ -116,7 +134,7 @@ class Model:
     def step(self, action):
         """Apply one action, return the resulting state dict {var: value}.
         MUST be overridden -- this is the only truly project-specific part."""
-        raise NotImplementedError(f"Model.step({action!r}): wire this to your implementation")
+        raise NotImplementedError(msg("step_unimplemented", action=action))
 
     def normalize(self, state):
         """Coerce the implementation's state into the TLC text form the Gherkin
@@ -145,7 +163,7 @@ def _selfcheck():
     m2.state = {}
     m2.seed("y", "TRUE")
     assert m2.normalize({"y": "TRUE"})["y"] == "TRUE"
-    print("selfcheck OK")
+    print(msg("selfcheck_ok"))
 
 
 if __name__ == "__main__":
@@ -154,4 +172,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--selfcheck":
         _selfcheck()
     else:
-        print(__doc__)
+        print(msg("usage"))
