@@ -30,6 +30,7 @@ REDIRECTS = {">", ">>", "<", ">&", "<&", ">|", "<>"}
 # rest: the rest of the opening line (kept); body: dropped unless a shell reads it
 HEREDOC = re.compile(r"<<-?\s*(?P<q>['\"]?)(?P<tag>\w+)(?P=q)(?P<rest>[^\n]*)\n(?P<body>.*?)\n[ \t]*(?P=tag)[ \t]*(?=\n|$)", re.S)
 FEEDS_SHELL = re.compile(r"(^|[\s|;&(])(bash|sh|zsh|dash|fish)\b")
+FEEDS_PYTHON = re.compile(r"(^|[\s|;&(])python3?(\.\d+)?\b")
 
 
 def root_of(path, cwd):
@@ -38,11 +39,16 @@ def root_of(path, cwd):
 
 
 def substitutions(text):
-    """Bodies of $(…) and `…`, outermost first; single quotes keep them literal.
-    shortcut: no full quoting model (a quote inside $(…) can fool the depth count); good enough for a gate."""
-    out, i = [], 0
+    """Bodies of $(…) and `…`, outermost first. Single quotes keep them literal; inside double quotes a
+    ' is a plain character and \\ escapes $ ` " \\ as in bash.
+    shortcut: no quoting model inside $(…) itself (a ) in a string there can fool the depth count)."""
+    out, i, dq = [], 0, False
     while i < len(text):
-        if text[i] == "'":
+        if text[i] == "\\":
+            i += 2
+        elif text[i] == '"':
+            dq, i = not dq, i + 1
+        elif text[i] == "'" and not dq:
             j = text.find("'", i + 1)
             i = len(text) if j < 0 else j + 1
         elif text.startswith("$(", i):
@@ -109,8 +115,14 @@ class Gate:
         """env: variables exported so far in this command (SPEC= reaches make through the environment)."""
         def heredoc(m):
             opening = text[text.rfind("\n", 0, m.start()) + 1:m.start()] + m.group("rest")
+            body = m.group("body")
             if FEEDS_SHELL.search(opening) and depth < 4:
-                self.parse(m.group("body"), cwd, dict(env), depth + 1)
+                self.parse(body, cwd, dict(env), depth + 1)
+            elif FEEDS_PYTHON.search(opening) and (RUNS_ENTRY.search(body) or LOOP.search(body)):
+                self.block("python に流した heredoc の中の検証の入口は読めない。入口のコマンドを直接実行する")
+            elif not m.group("q") and depth < 4:  # an unquoted heredoc still expands $(…) and `…`
+                for _, _, sub in substitutions(body):
+                    self.parse(sub, cwd, dict(env), depth + 1)
             return m.group("rest")
         text = HEREDOC.sub(heredoc, text)
         if depth < 4:
@@ -159,16 +171,20 @@ class Gate:
                     i = min(toks.index(x) for x in ("-c", "--command") if x in toks)
                     toks = toks[i + 1:]
                 elif re.match(r"^python3?(\.\d+)?$", base):
-                    rest, toks = toks[1:], []
-                    while rest and rest[0].startswith("-"):
+                    rest, toks, inline = toks[1:], [], False
+                    while rest and rest[0].startswith("-") and rest[0] != "-":
                         opt, rest = rest[0], rest[1:]
                         if opt == "-c":
                             if RUNS_ENTRY.search(" ".join(rest[:1])) or LOOP.search(" ".join(rest[:1])):
                                 self.block("python3 -c の中から検証の入口を呼んでいる。入口のコマンドを直接実行する")
-                            rest = []
+                            rest, inline = [], True
                             break
                         if opt in ("-W", "-X", "-m") and rest:
                             rest = rest[1:]
+                    # python reading its stdin (… | python3, python3 -): the script is not visible here
+                    if not inline and rest[:1] in ([], ["-"]) and re.search(r"\|\s*\S*python3?(\.\d+)?\b", text) \
+                            and (RUNS_ENTRY.search(text) or LOOP.search(text)):
+                        self.block("python の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する")
                     toks = rest
                 elif base in SHELLS:
                     rest = toks[1:]
@@ -177,6 +193,11 @@ class Gate:
                         rest = rest[2:] if re.fullmatch(r"[-+]\w*[oO]", rest[0]) else rest[1:]
                     if rest and re.fullmatch(r"-\w*c\w*", rest[0]) and len(rest) > 1 and depth < 4:
                         self.parse(rest[1], cwd, {**env, **local}, depth + 1)
+                    elif "<<<" in rest and rest.index("<<<") + 1 < len(rest) and depth < 4:
+                        self.parse(rest[rest.index("<<<") + 1], cwd, {**env, **local}, depth + 1)
+                    elif not [a for a in rest if a not in ("-", "-s")] and (RUNS_ENTRY.search(text) or LOOP.search(text)):
+                        # a shell reading its stdin (echo … | bash): the script is not visible here
+                        self.block(f"{base} の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する")
                     toks = []
                 elif base in ("eval", "xargs", "parallel", "watch"):
                     if RUNS_ENTRY.search(raw) or LOOP.search(raw):
@@ -215,6 +236,9 @@ class Gate:
                     break
                 rest = self.skip_opts(rest, ("--cfg", "--timeout"))
         elif verb == "lake" and "build" in args:
+            if "$" in cwd:
+                self.block("変数を含む cd の先は決まらないので、lake build の台帳を特定できない。パスを直接書く")
+                return
             here = cwd
             for i, a in enumerate(args):
                 d = args[i + 1] if a in ("-d", "--dir") and i + 1 < len(args) else (

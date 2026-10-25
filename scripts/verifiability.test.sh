@@ -392,6 +392,20 @@ gate 2 'echo $(cd / && ls) && loop-middle SPEC=Ccn'
 # シングルクォートの中のバッククォートは文字列。変数の SPEC は決まらないので止める
 gate 0 "git commit -m 'docs: run \`loop-middle SPEC=Ccn\` first'"
 gate 2 'for s in a b; do loop-middle SPEC=$s; done'
+# ダブルクォートの中のアポストロフィはクォートの開始ではない。エスケープした \` と \$( は文字列
+gate 2 $'echo "don\'t" "$(loop-middle SPEC=Ccn)"'
+gate 0 'git commit -m "docs: mention \`trace_check.py\`"'
+gate 0 'git commit -m "fix: \$(loop-middle) docs"'
+# クォートしない heredoc の本文は $(…) を展開する
+gate 2 $'cat > n <<EOF\n$(loop-middle SPEC=Ccn)\nEOF'
+# シェルや python の標準入力に流す形
+gate 2 'bash <<< "loop-middle SPEC=Ccn"'
+gate 2 "echo 'loop-middle SPEC=Ccn' | bash"
+gate 2 $'python3 - <<\'EOF\'\nimport os; os.system("loop-middle SPEC=Ccn")\nEOF'
+gate 2 "echo 'loop-middle SPEC=Ccn' | python3"
+gate 0 "echo '{}' | python3 -m json.tool"
+# 変数を含む cd の先の lake build は台帳を特定できない
+gate 2 'cd $D && lake build'
 # コミットメッセージの本文(heredoc)に入口の語があっても、それは文字列なので止めない
 gate 0 $'git commit -m "$(cat <<\'EOF\'\nfeat(loopeng): add trace_check.py and lake build notes\nloop-middle SPEC=Ccn\nEOF\n)"'
 # 中身を読めない形に入口の語があれば止める。ただの文字列としての言及は止めない
