@@ -20,8 +20,39 @@
 # 修正は一切行わない。収集だけ。GitHub(github.com / GitHub Enterprise)専用。
 set -euo pipefail
 
-die() {
-  printf 'ERROR: %s\n' "$*" >&2
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    error) printf 'エラー: %s\n' "$2" ;;
+    bad_url_owner) printf 'URL から OWNER/REPO を取れない: %s\n' "$2" ;;
+    bad_url_kind) printf 'URL から actions run / pull を特定できない: %s\n' "$2" ;;
+    bad_input) printf '入力を解釈できない: %s(URL / run_id / #PR / 空 のいずれか)\n' "$2" ;;
+    bad_opt) printf '不明なオプション: %s\n' "$2" ;;
+    no_gh) printf 'gh が見つからない。GitHub CLI を導入すること\n' ;;
+    no_repo) printf 'URL も run_id も無く、git リポジトリ外。URL か run_id を指定すること\n' ;;
+    no_latest) printf '最新の run を特定できない。URL か run_id を指定すること\n' ;;
+    parse_needs_input) printf 'parse には入力が必要\n' ;;
+    pr_no_fail_run) printf 'PR #%s に失敗 run が見つからない。preflight で確認すること\n' "$2" ;;
+    bad_sub) printf '未知のサブコマンド: %s(parse | preflight | logs)\n' "$2" ;;
+    cwd_remote) printf '(cwd の remote)\n' ;;
+    none) printf '(なし)\n' ;;
+    run_header) printf -- '--- run %s: 結論と失敗ジョブ/ステップ ---\n' "$2" ;;
+    run_meta_fail) printf '  (run %s のメタ取得に失敗。権限/hostname/認証を確認)\n' "$2" ;;
+    failed_jobs) printf '  失敗ジョブ・ステップ:\n' ;;
+    jobs_fail) printf '  (ジョブ内訳を取得できなかった)\n' ;;
+    pr_checks) printf 'PR #%s の checks:\n' "$2" ;;
+    pr_checks_fail) printf '  (pr checks 取得失敗)\n' ;;
+    failed_runs) printf '失敗 check の run:\n' ;;
+    no_failed_run_id) printf '  失敗している check の run_id を特定できなかった\n' ;;
+    next_logs) printf '失敗ステップのログ取得:\n' ;;
+    logs_note) printf '注意: PR #%s の失敗 run のうち先頭 (%s) のログを表示する。複数あるときは preflight の一覧から run_id を直接指定すること\n' "$2" "$3" ;;
+    log_pending) printf '(ログ未確定。run がまだ実行中か、権限不足の可能性。要約に戻る)\n' ;;
+    log_fail) printf '(失敗ログを取得できなかった。run がまだ実行中か、権限不足の可能性。要約に戻る)\n' ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
+die() { # die <code> [args...]
+  msg error "$(msg "$@")" >&2
   exit 1
 }
 
@@ -47,7 +78,7 @@ parse_input() {
       path="${path#*/}"
       repo="${path%%/*}"
       path="${path#*/}"
-      [ -n "$owner" ] && [ -n "$repo" ] || die "URL から OWNER/REPO を取れません: $in"
+      [ -n "$owner" ] && [ -n "$repo" ] || die bad_url_owner "$in"
       REPO="$owner/$repo"
       case "/$path/" in
         */actions/runs/*)
@@ -64,13 +95,13 @@ parse_input() {
           PR="${path#*pull/}"
           PR="${PR%%/*}"
           ;;
-        *) die "URL から actions run / pull を特定できません: $in" ;;
+        *) die bad_url_kind "$in" ;;
       esac
       ;;
     \#[0-9]*) PR="${in#\#}" ;;
     pr:[0-9]*) PR="${in#pr:}" ;;
     [0-9]*) RUN_ID="$in" ;;
-    *) die "入力を解釈できません: $in（URL / run_id / #PR / 空 のいずれか）" ;;
+    *) die bad_input "$in" ;;
   esac
 }
 
@@ -80,7 +111,7 @@ input=""
 for a in "$@"; do
   case "$a" in
     --job) NEXT_IS_JOB=1 ;;
-    -*) die "不明なオプション: $a" ;;
+    -*) die bad_opt "$a" ;;
     *)
       if [ "${NEXT_IS_JOB:-0}" = 1 ]; then
         JOB_ID="$a"
@@ -90,7 +121,7 @@ for a in "$@"; do
   esac
 done
 
-command -v gh >/dev/null 2>&1 || die "gh が見つかりません。GitHub CLI を導入してください"
+command -v gh >/dev/null 2>&1 || die no_gh
 parse_input "$input"
 
 # -R フラグ: URL 由来で REPO が取れたときだけ明示。無ければ gh が cwd の remote を使う。
@@ -101,7 +132,7 @@ RARGS=()
 need_cwd_repo() {
   [ -n "$REPO" ] && return 0
   git rev-parse --git-dir >/dev/null 2>&1 ||
-    die "URL も run_id も無く、git リポジトリ外です。URL か run_id を指定してください。"
+    die no_repo
 }
 
 # PR → 失敗している check の run_id 群（重複排除）。bucket=="fail" が失敗系をまとめる。
@@ -114,43 +145,43 @@ pr_failed_run_ids() {
 # 空入力 → cwd repo の最新 run。
 resolve_latest_run() {
   RUN_ID="$(gh run list -L 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null || true)"
-  [ -n "$RUN_ID" ] || die "最新の run を特定できません。URL か run_id を指定してください。"
+  [ -n "$RUN_ID" ] || die no_latest
 }
 
 run_summary() { # $1 = run_id
-  echo "--- run $1: 結論と失敗ジョブ/ステップ ---"
+  msg run_header "$1"
   gh run view "$1" "${RARGS[@]}" \
     --json displayTitle,status,conclusion,headBranch,event,workflowName,url \
     --jq '"title:     \(.displayTitle)\nworkflow:  \(.workflowName)\nbranch:    \(.headBranch)  event: \(.event)\nstatus:    \(.status)  conclusion: \(.conclusion)\nurl:       \(.url)"' ||
     {
-      echo "  (run $1 のメタ取得に失敗。権限/hostname/認証を確認)"
+      msg run_meta_fail "$1"
       return 0
     }
-  echo "  失敗ジョブ・ステップ:"
+  msg failed_jobs
   gh run view "$1" "${RARGS[@]}" --json jobs \
     --jq '.jobs[] | select(.conclusion=="failure" or .conclusion=="cancelled" or .conclusion=="timed_out")
             | "  ✗ job: \(.name) [\(.conclusion)] (id: \(.databaseId))",
               (.steps[] | select(.conclusion=="failure" or .conclusion=="cancelled" or .conclusion=="timed_out")
                | "      step \(.number): \(.name) [\(.conclusion)]")' ||
-    echo "  (ジョブ内訳を取得できませんでした)"
+    msg jobs_fail
 }
 
 case "$cmd" in
   parse)
-    [ -n "$input" ] || die "parse には入力が必要です"
+    [ -n "$input" ] || die parse_needs_input
     echo "=== RESOLVED ==="
-    echo "host:    ${HOST:-(cwd remote)}"
-    echo "repo:    ${REPO:-(cwd remote)}"
-    echo "run_id:  ${RUN_ID:-(none)}"
-    echo "job_id:  ${JOB_ID:-(none)}"
-    echo "pr:      ${PR:-(none)}"
+    echo "host:    ${HOST:-$(msg cwd_remote)}"
+    echo "repo:    ${REPO:-$(msg cwd_remote)}"
+    echo "run_id:  ${RUN_ID:-$(msg none)}"
+    echo "job_id:  ${JOB_ID:-$(msg none)}"
+    echo "pr:      ${PR:-$(msg none)}"
     ;;
 
   preflight)
     need_cwd_repo
     echo "=== TARGET ==="
-    echo "host:   ${HOST:-(cwd remote)}"
-    echo "repo:   ${REPO:-(cwd remote)}"
+    echo "host:   ${HOST:-$(msg cwd_remote)}"
+    echo "repo:   ${REPO:-$(msg cwd_remote)}"
     echo
     echo "=== AUTH ==="
     if [ -n "$HOST" ]; then
@@ -159,15 +190,15 @@ case "$cmd" in
     echo
     echo "=== FAILED CI ==="
     if [ -n "$PR" ]; then
-      echo "PR #$PR の checks:"
-      gh pr checks "$PR" "${RARGS[@]}" 2>&1 | sed 's/^/  /' || echo "  (pr checks 取得失敗)"
+      msg pr_checks "$PR"
+      gh pr checks "$PR" "${RARGS[@]}" 2>&1 | sed 's/^/  /' || msg pr_checks_fail
       echo
       local_ids="$(pr_failed_run_ids || true)"
       if [ -n "$local_ids" ]; then
-        echo "失敗 check の run:"
+        msg failed_runs
         while read -r rid; do [ -n "$rid" ] && run_summary "$rid"; done <<<"$local_ids"
       else
-        echo "  失敗している check の run_id を特定できませんでした。"
+        msg no_failed_run_id
       fi
     else
       [ -n "$RUN_ID" ] || resolve_latest_run
@@ -175,7 +206,7 @@ case "$cmd" in
     fi
     echo
     echo "=== NEXT ==="
-    echo "失敗ステップのログ取得:"
+    msg next_logs
     if [ -n "$JOB_ID" ]; then
       echo "  bash <skill-dir>/scripts/gh-ci-investigate.sh logs '${input:-$RUN_ID}' --job $JOB_ID"
     else
@@ -187,8 +218,8 @@ case "$cmd" in
     need_cwd_repo
     if [ -n "$PR" ] && [ -z "$RUN_ID" ]; then
       RUN_ID="$(pr_failed_run_ids | head -n1 || true)"
-      [ -n "$RUN_ID" ] || die "PR #$PR に失敗 run が見つかりません。preflight で確認してください。"
-      echo "note: PR #$PR の失敗 run のうち先頭 ($RUN_ID) のログを表示します。複数あるときは preflight の一覧から run_id を直接指定してください。"
+      [ -n "$RUN_ID" ] || die pr_no_fail_run "$PR"
+      msg logs_note "$PR" "$RUN_ID"
       echo
     fi
     [ -n "$RUN_ID" ] || resolve_latest_run
@@ -199,19 +230,19 @@ case "$cmd" in
       gh run view "$RUN_ID" --job "$JOB_ID" --log-failed "${RARGS[@]}" 2>/dev/null ||
         gh run view "$RUN_ID" --job "$JOB_ID" --log "${RARGS[@]}" 2>/dev/null ||
         {
-          echo "(ログ未確定。run がまだ実行中か、権限不足の可能性。要約に戻ります)"
+          msg log_pending
           run_summary "$RUN_ID"
         }
     else
       gh run view "$RUN_ID" --log-failed "${RARGS[@]}" 2>/dev/null ||
         {
-          echo "(失敗ログを取得できませんでした。run がまだ実行中か、権限不足の可能性。要約に戻ります)"
+          msg log_fail
           run_summary "$RUN_ID"
         }
     fi
     ;;
 
   *)
-    die "未知のサブコマンド: $cmd （parse | preflight | logs）"
+    die bad_sub "$cmd"
     ;;
 esac

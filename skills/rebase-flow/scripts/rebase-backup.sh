@@ -6,30 +6,45 @@
 # Usage: rebase-backup.sh
 set -euo pipefail
 
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    no_git) printf 'エラー: git リポジトリ内で実行すること\n' ;;
+    detached) printf 'エラー: detached HEAD 状態では backup を作成しない\n' ;;
+    protected) printf 'エラー: 保護ブランチ (%s) では backup/arm しない。rebase は作業ブランチのみ\n' "$2" ;;
+    remote_default) printf 'エラー: リモート既定ブランチ (%s) では backup/arm しない\n' "$2" ;;
+    dirty) printf 'エラー: working tree が clean ではない。backup 作成を中止(rebase-context.sh の BLOCKER を先に解消すること)\n' ;;
+    armed) printf 'armed: %s(30 分有効 — git rebase が git-guard hook を通過可能になる)\n' "$2" ;;
+    upstream_tip) printf 'upstream-tip: %s (%s — force-push 時の lease 候補)\n' "$2" "$3" ;;
+    recovery) printf 'rebase 進行中に中断する : git rebase --abort\nrebase 完了後に全て戻す : git reset --hard %s   # ユーザー実行(要 clean tree)\n検証                    : bash <skill-dir>/scripts/rebase-verify.sh %s <base-ref>\n' "$2" "$2" ;;
+    keep) printf '注意: この backup ブランチはユーザーの明示承認があるまで削除しないこと\n' ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
 git rev-parse --git-dir >/dev/null 2>&1 || {
-  echo "ERROR: git リポジトリ内で実行してください" >&2
+  msg no_git >&2
   exit 1
 }
 
 current=$(git rev-parse --abbrev-ref HEAD)
 if [ "$current" = "HEAD" ]; then
-  echo "ERROR: detached HEAD 状態では backup を作成しません" >&2
+  msg detached >&2
   exit 1
 fi
 # 保護ブランチでは arm しない（context の BLOCKER を素通りした直叩きを塞ぐ）
 case "$current" in
   main | master | develop | development | trunk | release | release/* | releases/*)
-    echo "ERROR: 保護ブランチ ($current) では backup/arm しません。rebase は作業ブランチのみ" >&2
+    msg protected "$current" >&2
     exit 1
     ;;
 esac
 if def=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null) &&
   [ "${def#refs/remotes/origin/}" = "$current" ]; then
-  echo "ERROR: リモート既定ブランチ ($current) では backup/arm しません" >&2
+  msg remote_default "$current" >&2
   exit 1
 fi
 if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "ERROR: working tree が clean ではありません。backup 作成を中止（rebase-context.sh の BLOCKER を先に解消すること）" >&2
+  msg dirty >&2
   exit 1
 fi
 
@@ -50,14 +65,12 @@ date +%s >"$marker"
 echo "=== BACKUP ==="
 echo "branch: $name"
 echo "sha: $(git rev-parse HEAD)"
-echo "armed: ${marker}（30 分有効 — git rebase が git-guard hook を通過可能になる）"
+msg armed "$marker"
 if upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null); then
-  echo "upstream-tip: $(git rev-parse "$upstream") ($upstream — force-push 時の lease 候補)"
+  msg upstream_tip "$(git rev-parse "$upstream")" "$upstream"
 fi
 echo ""
 echo "=== RECOVERY ==="
-echo "rebase 進行中に中断する : git rebase --abort"
-echo "rebase 完了後に全て戻す : git reset --hard $name   # ユーザー実行（要 clean tree）"
-echo "検証                    : bash <skill-dir>/scripts/rebase-verify.sh $name <base-ref>"
+msg recovery "$name"
 echo ""
-echo "NOTE: この backup ブランチはユーザーの明示承認があるまで削除しないこと"
+msg keep

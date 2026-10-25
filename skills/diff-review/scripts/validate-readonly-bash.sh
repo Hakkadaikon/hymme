@@ -8,15 +8,26 @@ INPUT=$(cat)
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
 [[ -z "$COMMAND" ]] && exit 0
 
-deny() {
-  echo "Blocked (diff-reviewer is read-only): $1" >&2
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    blocked) printf 'ブロック(diff-reviewer は読み取り専用): %s\n' "$2" ;;
+    redirect) printf 'リダイレクトによる書き込みは不可: %s\n' "$2" ;;
+    git_sub) printf 'git %s は不可(参照系サブコマンドのみ許可)\n' "$2" ;;
+    no_sub) printf '(サブコマンドなし)\n' ;;
+    not_allowed) printf 'コマンド %s は許可リスト外(git 参照系と基本テキスト処理のみ使用可)\n' "$2" ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
+deny() { # deny <code> [args...]
+  msg blocked "$(msg "$@")" >&2
   exit 2
 }
 
 # リダイレクトを拒否。stderr の /dev/null 捨てと 2>&1 のみ許可
 STRIPPED=$(printf '%s' "$COMMAND" | sed -E 's#[0-9]*>>?[[:space:]]*(&[0-9]+|/dev/null)##g')
 if [[ "$STRIPPED" == *'>'* ]]; then
-  deny "リダイレクトによる書き込みは不可: ${COMMAND}"
+  deny redirect "$COMMAND"
 fi
 
 # パイプ・連結・コマンド置換を区切りに分割し、各コマンドの先頭語を検証
@@ -58,10 +69,10 @@ for seg in "${SEGMENTS[@]}"; do
       esac
     done
     if ! [[ "$sub" =~ $GIT_SUB_RE ]]; then
-      deny "git ${sub:-(サブコマンドなし)} は不可(参照系サブコマンドのみ許可)"
+      deny git_sub "${sub:-$(msg no_sub)}"
     fi
   elif ! [[ "$first" =~ $UTIL_RE ]]; then
-    deny "コマンド ${first} は許可リスト外(git 参照系と基本テキスト処理のみ使用可)"
+    deny not_allowed "$first"
   fi
 done
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # diff-review: レビュー対象差分の決定論的収集(読み取り専用・stdout のみ)
 #
-# usage:
+# 使い方:
 #   collect-diff.sh manifest [<base-ref>]                    範囲解決 + コミット一覧 + 統計(小径なら全文同梱)
 #   collect-diff.sh commit <sha>                             単一コミットの diff(除外適用)
 #   collect-diff.sh worktree                                 未コミット変更の diff(staged + unstaged)
@@ -25,8 +25,24 @@ for p in "${EXCLUDE_PATTERNS[@]}"; do
   EXCLUDE_PATHSPEC+=(":(exclude)$p")
 done
 
-usage() {
-  sed -n '2,8p' "$0" | cut -c3-
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    usage) sed -n '2,8p' "$0" | cut -c3- ;;
+    no_base) printf 'エラー: デフォルトブランチを特定できない。base-ref を引数で指定すること\n' ;;
+    no_sha) printf 'エラー: commit <sha> の形式で指定すること\n' ;;
+    none) printf '(なし)\n' ;;
+    h_commits) printf '== COMMITS (base..HEAD, 古い順) ==\n' ;;
+    h_worktree) printf '== WORKTREE (未コミット変更: staged + unstaged) ==\n' ;;
+    h_untracked) printf '== UNTRACKED (未追跡ファイル: Read ツールで参照する) ==\n' ;;
+    h_untracked_wt) printf '== UNTRACKED (Read ツールで参照する) ==\n' ;;
+    untracked_file) printf '  %s (%s 行)\n' "$2" "$3" ;;
+    h_excluded) printf '== EXCLUDED (lockfile・生成物: 統計のみ、全文は取得不可) ==\n' ;;
+    size) printf 'total_changed_lines=%s (除外分を除く) + untracked_lines=%s\n' "$2" "$3" ;;
+    h_full) printf '== FULL DIFF (total <= %s のため同梱。未追跡ファイルは含まない) ==\n' "$2" ;;
+    h_full_skip) printf '== FULL DIFF 省略 (total > %s) ==\n' "$2" ;;
+    full_skip_hint) printf 'commit <sha> / worktree / cumulative [-- <path>...] で必要な単位のみ取得すること\n' ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
 }
 
 # BASE_REF / BASE_SHA を解決する。引数 > origin/HEAD > main / master の順
@@ -45,7 +61,7 @@ resolve_base() {
     done
   fi
   if [[ -z "$base_ref" ]]; then
-    echo "ERROR: デフォルトブランチを特定できない。base-ref を引数で指定すること" >&2
+    msg no_base >&2
     exit 1
   fi
   BASE_REF="$base_ref"
@@ -81,9 +97,9 @@ cmd_manifest() {
   echo "head=$head_sha (branch: $branch)"
   echo
 
-  echo "== COMMITS (base..HEAD, 古い順) =="
+  msg h_commits
   if [[ -z "$commits" ]]; then
-    echo "(なし)"
+    msg none
   else
     local sha subject
     while read -r sha _; do
@@ -94,32 +110,32 @@ cmd_manifest() {
   fi
   echo
 
-  echo "== WORKTREE (未コミット変更: staged + unstaged) =="
+  msg h_worktree
   local worktree_stat
   worktree_stat=$(git diff --numstat HEAD -- . "${EXCLUDE_PATHSPEC[@]}")
   if [[ -z "$worktree_stat" ]]; then
-    echo "(なし)"
+    msg none
   else
     format_numstat <<<"$worktree_stat"
   fi
   echo
 
-  echo "== UNTRACKED (未追跡ファイル: Read ツールで参照する) =="
+  msg h_untracked
   if [[ -z "$untracked" ]]; then
-    echo "(なし)"
+    msg none
   else
     local f
     while IFS= read -r f; do
-      echo "  $f ($(wc -l <"$f") lines)"
+      msg untracked_file "$f" "$(wc -l <"$f")"
     done <<<"$untracked"
   fi
   echo
 
-  echo "== EXCLUDED (lockfile・生成物: 統計のみ、全文は取得不可) =="
+  msg h_excluded
   local excluded_stat
   excluded_stat=$(git diff --numstat "$BASE_SHA" -- "${EXCLUDE_PATTERNS[@]}")
   if [[ -z "$excluded_stat" ]]; then
-    echo "(なし)"
+    msg none
   else
     format_numstat <<<"$excluded_stat"
   fi
@@ -134,22 +150,22 @@ cmd_manifest() {
     done <<<"$untracked"
   fi
   echo "== SIZE =="
-  echo "total_changed_lines=$total (除外分を除く) + untracked_lines=$untracked_lines"
+  msg size "$total" "$untracked_lines"
   echo
 
   if ((total <= INLINE_THRESHOLD)); then
-    echo "== FULL DIFF (total <= ${INLINE_THRESHOLD} のため同梱。未追跡ファイルは含まない) =="
+    msg h_full "$INLINE_THRESHOLD"
     git diff "$BASE_SHA" -- . "${EXCLUDE_PATHSPEC[@]}"
   else
-    echo "== FULL DIFF 省略 (total > ${INLINE_THRESHOLD}) =="
-    echo "commit <sha> / worktree / cumulative [-- <path>...] で必要な単位のみ取得すること"
+    msg h_full_skip "$INLINE_THRESHOLD"
+    msg full_skip_hint
   fi
 }
 
 cmd_commit() {
   local sha="${1:-}"
   if [[ -z "$sha" ]]; then
-    echo "ERROR: commit <sha> の形式で指定すること" >&2
+    msg no_sha >&2
     exit 1
   fi
   git show "$sha" -- . "${EXCLUDE_PATHSPEC[@]}"
@@ -161,7 +177,7 @@ cmd_worktree() {
   untracked=$(git ls-files --others --exclude-standard)
   if [[ -n "$untracked" ]]; then
     echo
-    echo "== UNTRACKED (Read ツールで参照する) =="
+    msg h_untracked_wt
     local f
     while IFS= read -r f; do
       echo "  $f"
@@ -200,7 +216,7 @@ case "$sub" in
   worktree) cmd_worktree ;;
   cumulative) cmd_cumulative "$@" ;;
   *)
-    usage >&2
+    msg usage >&2
     exit 1
     ;;
 esac

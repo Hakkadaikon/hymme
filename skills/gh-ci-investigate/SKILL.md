@@ -31,7 +31,7 @@ CI 失敗調査で毎回同じことをする——失敗した run を開き、
 bash <skill-dir>/scripts/gh-ci-investigate.sh preflight "<url|run_id|#PR|（空=現在ブランチ最新）>"
 ```
 
-`=== SECTION ===` 区切りで **対象 repo・認証状態・失敗ジョブとステップ・結論** が出る。ここでまず「どの workflow の・どのジョブの・どのステップが・どの結論（failure / cancelled / timed_out）で落ちたか」をユーザーに提示する。`ERROR:` が出たら（未認証・URL 不正・repo 特定不可など）先にそれを解決する。
+`=== SECTION ===` 区切りで **対象 repo・認証状態・失敗ジョブとステップ・結論** が出る。ここでまず「どの workflow の・どのジョブの・どのステップが・どの結論（failure / cancelled / timed_out）で落ちたか」をユーザーに提示する。`エラー:` が出たら（未認証・URL 不正・repo 特定不可など）先にそれを解決する。
 
 PR URL / `#PR` を渡した場合は、その PR の checks 一覧と、失敗している check に対応する run の要約が出る。
 

@@ -14,16 +14,39 @@
 # これを読んでタイトル・本文を組み立てる。
 set -euo pipefail
 
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    no_git) printf 'エラー: git リポジトリ内で実行すること\n' ;;
+    detached) printf 'エラー: detached HEAD 状態。ブランチをチェックアウトすること\n' ;;
+    no_remote) printf 'remote: (なし)\n' ;;
+    repo_unknown) printf 'repo: (不明)\n' ;;
+    no_root) printf '(repo root 不明 — 検出不可)\n' ;;
+    no_template) printf '(テンプレートなし — 汎用構成で本文を組む)\n' ;;
+    primary) printf 'primary: %s  ← これを使う(独自フォーマット禁止)\n' "$2" ;;
+    multi) printf 'multi (複数テンプレ。候補提示してユーザーに選んでもらう):\n' ;;
+    no_ci) printf '(CI workflow なし)\n' ;;
+    no_cli) printf 'cli: (該当 CLI なし。手動作成へフォールバック)\n' ;;
+    no_base) printf '(特定できなかった。ユーザーに確認すること)\n' ;;
+    no_base_note) printf 'main / master / develop / origin/HEAD いずれとも分岐関係を特定できなかった。\nベースブランチを引数で明示して再実行すること: pr-context.sh <base-branch>\n' ;;
+    base_explicit) printf '(引数で明示指定)\n' ;;
+    base_detected) printf '(分岐元として自動検出)\n' ;;
+    unpushed) printf 'WARNING: ローカルに未 push のコミットが %s 件ある。push はユーザーが実施すること\n' "$2" ;;
+    no_upstream) printf 'upstream: (未設定 — リモート未 push)\nWARNING: このブランチはリモートに push されていない。PR 作成前にユーザーが push する必要がある\n' ;;
+    full_diff) printf '完全な差分が必要な場合: git diff %s...HEAD\n' "$2" ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
 base_override="${1:-}"
 
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
-  echo "ERROR: git リポジトリ内で実行してください" >&2
+  msg no_git >&2
   exit 1
 fi
 
 current=$(git rev-parse --abbrev-ref HEAD)
 if [ "$current" = "HEAD" ]; then
-  echo "ERROR: detached HEAD 状態です。ブランチをチェックアウトしてください" >&2
+  msg detached >&2
   exit 1
 fi
 
@@ -95,8 +118,8 @@ detect_repo_identity() {
   echo "worktree-root: $root"
   url=$(git remote get-url origin 2>/dev/null || git remote get-url "$(git remote | head -1)" 2>/dev/null || echo "")
   if [ -z "$url" ]; then
-    echo "remote: (なし)"
-    echo "repo: (不明)"
+    msg no_remote
+    msg repo_unknown
     return
   fi
   host=$(printf '%s' "$url" | sed -E 's#^[a-zA-Z]+://##; s#^[^@/]+@##; s#[:/].*$##')
@@ -115,7 +138,7 @@ detect_repo_identity() {
 detect_templates() {
   local root c f
   root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    echo "(repo root 不明 — 検出不可)"
+    msg no_root
     return
   }
 
@@ -148,18 +171,18 @@ detect_templates() {
   fi
 
   if [ ${#singles[@]} -eq 0 ] && [ ${#multi[@]} -eq 0 ]; then
-    echo "(テンプレートなし — 汎用構成で本文を組む)"
+    msg no_template
     return
   fi
   if [ ${#singles[@]} -gt 0 ]; then
-    echo "primary: $root/${singles[0]}  ← これを使う（独自フォーマット禁止）"
+    msg primary "$root/${singles[0]}"
     local i
     for ((i = 1; i < ${#singles[@]}; i++)); do
       echo "other:   $root/${singles[$i]}"
     done
   fi
   if [ ${#multi[@]} -gt 0 ]; then
-    echo "multi (複数テンプレ。候補提示してユーザーに選んでもらう):"
+    msg multi
     for c in "${multi[@]}"; do
       echo "  - $root/$c"
     done
@@ -173,7 +196,7 @@ detect_templates() {
 detect_workflows() {
   local root f
   root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    echo "(repo root 不明 — 検出不可)"
+    msg no_root
     return
   }
   local found=0
@@ -190,7 +213,7 @@ detect_workflows() {
     found=1
   }
   if [ "$found" -eq 0 ]; then
-    echo "(CI workflow なし)"
+    msg no_ci
     return
   fi
   echo "changed-file extensions: $(git diff "$1"...HEAD --name-only 2>/dev/null | sed -n 's/.*\.\([A-Za-z0-9_]\{1,10\}\)$/\1/p' | sort -u | tr '\n' ' ')"
@@ -204,7 +227,7 @@ detect_platform() {
   local url host platform cli cli_found
   url=$(git remote get-url origin 2>/dev/null || git remote get-url "$(git remote | head -1)" 2>/dev/null || echo "")
   if [ -z "$url" ]; then
-    echo "remote: (なし)"
+    msg no_remote
     echo "platform: none"
     return
   fi
@@ -245,7 +268,7 @@ detect_platform() {
     if command -v "$cli" >/dev/null 2>&1; then cli_found=yes; else cli_found=no; fi
     echo "cli: $cli (installed: $cli_found)"
   else
-    echo "cli: (該当 CLI なし。手動作成へフォールバック)"
+    msg no_cli
   fi
 }
 
@@ -269,18 +292,17 @@ echo ""
 
 echo "=== BASE BRANCH ==="
 if [ -z "$base" ]; then
-  echo "(特定できませんでした。ユーザーに確認してください)"
+  msg no_base
   echo ""
   echo "=== NOTE ==="
-  echo "main / master / develop / origin/HEAD いずれとも分岐関係を特定できませんでした。"
-  echo "ベースブランチを引数で明示して再実行してください: pr-context.sh <base-branch>"
+  msg no_base_note
   exit 0
 fi
 echo "$base"
 if [ -n "$base_override" ]; then
-  echo "(引数で明示指定)"
+  msg base_explicit
 else
-  echo "(分岐元として自動検出)"
+  msg base_detected
 fi
 echo ""
 
@@ -295,11 +317,10 @@ if upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null
   ahead=$(echo "$counts" | awk '{print $2}')
   echo "ahead: $ahead / behind: $behind"
   if [ "$ahead" != "0" ]; then
-    echo "WARNING: ローカルに未 push のコミットが ${ahead} 件あります。push はユーザーが実施してください。"
+    msg unpushed "$ahead"
   fi
 else
-  echo "upstream: (未設定 — リモート未 push)"
-  echo "WARNING: このブランチはリモートに push されていません。PR 作成前にユーザーが push する必要があります。"
+  msg no_upstream
 fi
 echo ""
 
@@ -325,5 +346,5 @@ detect_workflows "$base"
 echo ""
 
 echo "=== NOTE ==="
-echo "完全な差分が必要な場合: git diff ${base}...HEAD"
+msg full_diff "$base"
 echo "merge-base: $mb"
