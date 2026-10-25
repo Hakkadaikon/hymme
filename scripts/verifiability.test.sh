@@ -404,6 +404,20 @@ gate 2 "echo 'loop-middle SPEC=Ccn' | bash"
 gate 2 $'python3 - <<\'EOF\'\nimport os; os.system("loop-middle SPEC=Ccn")\nEOF'
 gate 2 "echo 'loop-middle SPEC=Ccn' | python3"
 gate 0 "echo '{}' | python3 -m json.tool"
+# heredoc の本文ではクォートはただの文字(it's の後の $(…) も展開される)
+gate 2 $'cat <<EOF\nit\'s $(loop-middle SPEC=Ccn)\nEOF'
+# python3 -m はモジュールを動かすだけで、標準入力をスクリプトとして読まない
+gate 0 'cat x.json | python3 -m json.tool && loop-middle SPEC=Good'
+gate 0 'echo "loop-middle SPEC=Ccn" | python3 -m json.tool'
+gate 0 $'cat <<\'EOF\' | python3 -m json.tool\n{"cmd": "loop-middle SPEC=Ccn"}\nEOF'
+# 標準入力の判定はパイプで渡ってくる直前の区切りだけを見る
+gate 0 $'bash <<\'EOF\'\necho hi\nEOF\nloop-middle SPEC=Good'
+gate 0 'echo hi | python3 && loop-middle SPEC=Good'
+# tasks/fv を使っていないリポジトリでは、変数を含む cd の後の lake build を止めない
+plain="$(mktemp -d)"
+gate 0 'cd "$HOME/proj" && lake build' "$plain"
+gate 2 'cd "$HOME/proj" && lake build' "$tmp/src"
+rmdir "$plain"
 # 変数を含む cd の先の lake build は台帳を特定できない
 gate 2 'cd $D && lake build'
 # コミットメッセージの本文(heredoc)に入口の語があっても、それは文字列なので止めない
