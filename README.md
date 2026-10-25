@@ -118,4 +118,7 @@ TLC を回す前に、`loopeng/bin/tla_lint.sh` で SANY の構文・意味解�
 - Gherkin ランナー：`cucumber-js`(npm)や `godog`(`go install`)。nixpkgs に無い。
 - 要求のトレーサビリティ用の `doorstop`：`uv pip install doorstop`。
 
-hymme 自体の開発では、`agents/*-reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)、SMT の判定器(`scripts/loopeng-smt-oracle.test.sh`)、実ログの突き合わせ(`scripts/loopeng-trace-check.test.sh`)、検証容易性の指標とゲート(`scripts/verifiability.test.sh`)の回帰テストも走らせる。
+hymme 自体の開発では、スクリプト(`hooks/`・`loopeng/`・`scripts/`・`skills/*/scripts/` の `*.py` と `*.sh`)を `scripts/lint.sh` の品質ゲート(ruff の静的解析とフォーマット、shellcheck、shfmt。`nix develop` に入っている)に通す。`scripts/lint.sh --fix` で整形と自動修正を書き戻す。設定は `ruff.toml` と `.editorconfig`。
+スクリプトが端末に出す文言は日本語で書き、各スクリプトの先頭近くの対応表(Python は `MESSAGES` と `msg()`、シェルは `msg()` の case)から引く。判定の値(HOLDS/VIOLATED)や、他のプログラムやスキルが目印として読むトークンは文言ではないので訳さない。
+hook の中の Python は `python3 -I` で動かす(作業中のリポジトリにある `json.py` などを読み込まないため)。
+`agents/*-reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)、SMT の判定器(`scripts/loopeng-smt-oracle.test.sh`)、実ログの突き合わせ(`scripts/loopeng-trace-check.test.sh`)、検証容易性の指標とゲート(`scripts/verifiability.test.sh`)の回帰テストと、品質ゲート(`scripts/lint.sh`)も走らせる。
