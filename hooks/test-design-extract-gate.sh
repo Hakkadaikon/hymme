@@ -50,8 +50,17 @@ ledger_dir="tasks/test-design"
 ledgers="$(find "$ledger_dir" -maxdepth 1 -name '*.md' 2>/dev/null || true)"
 [ -n "$ledgers" ] || exit 0
 
-block() {
-  echo "test-design 0段ゲート: $1" >&2
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    unchecked) printf 'test-design 0段ゲート: %s に未チェック(- [ ] T-...)が残っている。手法割り当てとテスト名を埋めて [x] にしてから実装へ進め。\n' "$2" ;;
+    gap) printf 'test-design 0段ゲート: %s の T-ID 連番に欠番がある(T-%s..T-%s のうち %s 件)。抜けを埋めるか採番し直せ。\n' "$2" "$3" "$4" "$5" ;;
+    no_feature) printf 'test-design 0段ゲート: tasks/loopeng/ に .feature があるが、どの台帳にも出典として転記されていない。loopeng-gherkin の正常系シナリオを T-ID として台帳に転記してから実装へ進め。\n' ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
+block() { # block <code> [args...]: 文言を stderr に出して exit 2
+  msg "$@" >&2
   exit 2
 }
 
@@ -62,7 +71,7 @@ for ledger in $ledgers; do
   [ -n "$body" ] || continue
 
   if printf '%s' "$body" | grep -qE '^\s*- \[ \] T-'; then
-    block "$ledger に未チェック(- [ ] T-...)が残っている。手法割り当てとテスト名を埋めて [x] にしてから実装へ進め。"
+    block unchecked "$ledger"
   fi
 
   ids="$(printf '%s' "$body" | grep -oE 'T-[0-9]+' | sort -u || true)"
@@ -73,7 +82,7 @@ for ledger in $ledgers; do
     count="$(printf '%s\n' "$nums" | grep -c .)"
     expected=$((last - first + 1))
     if [ "$count" -ne "$expected" ]; then
-      block "$ledger の T-ID 連番に欠番がある(T-$first..T-$last のうち $count 件)。抜けを埋めるか採番し直せ。"
+      block gap "$ledger" "$first" "$last" "$count"
     fi
   }
 done
@@ -85,12 +94,13 @@ if [ -n "$features" ]; then
   transcribed=0
   for f in $features; do
     base="$(basename "$f")"
+    # shellcheck disable=SC2086 # $ledgers は改行区切りの台帳一覧。上の for と同じく語分割して複数ファイルを渡す
     if grep -qF "$base" $ledgers 2>/dev/null; then
       transcribed=1
       break
     fi
   done
-  [ "$transcribed" -eq 1 ] || block "tasks/loopeng/ に .feature があるが、どの台帳にも出典として転記されていない。loopeng-gherkin の正常系シナリオを T-ID として台帳に転記してから実装へ進め。"
+  [ "$transcribed" -eq 1 ] || block no_feature
 fi
 
 exit 0

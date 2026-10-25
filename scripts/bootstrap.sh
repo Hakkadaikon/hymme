@@ -12,13 +12,26 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 mode="${1:-develop}"
 
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    not_tty) printf '端末から実行されていない。続けるなら HYMME_ASSUME_YES=1 を付けて再実行する\n' ;;
+    confirm) printf '%s [y/N] ' "$2" ;;
+    no_nix) printf 'Nix が見つからない\n' ;;
+    ask_install) printf 'Determinate Nix をインストールするか(システム全体に入る。sudo が要る)' ;;
+    aborted) printf '中止した。Nix を自分で入れてから再実行する\n' ;;
+    not_on_path) printf 'Nix は入ったが PATH に無い。新しいシェルを開いて再実行する\n' ;;
+    usage) printf '使い方: %s [develop|install]\n' "$2" ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
 confirm() {
   [ "${HYMME_ASSUME_YES:-}" = "1" ] && return 0
   [ -t 0 ] || {
-    echo "Not a TTY; rerun with HYMME_ASSUME_YES=1 to proceed." >&2
+    msg not_tty >&2
     return 1
   }
-  read -r -p "$1 [y/N] " a
+  read -r -p "$(msg confirm "$1")" a
   case "$a" in [yY] | [yY][eE][sS]) return 0 ;; *) return 1 ;; esac
 }
 
@@ -26,9 +39,9 @@ ensure_nix() {
   if command -v nix >/dev/null 2>&1; then
     return 0
   fi
-  echo "Nix not found."
-  confirm "Install Determinate Nix (system-level, needs sudo)?" || {
-    echo "Aborted. Install Nix yourself, then re-run." >&2
+  msg no_nix
+  confirm "$(msg ask_install)" || {
+    msg aborted >&2
     exit 1
   }
   curl -fsSL https://install.determinate.systems/nix | sh -s -- install
@@ -38,7 +51,7 @@ ensure_nix() {
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
   fi
   command -v nix >/dev/null 2>&1 || {
-    echo "Nix installed but not on PATH. Open a new shell and re-run." >&2
+    msg not_on_path >&2
     exit 1
   }
 }
@@ -56,7 +69,7 @@ case "$mode" in
     exec nix "${flags[@]}" profile install "$here#skill-tools"
     ;;
   *)
-    echo "usage: $0 [develop|install]" >&2
+    msg usage "$0" >&2
     exit 2
     ;;
 esac

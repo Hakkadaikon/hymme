@@ -29,8 +29,22 @@ def marker_fresh(name):
     except Exception:
         return False
 
-def block(msg):
-    print(f"git-guard: {msg}", file=sys.stderr)
+MESSAGES = {
+    "rebase": "arm なしの git rebase は禁止。rebase-flow スキルの手順(計画提示 → 承認 → scripts/rebase-backup.sh)を通すこと。",
+    "reset": "arm なしの git reset は禁止。unstage なら git restore --staged。それ以外は reset-flow スキルの手順(計画提示 → 承認 → scripts/reset-arm.sh)を通すこと。",
+    "force": "生の force push は禁止。検証済み tip を指定した --force-with-lease=<branch>:<sha> のみ許可(rebase-flow §7)。",
+    "lease": "期待 tip なしの --force-with-lease は弱い(remote-tracking 依存)。--force-with-lease=<branch>:<sha> の形で検証済み sha を明示すること。",
+    "refspec": "+refspec による force push は禁止。--force-with-lease=<branch>:<sha> を使うこと。",
+    "semicolon": "`;` で直前コマンドと連結された git commit は禁止(直前の失敗を無視して走る)。`&&` か if で失敗時に止まる形にすること。",
+    "tail_head": "`| tail`/`| head` を経た行での git commit は禁止(パイプの exit がフィルタ側になり、検証の赤が握り潰される)。検証は `grep -q` 等 exit に判定が乗る形にするか、コミットを別コマンドに分けること。",
+}
+
+def msg(code, **kw):
+    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    return "git-guard: " + MESSAGES[code].format(**kw)
+
+def block(code):
+    print(msg(code), file=sys.stderr)
     sys.exit(2)
 
 # git の前に置かれても実行主体が変わらないラッパ。これらとそのオプション・数値引数は読み飛ばす
@@ -72,18 +86,18 @@ def check_git(args):
         if "--abort" in rest:
             return
         if not marker_fresh("rebase-flow.armed"):
-            block("arm なしの git rebase は禁止。rebase-flow スキルの手順(計画提示 → 承認 → scripts/rebase-backup.sh)を通すこと。")
+            block("rebase")
     elif sub == "reset":
         if not marker_fresh("reset-flow.armed"):
-            block("arm なしの git reset は禁止。unstage なら git restore --staged。それ以外は reset-flow スキルの手順(計画提示 → 承認 → scripts/reset-arm.sh)を通すこと。")
+            block("reset")
     elif sub == "push":
         for a in rest:
             if a == "--force" or re.fullmatch(r"-[A-Za-z0-9]*f[A-Za-z0-9]*", a):
-                block("生の force push は禁止。検証済み tip を指定した --force-with-lease=<branch>:<sha> のみ許可(rebase-flow §7)。")
+                block("force")
             if a == "--force-with-lease" or (a.startswith("--force-with-lease=") and ":" not in a):
-                block("期待 tip なしの --force-with-lease は弱い(remote-tracking 依存)。--force-with-lease=<branch>:<sha> の形で検証済み sha を明示すること。")
+                block("lease")
             if not a.startswith("-") and a.startswith("+"):
-                block("+refspec による force push は禁止。--force-with-lease=<branch>:<sha> を使うこと。")
+                block("refspec")
 
 def line_parts(line):
     # split_segments と同じ字句化だが、直前の連結子(; && || | 等)を保持する
@@ -134,10 +148,10 @@ def check_commit_chain(text):
             if git_sub(seg) != "commit":
                 continue
             if conn == ";":
-                block("`;` で直前コマンドと連結された git commit は禁止(直前の失敗を無視して走る)。`&&` か if で失敗時に止まる形にすること。")
+                block("semicolon")
             for pconn, pseg in parts[:idx]:
                 if pconn == "|" and pseg and os.path.basename(pseg[0]) in ("tail", "head"):
-                    block("`| tail`/`| head` を経た行での git commit は禁止(パイプの exit がフィルタ側になり、検証の赤が握り潰される)。検証は `grep -q` 等 exit に判定が乗る形にするか、コミットを別コマンドに分けること。")
+                    block("tail_head")
 
 def scan(text, depth=0):
     check_commit_chain(text)

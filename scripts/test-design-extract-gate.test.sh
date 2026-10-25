@@ -8,10 +8,12 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
-ok() { echo "ok   $1"; }
-ng() {
-  echo "FAIL $1"
-  fail=1
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    pass) printf '合格   %s -> %s\n' "$2" "$3" ;;
+    fail) printf '不合格 %s: exit %s(期待は %s)\n' "$2" "$3" "$4" ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
 }
 
 # ledger <名前> <行...>: 作業ディレクトリの tasks/test-design/<名前>.md を作る
@@ -26,7 +28,10 @@ ledger() {
 gate() {
   local got=0
   printf '{"tool_input":{"file_path":"%s"}}' "$3" | bash "$hook" >/dev/null 2>&1 || got=$?
-  if [ "$got" -eq "$1" ]; then ok "$2 -> $got"; else ng "$2: exit $got (want $1)"; fi
+  if [ "$got" -eq "$1" ]; then msg pass "$2" "$got"; else
+    msg fail "$2" "$got" "$1"
+    fail=1
+  fi
 }
 
 # 各ケースは空の作業ディレクトリ(git リポジトリ)から始める

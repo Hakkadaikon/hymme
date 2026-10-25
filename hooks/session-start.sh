@@ -8,8 +8,15 @@ skill="${root}/skills/using-hymme/SKILL.md"
 
 # 2 つ目の `---` 以降だけを出す(frontmatter を落とす)
 body="$(awk 'f; /^---$/ { if (++c == 2) f = 1 }' "$skill")"
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    empty_body) printf 'session-start: %s の本文が空か frontmatter が壊れている\n' "$2" ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
 [ -n "$body" ] || {
-  echo "session-start: ${skill} の本文が空か frontmatter が壊れている" >&2
+  msg empty_body "$skill" >&2
   exit 1
 }
 

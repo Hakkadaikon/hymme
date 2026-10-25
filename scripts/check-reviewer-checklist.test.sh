@@ -11,16 +11,24 @@ fail=0
 names='見出し語とチェックリストの項目名が一致しない'
 count='件数を数字で直書きしている'
 
+msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+  case "$1" in
+    pass) printf '合格   %s\n' "$2" ;;
+    fail) printf '不合格 %s: exit %s(期待は %s)%s\n' "$2" "$3" "$4" "${5:+、stderr に「$5」が要る}" ;;
+    *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
+  esac
+}
+
 expect() { # expect <exit> <stderr に含まれるべき文言(空なら不問)> <name> <file...>
   local want="$1" msg="$2" name="$3" got=0
   shift 3
   bash "$check" "$@" 2>"$tmp/err" || got=$?
   if [ "$got" -ne "$want" ] || { [ -n "$msg" ] && ! grep -q "$msg" "$tmp/err"; }; then
-    echo "FAIL $name: exit $got (want $want${msg:+, '$msg'})"
+    msg fail "$name" "$got" "$want" "$msg"
     cat "$tmp/err"
     fail=1
   else
-    echo "ok   $name"
+    msg pass "$name"
   fi
 }
 # 本文・チェックリストは現行のまま、末尾に 1 行足した fixture を作る
@@ -71,6 +79,7 @@ expect 1 'ファイルが無い' missing-file "$tmp/nope.md"
 expect 0 '' bold-after-body "$(with_line bab '- **余分**: x')"
 expect 0 '' row-after-fence "$(with_line raf '- 余分 : x')"
 
+# shellcheck disable=SC2016 # バッククォートは fence の文字そのもの(展開させない)
 printf '## 必須ゲート\n1. **a**: x\n## 出力フォーマット\n```\n- 違反の雛形 : x\n```\n' >"$tmp/no-checklist.md"
 expect 0 '' gate-without-checklist "$tmp/no-checklist.md"
 
