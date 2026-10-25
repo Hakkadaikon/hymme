@@ -6,7 +6,7 @@
 set -euo pipefail
 
 payload="$(cat)"
-PAYLOAD="$payload" python3 - <<'PY'
+PAYLOAD="$payload" python3 -I - <<'PY'
 import json, os, re, subprocess, sys
 
 cmd = json.loads(os.environ.get("PAYLOAD", "{}")).get("tool_input", {}).get("command", "")

@@ -12,7 +12,7 @@
 set -euo pipefail
 
 payload="$(cat)"
-spec="$(printf '%s' "$payload" | python3 -c '
+spec="$(printf '%s' "$payload" | python3 -I -c '
 import json, os, shlex, sys
 try:
     data = json.load(sys.stdin)

@@ -10,7 +10,7 @@ skill="${root}/skills/using-hymme/SKILL.md"
 body="$(awk 'f; /^---$/ { if (++c == 2) f = 1 }' "$skill")"
 [ -n "$body" ] || { echo "session-start: ${skill} の本文が空か frontmatter が壊れている" >&2; exit 1; }
 
-BODY="$body" python3 -c '
+BODY="$body" python3 -I -c '
 import json, os
 ctx = ("<hymme-routing>\n"
        "hymme は superpowers 前提の拡張。以下は hymme:using-hymme スキルの全文(superpowers の工程のどこで hymme を呼ぶかの地図)。"

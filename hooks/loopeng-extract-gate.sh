@@ -6,7 +6,7 @@
 set -euo pipefail
 
 payload="$(cat)"
-cmd="$(printf '%s' "$payload" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null || true)"
+cmd="$(printf '%s' "$payload" | python3 -I -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null || true)"
 
 # 先頭の env VAR=val プレフィックスを飛ばし、実行されるコマンド名(語頭)を取る。
 # echo/grep の引数に loop-* が出るだけの誤爆を避けるため、部分一致でなく語頭一致で判定する。

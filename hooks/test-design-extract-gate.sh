@@ -13,7 +13,7 @@
 set -euo pipefail
 
 payload="$(cat)"
-file_path="$(printf '%s' "$payload" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null || true)"
+file_path="$(printf '%s' "$payload" | python3 -I -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null || true)"
 [ -n "$file_path" ] || exit 0
 
 # テストファイルでなければ対象外(実装ファイル・ドキュメント編集まで縛らない)
@@ -23,18 +23,18 @@ case "$file_path" in
 esac
 
 # ファイルの属するリポジトリへ移る。まだ無いディレクトリは、存在する祖先から探す。
-abs="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$file_path")"
+abs="$(python3 -I -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$file_path")"
 dir="$(dirname "$abs")"
 while [ ! -d "$dir" ]; do dir="$(dirname "$dir")"; done
 root="$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null || pwd -P)"
 cd "$root"
-rel="$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1]))' "$abs")"
+rel="$(python3 -I -c 'import os,sys; print(os.path.relpath(sys.argv[1]))' "$abs")"
 
 # in_scope <台帳>: 台帳の「テスト対象:」(全角コロン可)の glob に rel が一致するか。
 # glob はリポジトリのルートからの相対パス。行が無い、またはテンプレートのまま(< を含む)
 # なら未記入として全ファイルを対象にする。
 in_scope() {
-  python3 - "$1" "$rel" <<'PY'
+  python3 -I - "$1" "$rel" <<'PY'
 import fnmatch, re, sys
 ledger, rel = sys.argv[1], sys.argv[2]
 values = [m.group(1) for m in map(re.compile(r"^テスト対象[:：](.*)").match, open(ledger, encoding="utf-8")) if m]
