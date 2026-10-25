@@ -71,6 +71,9 @@
         # Gherkin runners (cucumber-js / godog) aren't in nixpkgs; install per-project
         # via npm / go install when a runnable .feature is actually needed.
       ];
+
+      # hymme 自身のスクリプトの品質ゲート(scripts/lint.sh)。skill-tools には入れない(開発用)
+      lintTools = [ pkgs.ruff pkgs.shellcheck pkgs.shfmt ];
     in
     {
       packages = {
@@ -126,8 +129,14 @@
         touch $out
       '';
 
+      checks.lint = pkgs.runCommand "lint" { nativeBuildInputs = lintTools ++ [ pkgs.bashNonInteractive pkgs.findutils ]; } ''
+        cp -r ${self} src && chmod -R u+w src
+        bash src/scripts/lint.sh
+        touch $out
+      '';
+
       devShells.default = pkgs.mkShell {
-        buildInputs = tools;
+        buildInputs = tools ++ lintTools;
       };
     }
   );
