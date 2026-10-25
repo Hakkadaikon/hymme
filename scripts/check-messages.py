@@ -30,7 +30,8 @@ def defined_and_used(path, text):
         start = re.search(r"(?:^|[;{\s])(?:function\s+msg\b|msg\s*\(\s*\))\s*\{", text)
         end = text.find("esac", start.end()) if start else -1
         body = text[start.end() : end] if start and end > 0 else ""
-        labels = re.findall(r"(?:^|[;\s])((?:[\"']?\w+[\"']?\s*\|\s*)*[\"']?\w+[\"']?)\s*\)", body)
+        # a label starts a line, or follows ;; or "in" (a word followed by ")" inside a message is not one)
+        labels = re.findall(r"(?:^\s*|;;\s*|\bin\s+)\(?((?:[\"']?\w+[\"']?\s*\|\s*)*[\"']?\w+[\"']?)\s*\)", body, re.M)
         defined = {lab.strip(" \"'") for group in labels for lab in group.split("|")}
         used = set(re.findall(r"""(?:^|[\s;&|(`])msg\s+["']?([a-z_]\w*)\b""", text, re.M))
     return defined, used

@@ -7,7 +7,7 @@ set -euo pipefail
 
 # 途中で cd しても切り出した .py を見失わないよう、hook の置き場所を先に絶対パスにする
 # (シンボリックリンク経由の呼び出しは実体へ辿り、CDPATH の出力は捨てる)
-self="$(realpath "$0" 2>/dev/null || printf '%s' "$0")"
+self="$(realpath "$0" 2>/dev/null || python3 -I -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$0")"
 here="$(CDPATH='' cd -P "$(dirname "$self")" >/dev/null && pwd -P)"
 
 payload="$(cat)"
