@@ -8,7 +8,7 @@
 
 | 局面 | superpowers が担う | hymme が足す |
 | --- | --- | --- |
-| 設計 | brainstorming(spec 化、Architectural 経路) | 設計後・spec 前に loop-engineering の 2 問ゲート / formal-verification の性質カタログ |
+| 設計 | brainstorming(spec 化、Architectural 経路) | 設計後・spec 前に loop-engineering の道具の選び方 / formal-verification の性質カタログ |
 | 計画 | writing-plans(Task / Step) | spec 承認後に test-design で T-ID 台帳 → Task に落とす |
 | 実装 | subagent-driven-development / executing-plans、test-driven-development | implementer は coder agent(ponytail + TDD 契約)。prover / modeler は controller が別 dispatch、完了ゲートで各 reviewer |
 | コミット | (規約なし) | commit-flow(粒度)+ micro-commit(実務) |
@@ -31,7 +31,10 @@ superpowers の `using-superpowers` と hymme の `using-hymme` はどちらも�
 | loop-engineering | 工程(0 段) | ├ **loopeng-extract** | 仕様・要求から要件を網羅抽出する。信頼境界ごとに STRIDE の6観点で異常系の要件を突き合わせ、入力のパースや長さ・オフセットの算術があれば CWE Top 25 も確認する。 |
 | loop-engineering | 工程(外) | ├ **loopeng-formalize** | EARS 記法と状態/ドメインモデルへ構造化し、TLA+ spec に落とす。 |
 | loop-engineering | 工程(中) | ├ **loopeng-modelcheck** | TLC でモデル検査し、spec 自体を mutation oracle で点検する。最後に、初期状態・不変条件・temporal 性質・遷移の文面を独立した読み手に平文へ戻させる。その結果が要件と一致するか、向きの取り違えや空成立が無いかを確かめる。 |
-| loop-engineering | 工程(内) | └ **loopeng-gherkin** | 反例トレースを Gherkin の受け入れ仕様に落とす。 |
+| loop-engineering | 工程(内) | ├ **loopeng-gherkin** | 反例トレースを Gherkin の受け入れ仕様に落とす。 |
+| loop-engineering | SMT 経路 | ├ **loopeng-smt** | 状態を持たない判定(ルール・設定・条件式)がどんな入力でも成り立つかを Z3 で検査する。性質ごとにわざと壊した版を添え、検査が効いていることも確かめる(`smt_oracle.py`)。 |
+| loop-engineering | 実装後 | └ **loopeng-tracecheck** | 実システムの状態ログを TLA+ spec に流し、spec の許さない遷移を特定する(`trace_check.py`)。見えない変数は spec に選ばせる。 |
+| 形式検証の前 | 検証容易性 | **verifiability** | 検証する判定のコードを小さな純粋関数に切り出し、指標(CCN・行数・引数・副作用・エラーの畳み込み)を閾値まで直す(`verifiability.py`)。hook が台帳と指標と reviewer の合格を検査し、満たさなければ形式検証の入口を止める(入口と条件はスキルの「強制のしくみ」)。 |
 | test-design | ルーター | **test-design** | テスト設計・既存テストレビューの入口ルーター。 |
 | test-design | 工程(0 段) | ├ **test-extract** | テストすべき振る舞いを網羅抽出し、台帳にする。 |
 | test-design | 工程 | ├ **test-catalog** | 手法カタログ(索引専用)。各振る舞いへ、同値分割・状態遷移・mutation testing・TDDサイクルなど個別スキル化された40のテスト技法から手法を割り当てる。 |
@@ -61,6 +64,7 @@ agents として次を同梱する。呼び出しは subagent_type `hymme:<name>
 | **prover** | formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。formal-verification-reviewer への hand-off は controller が行う。 |
 | **diff-reviewer** | diff-review のワーカー(多観点レビュー)。 |
 | **code-reviewer** | ponytail-review 観点(過剰設計)だけを見るレビュー担当。 |
+| **verifiability-reviewer** | 検証容易性の台帳の完了ゲート。指標を自分で再計測し、対象の選び方・例外・振る舞いの保全を外側から検査する。 |
 | **loop-engineering-reviewer** / **test-design-reviewer** / **formal-verification-reviewer** | 各系統の完了ゲート。controller が modeler / prover / test-design の成果を渡して外部検査させる。 |
 
 coder と code-reviewer は [ponytail](https://github.com/DietrichGebert/ponytail) プラグインを Skill ツールで呼ぶ(soft dependency、未導入なら該当手順をスキップ)。ponytail は自身の marketplace から入れる。`/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`。
@@ -83,7 +87,7 @@ superpowers は `/plugin install superpowers@claude-plugins-official` で入れ�
 
 ## ツールチェイン(Nix)
 
-スキルは TLA+(TLC/SANY)、Apalache、make、python3、Lean(elan 経由)を外部コマンドとして呼ぶ。
+スキルは TLA+(TLC/SANY)、Apalache、make、python3(Z3 と lizard の Python バインディング入り)、Lean(elan 経由)を外部コマンドとして呼ぶ。
 flake がこれらをまとめて提供する。
 
 一括セットアップ。
@@ -102,9 +106,10 @@ nix develop                       # ツールチェインを PATH に載せた d
 nix profile install .#skill-tools # または profile にインストール
 ```
 
-これで `tlc` / `sany` / `apalache-mc` / `lake` / `lean` が使えるようになる。
+これで `tlc` / `sany` / `apalache-mc` / `lake` / `lean` と、`loopeng/bin` のスクリプト(`smt_oracle.py` / `trace_check.py` / `verifiability.py` など)が使えるようになる。検証容易性ゲートは `verifiability.py` を PATH から呼ぶので、`skill-tools` が無いと対象コードのある検証は止まる。
 nixpkgs には TLA+ と Apalache の公式パッケージが無いため、flake は固定したリリース成果物を取得して JRE でラップする。
 バージョンを上げるときは `flake.nix` の URL とハッシュを揃えて更新する。
+v1.8.0 の `tla2tools.jar` は差し替えが続く先行版で、ハッシュ不一致でビルドが止まることがある。そのときは新しいハッシュを GitHub のリリース資産のダイジェストと照合してから付け直す(取得経路の改ざんと区別するため)。
 
 TLC を回す前に、`loopeng/bin/tla_lint.sh` で SANY の構文・意味解析と、`@type:` 注釈がある spec の Apalache 型検査を通す。`loop-middle` / `loop-inner` は `lint` ターゲットで自動的に通す。`tlc` を直接叩いた Bash が止められたら、PreToolUse の hook(`hooks/loopeng-lint-gate.sh`)が spec のエラーを見つけている。表示されたエラーを直してから回し直す。
 
@@ -113,4 +118,4 @@ TLC を回す前に、`loopeng/bin/tla_lint.sh` で SANY の構文・意味解�
 - Gherkin ランナー：`cucumber-js`(npm)や `godog`(`go install`)。nixpkgs に無い。
 - 要求のトレーサビリティ用の `doorstop`：`uv pip install doorstop`。
 
-hymme 自体の開発では、`agents/*-reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)も走らせる。
+hymme 自体の開発では、`agents/*-reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)、SMT の判定器(`scripts/loopeng-smt-oracle.test.sh`)、実ログの突き合わせ(`scripts/loopeng-trace-check.test.sh`)、検証容易性の指標とゲート(`scripts/verifiability.test.sh`)の回帰テストも走らせる。
