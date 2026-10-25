@@ -6,7 +6,9 @@
 set -euo pipefail
 
 # 途中で cd しても切り出した .py を見失わないよう、hook の置き場所を先に絶対パスにする
-here="$(cd "$(dirname "$0")" && pwd)"
+# (シンボリックリンク経由の呼び出しは実体へ辿り、CDPATH の出力は捨てる)
+self="$(realpath "$0" 2>/dev/null || printf '%s' "$0")"
+here="$(CDPATH='' cd -P "$(dirname "$self")" >/dev/null && pwd -P)"
 
 payload="$(cat)"
 PAYLOAD="$payload" python3 -I "$here/pr_review_gate.py"

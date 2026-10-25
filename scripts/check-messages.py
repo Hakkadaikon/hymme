@@ -3,6 +3,7 @@
 
 Python は MESSAGES のキーと msg() に渡すコード、シェルは msg() の case ラベルと msg に渡すコードを突き合わせる。
 対応表に無いコードは実行時に「未知のメッセージコード」と表示されるだけで落ちないので、ここで静的に止める。
+変数で渡すコード(msg "$code")は静的に決まらないので見ない(実行時の「未知のメッセージコード」表示に任せる)。
 使い方: check-messages.py <file>...   (exit 0: 全部ある、1: 足りないコードがある)
 """
 
@@ -22,13 +23,16 @@ def msg(code, **kw):
 def defined_and_used(path, text):
     if path.endswith(".py"):
         table = re.search(r"^MESSAGES = \{(.*?)^\}", text, re.M | re.S)
-        defined = set(re.findall(r'^\s+"(\w+)":', table.group(1), re.M)) if table else set()
-        used = set(re.findall(r'\bmsg\(\s*"(\w+)"', text))
+        defined = set(re.findall(r'^\s+["\'](\w+)["\']:', table.group(1), re.M)) if table else set()
+        used = set(re.findall(r"""\bmsg\(\s*(?:code\s*=\s*)?["'](\w+)["']""", text))
     else:
-        body = re.search(r"^\s*msg\(\) *\{.*?^\s*\}", text, re.M | re.S)
-        defined = set(re.findall(r"^\s*([\w|]+)\)", body.group(0), re.M)) if body else set()
-        defined = {c for d in defined for c in d.split("|")}
-        used = set(re.findall(r"(?:^|[\s;&|(\"$])msg\s+([a-z_][\w]*)", text, re.M))
+        # msg() {, msg () {, function msg {: the table is the case … esac that follows (one-line bodies too)
+        start = re.search(r"(?:^|[;{\s])(?:function\s+msg\b|msg\s*\(\s*\))\s*\{", text)
+        end = text.find("esac", start.end()) if start else -1
+        body = text[start.end() : end] if start and end > 0 else ""
+        labels = re.findall(r"(?:^|[;\s])((?:[\"']?\w+[\"']?\s*\|\s*)*[\"']?\w+[\"']?)\s*\)", body)
+        defined = {lab.strip(" \"'") for group in labels for lab in group.split("|")}
+        used = set(re.findall(r"""(?:^|[\s;&|(`])msg\s+["']?([a-z_]\w*)\b""", text, re.M))
     return defined, used
 
 
