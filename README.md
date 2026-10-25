@@ -28,7 +28,7 @@ superpowers の `using-superpowers` と hymme の `using-hymme` はどちらも�
 | 系統 | 役割 | スキル | 説明 |
 | --- | --- | --- | --- |
 | loop-engineering | ルーター | **loop-engineering** | 自然言語の要求を TLA+ で検査可能な設計へ厳密化する 3 重ループの入口ルーター。 |
-| loop-engineering | 工程(0 段) | ├ **loopeng-extract** | 仕様・要求から要件を網羅抽出する。信頼境界ごとに STRIDE の6観点で異常系の要件を突き合わせ、入力のパースや長さ・オフセットの算術があれば CWE Top 25 も確認する。 |
+| loop-engineering | 工程(0 段) | ├ **loopeng-extract** | 仕様・要求から要件を網羅抽出する。信頼境界ごとに STRIDE の6観点で異常系の要件を突き合わせ、入力のパースや長さ・オフセットの算術があれば CWE Top 25 も確認する。名前から掘る必要のある原文(依存先・先行研究)は、[imozuru](https://github.com/MaryCache/imozuru) が入っていればそれで集める(任意の依存)。 |
 | loop-engineering | 工程(外) | ├ **loopeng-formalize** | EARS 記法と状態/ドメインモデルへ構造化し、TLA+ spec に落とす。 |
 | loop-engineering | 工程(中) | ├ **loopeng-modelcheck** | TLC でモデル検査し、spec 自体を mutation oracle で点検する。最後に、初期状態・不変条件・temporal 性質・遷移の文面を独立した読み手に平文へ戻させる。その結果が要件と一致するか、向きの取り違えや空成立が無いかを確かめる。 |
 | loop-engineering | 工程(内) | ├ **loopeng-gherkin** | 反例トレースを Gherkin の受け入れ仕様に落とす。 |
