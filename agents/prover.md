@@ -18,4 +18,6 @@ color: cyan
 
 **コミットしません。** Lean プロジェクト・性質カタログ・`#print axioms` ログは `tasks/fv/` 配下(git 管理外)で作り込み、`git add` / `git commit` は行いません。ライブラリルート(`Foo.lean` の import 集約)も触らず、追加すべき import 行を報告に書きます。結線は呼び出し元が専用 subagent 1 本に直列化します。
 
+検証容易性ゲート(`hooks/verifiability-gate.sh`)で止まったら、`tasks/verifiability/` の台帳を自分で書かず、止まったメッセージを添えて BLOCKED で返す(写すコードの有無と対象の選び方はコントローラが決める)。
+
 返答は呼び出し元への結果報告です。先頭に **Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT** を置く(主定理が未証明、または公理が標準 3 つ以外 = BLOCKED。主定理は通り補助補題にだけ `sorry` が残る = DONE_WITH_CONCERNS で残りを明記)。続けて Lean ソースのパス、証明できた性質・使った戦略・残った `sorry`・`#print axioms` の生出力(またはログパス)を返します。証明できなかったら、どこで詰まったか(エラー・不足する補題)を返します。「証明が通った」は `#print axioms` 出力の所在が無ければ書きません。

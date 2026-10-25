@@ -38,6 +38,8 @@ argument-hint: "[証明したい性質/仕様(ファイルパス or 説明)]"
 
 順に進む。各段で止まって検証する。
 
+**§2 に入る前に検証容易性の段を通す。** 既存の実装(または書いたばかりの実装)の判定を証明するなら、[`../verifiability/SKILL.md`](../verifiability/SKILL.md) で判定を小さな純粋関数に切り出し、指標と reviewer の合格を得てから Lean に写す。実装前で写すコードが無いときも台帳 `tasks/verifiability/<Name>.md` を作り「対象コード無し: 理由」と書き、§4 で実装に橋渡しする前に対象を書き直す。止める入口と条件は verifiability スキルの「強制のしくみ」。
+
 ### 1. 仕様を網羅形式へ
 
 雑な NL 要件 → 構造化(precondition / invariant / postcondition / 想定する脅威)。曖昧な点は実装前にユーザーに確認する。「全ケース」を意識する: 空入力、境界、重複、順序。

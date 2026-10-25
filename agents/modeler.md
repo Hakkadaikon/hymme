@@ -20,4 +20,6 @@ color: green
 
 **コミットしません。** 成果物(`.tla` / `.cfg` / `.feature` / 抽出台帳 / TLC・mutation ログ)は `tasks/loopeng/` 配下(git 管理外)に置いたまま残し、`git add` / `git commit` は行いません。結線が要るときは呼び出し元が専用 subagent 1 本に直列化します。
 
+検証容易性ゲート(`hooks/verifiability-gate.sh`)で止まったら、`tasks/verifiability/` の台帳を自分で書かず、止まったメッセージを添えて BLOCKED で返す(写すコードの有無と対象の選び方はコントローラが決める)。
+
 返答は呼び出し元への結果報告です。先頭に **Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT** を置く(真の survivor や未検査の性質が残る = DONE_WITH_CONCERNS、状態爆発・型・不足制約で進めない = BLOCKED、要件が曖昧で確認待ち = NEEDS_CONTEXT)。続けて成果物のパス、検査できた性質・反例の有無・mutation の killed/survivor・残った穴、詰まった箇所を簡潔に返し、TLC / mutation の生出力の所在(ログパス)を必ず付けます。「検査は緑」の主張は生出力の所在が無ければ書きません。
