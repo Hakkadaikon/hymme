@@ -33,7 +33,7 @@ MESSAGES = {
 
 def msg(code, **kw):
     """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
-    return MESSAGES[code].format(**kw)
+    return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 
 LOOP = re.compile(r"loop-(outer|middle|inner)")
@@ -167,11 +167,11 @@ class Gate:
             for start, end, body in reversed(substitutions(text)):
                 self.parse(body, cwd, dict(env), depth + 1)
                 text = text[:start] + "SUBST" + text[end:]
-        piped = ""  # the previous segment when this one reads it through a pipe
+        piped = ""  # every earlier segment of the pipeline this one reads from (a | tee x | bash)
         for op, toks in self.segments(text):
             raw = " ".join(toks)
             feed = piped if op in ("|", "|&") else ""
-            piped = raw
+            piped = f"{feed} {raw}" if op in ("|", "|&") else raw
             local = {}
             while toks:
                 t, base = toks[0], os.path.basename(toks[0])
@@ -293,6 +293,9 @@ class Gate:
                     break
                 rest = self.skip_opts(rest, ("--cfg", "--timeout"))
         elif verb == "lake" and "build" in args:
+            if "$" in cwd and "/tasks/fv/" in cwd.split("$", 1)[1] + "/":
+                self.block(msg("var_cd"))
+                return
             if "$" in cwd:
                 known = cwd.split("$")[0].rstrip("/") or "/"
                 while known != "/" and not os.path.isdir(os.path.join(known, "tasks", "fv")):

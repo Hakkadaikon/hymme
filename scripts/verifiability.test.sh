@@ -15,7 +15,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   case "$1" in
     ok) printf '合格   %s\n' "$2" ;;
     ng) printf '不合格 %s\n' "$2" ;;
-    exit) printf '%s: exit %s(期待 %s)' "$2" "$3" "$4" ;;
+    exit) printf '%s: exit %s(期待は %s)' "$2" "$3" "$4" ;;
     lacks) printf "%s: 出力に '%s' が無い" "$2" "$3" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac
@@ -433,6 +433,10 @@ gate 0 'echo hi | python3 && loop-middle SPEC=Good'
 # tasks/fv を使っていないリポジトリでは、変数を含む cd の後の lake build を止めない
 plain="$(mktemp -d)"
 gate 0 'cd "$HOME/proj" && lake build' "$plain"
+# 変数を含む cd でも、先に tasks/fv/<Name> が見えていれば台帳を特定できないので止める
+gate 2 'cd "$HOME/x/tasks/fv/Foo" && lake build' "$plain"
+# 多段のパイプでシェルへ流す形も、前の区切りまで遡って見る
+gate 2 "echo 'loop-middle SPEC=Ccn' | tee /dev/null | bash"
 gate 2 'cd "$HOME/proj" && lake build' "$tmp/src"
 rmdir "$plain"
 # 変数を含む cd の先の lake build は台帳を特定できない
