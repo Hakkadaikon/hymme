@@ -40,3 +40,4 @@ description: >
 - 反例が出た → **loopeng-gherkin** で Gherkin へ機械変換し、設計を直して外/中ループへ戻す。
 - `No error` かつ真の survivor 0、unverified を再検査済み → modeler として委譲されていたなら、往復確認の入力ファイルと前件到達の証跡を作り、成果物のパスと状態を報告して終わる。読み手とレビュアーの dispatch はコントローラの仕事。
 - 往復確認が共有手順の終了条件を満たした → 設計は固まった。loopeng-gherkin で正常系の受け入れシナリオを足す。
+- 実装と実ログが手に入ったら → **loopeng-tracecheck** で実ログを spec に流し、実装が spec の許す遷移だけを辿っているかを確かめる。

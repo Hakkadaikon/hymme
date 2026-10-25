@@ -12,7 +12,7 @@ description: >
 # loopeng-formalize (外ループ: NL を EARS + 状態/ドメインモデルへ)
 
 抽出した要件(または最初から自然言語の要求)を2つに構造化する。曖昧な点はモデル化前にユーザーへ確認。
-**前提**: `tasks/loopeng/<Name>.extract.md` の台帳が閉じていること。無い/未完なら **loopeng-extract** へ戻る。
+**前提**: `tasks/loopeng/<Name>.extract.md` の台帳が閉じていること。無い/未完なら **loopeng-extract** へ戻る。`tasks/verifiability/<Name>.md` の検証容易性の台帳が通っていること([`../verifiability/SKILL.md`](../verifiability/SKILL.md) の「強制のしくみ」)。
 
 ## EARS 記法
 
