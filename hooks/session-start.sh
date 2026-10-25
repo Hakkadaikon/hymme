@@ -8,7 +8,10 @@ skill="${root}/skills/using-hymme/SKILL.md"
 
 # 2 つ目の `---` 以降だけを出す(frontmatter を落とす)
 body="$(awk 'f; /^---$/ { if (++c == 2) f = 1 }' "$skill")"
-[ -n "$body" ] || { echo "session-start: ${skill} の本文が空か frontmatter が壊れている" >&2; exit 1; }
+[ -n "$body" ] || {
+  echo "session-start: ${skill} の本文が空か frontmatter が壊れている" >&2
+  exit 1
+}
 
 BODY="$body" python3 -I -c '
 import json, os

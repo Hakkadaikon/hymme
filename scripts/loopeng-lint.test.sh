@@ -10,18 +10,21 @@ trap 'rm -rf "$tmp"' EXIT
 export TMPDIR="$tmp" _JAVA_OPTIONS="-Djava.io.tmpdir=$tmp"
 fail=0
 
-ok()   { echo "ok   $1"; }
-ng()   { echo "FAIL $1"; fail=1; }
-spec() { printf '%s\n' "---- MODULE $1 ----" "${@:2}" "====" > "$tmp/$1.tla"; }
+ok() { echo "ok   $1"; }
+ng() {
+  echo "FAIL $1"
+  fail=1
+}
+spec() { printf '%s\n' "---- MODULE $1 ----" "${@:2}" "====" >"$tmp/$1.tla"; }
 
-spec Good  'EXTENDS Naturals' 'VARIABLE x' 'Init == x = 0' "Next == x < 2 /\\ x' = x + 1" 'Inv == x <= 2'
+spec Good 'EXTENDS Naturals' 'VARIABLE x' 'Init == x = 0' "Next == x < 2 /\\ x' = x + 1" 'Inv == x <= 2'
 spec Undef 'VARIABLE x' 'Init == x = 0' "Next == x' = y"
-spec Syn   'VARIABLE x' 'Init == x = = 0'
+spec Syn 'VARIABLE x' 'Init == x = = 0'
 spec Typed 'EXTENDS Naturals' 'VARIABLE' '  \* @type: Int;' '  x' 'Init == x = 0' "Next == x' = x + 1"
 spec TyBad 'EXTENDS Naturals' 'VARIABLE' '  \* @type: Int;' '  x' 'Init == x = 0' "Next == x' = TRUE"
 # eq->neq を EXCEPT の中に当てると構文エラーの mutant になる
-spec Exc   'VARIABLE f' 'Init == f = [i \in {1} |-> 0]' "Next == f' = [f EXCEPT ![1] = 2]" 'Inv == f[1] \in {0, 2}'
-printf 'INIT Init\nNEXT Next\nINVARIANT Inv\n' > "$tmp/Good.cfg"
+spec Exc 'VARIABLE f' 'Init == f = [i \in {1} |-> 0]' "Next == f' = [f EXCEPT ![1] = 2]" 'Inv == f[1] \in {0, 2}'
+printf 'INIT Init\nNEXT Next\nINVARIANT Inv\n' >"$tmp/Good.cfg"
 cp "$tmp/Good.cfg" "$tmp/Exc.cfg"
 mkdir -p "$tmp/sub" && cp "$tmp/Undef.tla" "$tmp/sub/"
 
@@ -30,13 +33,16 @@ mkdir -p "$tmp/nosany"
 for c in bash cat grep dirname basename tail mktemp rm python3; do ln -s "$(command -v "$c")" "$tmp/nosany/$c"; done
 # 型検査の前に落ちる偽の apalache-mc
 mkdir -p "$tmp/stub"
-printf '#!/bin/sh\necho "launcher exploded" >&2\nexit 1\n' > "$tmp/stub/apalache-mc"
+printf '#!/bin/sh\necho "launcher exploded" >&2\nexit 1\n' >"$tmp/stub/apalache-mc"
 chmod +x "$tmp/stub/apalache-mc"
 
 lint() { # lint <want-exit> <spec> [PATH]
   local got=0
   PATH="${3:-$PATH}" bash loopeng/bin/tla_lint.sh "$tmp/$2.tla" >"$tmp/lint.out" 2>&1 || got=$?
-  [ "$got" -eq "$1" ] && ok "lint $2 -> $got" || { ng "lint $2: exit $got (want $1)"; tail -15 "$tmp/lint.out"; }
+  [ "$got" -eq "$1" ] && ok "lint $2 -> $got" || {
+    ng "lint $2: exit $got (want $1)"
+    tail -15 "$tmp/lint.out"
+  }
 }
 lint 0 Good
 lint 1 Undef
@@ -67,7 +73,7 @@ gate 0 'tlc -config Good.cfg Good.tla'
 gate 0 'echo tlc Undef.tla'
 gate 0 'grep tlc Undef.tla'
 gate 0 'tlc NoSuchSpec.tla'
-gate 0 'tlc "Undef.tla'                      # 引用符が閉じていない: 判定できないので通す
+gate 0 'tlc "Undef.tla' # 引用符が閉じていない: 判定できないので通す
 gate 0 'broken json' "$PATH" '{not json'
 nosany_payload="$(python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":"tlc Undef.tla"},"cwd":sys.argv[1]}))' "$tmp")"
 gate 0 'tlc Undef.tla (no sany)' "$tmp/nosany" "$nosany_payload"
@@ -81,18 +87,20 @@ fi
 oracle() { # oracle <want-exit> <spec> <summary に含むべき ERE> [出力全体に含むべき ERE]
   local got=0 out
   out="$(cd "$tmp" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" "$2.tla" --workers 1 --mut-timeout 20 2>&1)" || got=$?
-  local summary; summary="$(grep '^mutants:' <<<"$out" || true)"
+  local summary
+  summary="$(grep '^mutants:' <<<"$out" || true)"
   if [ "$got" -eq "$1" ] && { [ -z "$3" ] || grep -qE "$3" <<<"$summary"; } && { [ -z "${4:-}" ] || grep -qE "$4" <<<"$out"; }; then
     ok "oracle $2 -> $got ${summary}"
   else
-    ng "oracle $2: exit $got (want $1), summary: ${summary:-<none>}"; tail -20 <<<"$out"
+    ng "oracle $2: exit $got (want $1), summary: ${summary:-<none>}"
+    tail -20 <<<"$out"
   fi
 }
 # 性質違反だけを killed と数え、TLC の実行時エラーは unverified に分ける(残れば exit 3)
 # lt->le#0 は x <= 2 の Inv 違反で落ちる(timeout ではなく性質違反で killed になる行を固定する)
 oracle 3 Good 'killed: [1-9].*survivors: 0.*unverified: [1-9]' '^  killed +lt->le#0@'
 # 構文エラーになる mutant は invalid に分け、killed に数えない
-oracle 3 Exc  'invalid: [1-9]'
+oracle 3 Exc 'invalid: [1-9]'
 # ベースラインが通らない spec では mutation を回さない
 oracle 2 Undef ''
 
@@ -155,7 +163,10 @@ sed 's/MODULE Good/MODULE New/' "$tmp/since/Good.tla" >"$tmp/since/New.tla"
 cp "$tmp/since/Good.cfg" "$tmp/since/New.cfg"
 got=0
 out="$(cd "$tmp/since" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" New.tla --since HEAD --mut-timeout 20 2>&1)" || got=$?
-if grep -qE '^mutants: 5 ' <<<"$out"; then ok 'oracle --since treats an untracked spec as all new'; else ng "oracle --since on an untracked spec: exit $got"; grep -E '^mutants:' <<<"$out" || true; fi
+if grep -qE '^mutants: 5 ' <<<"$out"; then ok 'oracle --since treats an untracked spec as all new'; else
+  ng "oracle --since on an untracked spec: exit $got"
+  grep -E '^mutants:' <<<"$out" || true
+fi
 # リビジョンが無い、git の外: ベースラインを回す前に、専用の終了コード 4 で止める
 bad() { # bad <説明> <dir> <rev>
   local got=0

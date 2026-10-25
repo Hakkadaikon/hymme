@@ -14,9 +14,12 @@ mode="${1:-develop}"
 
 confirm() {
   [ "${HYMME_ASSUME_YES:-}" = "1" ] && return 0
-  [ -t 0 ] || { echo "Not a TTY; rerun with HYMME_ASSUME_YES=1 to proceed." >&2; return 1; }
+  [ -t 0 ] || {
+    echo "Not a TTY; rerun with HYMME_ASSUME_YES=1 to proceed." >&2
+    return 1
+  }
   read -r -p "$1 [y/N] " a
-  case "$a" in [yY]|[yY][eE][sS]) return 0 ;; *) return 1 ;; esac
+  case "$a" in [yY] | [yY][eE][sS]) return 0 ;; *) return 1 ;; esac
 }
 
 ensure_nix() {
@@ -25,7 +28,9 @@ ensure_nix() {
   fi
   echo "Nix not found."
   confirm "Install Determinate Nix (system-level, needs sudo)?" || {
-    echo "Aborted. Install Nix yourself, then re-run." >&2; exit 1; }
+    echo "Aborted. Install Nix yourself, then re-run." >&2
+    exit 1
+  }
   curl -fsSL https://install.determinate.systems/nix | sh -s -- install
   # The installer adds Nix to new shells; load it into this one.
   # shellcheck disable=SC1091
@@ -33,7 +38,9 @@ ensure_nix() {
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
   fi
   command -v nix >/dev/null 2>&1 || {
-    echo "Nix installed but not on PATH. Open a new shell and re-run." >&2; exit 1; }
+    echo "Nix installed but not on PATH. Open a new shell and re-run." >&2
+    exit 1
+  }
 }
 
 ensure_nix

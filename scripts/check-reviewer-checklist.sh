@@ -12,7 +12,11 @@ export LC_ALL=C.UTF-8
 
 status=0
 for f in "$@"; do
-  [ -f "$f" ] || { echo "$f: ファイルが無い" >&2; status=1; continue; }
+  [ -f "$f" ] || {
+    echo "$f: ファイルが無い" >&2
+    status=1
+    continue
+  }
   awk '/^## 出力フォーマット/{fmt=1} fmt && /^## チェックリスト/{found=1} END{exit !found}' "$f" || continue
   if ! grep -q '^## 必須ゲート' "$f"; then
     echo "$f: チェックリストがあるのに ## 必須ゲート 節が無い" >&2
@@ -20,10 +24,10 @@ for f in "$@"; do
     continue
   fi
 
-  body="$(awk '/^## 必須ゲート/{in_sec=1} /^## 出力フォーマット/{in_sec=0} in_sec' "$f" \
-    | sed -nE 's/^([0-9]+\.|-) \*\*([^*]+)\*\*.*/\2/p')"
-  checklist="$(awk '/^## 出力フォーマット/{fmt=1} fmt && /^## チェックリスト/{in_sec=1;next} in_sec && /^```/{exit} in_sec' "$f" \
-    | sed -nE 's/^- (.*[^ ]) +: .*/\1/p')"
+  body="$(awk '/^## 必須ゲート/{in_sec=1} /^## 出力フォーマット/{in_sec=0} in_sec' "$f" |
+    sed -nE 's/^([0-9]+\.|-) \*\*([^*]+)\*\*.*/\2/p')"
+  checklist="$(awk '/^## 出力フォーマット/{fmt=1} fmt && /^## チェックリスト/{in_sec=1;next} in_sec && /^```/{exit} in_sec' "$f" |
+    sed -nE 's/^- (.*[^ ]) +: .*/\1/p')"
 
   if [ "$body" != "$checklist" ]; then
     echo "$f: 本文の見出し語とチェックリストの項目名が一致しない(< 本文 / > チェックリスト)" >&2

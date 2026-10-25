@@ -12,7 +12,7 @@ cmd="$(printf '%s' "$payload" | python3 -I -c 'import sys,json; print(json.load(
 # echo/grep の引数に loop-* が出るだけの誤爆を避けるため、部分一致でなく語頭一致で判定する。
 verb="$(printf '%s' "$cmd" | awk '{for(i=1;i<=NF;i++){if($i!~/=/){print $i;exit}}}')"
 case "$verb" in
-  loop-outer|loop-middle|loop-inner) ;;
+  loop-outer | loop-middle | loop-inner) ;;
   make)
     # make -f .../Makefile.loopeng loop-outer SPEC=... 形式も対象(公式手順のもう一方の入口)
     printf '%s' "$cmd" | grep -qE '(^|[[:space:]])loop-(outer|middle|inner)([[:space:]]|$)' || exit 0
@@ -26,7 +26,10 @@ name="$(printf '%s' "$cmd" | grep -oE 'SPEC=[A-Za-z0-9_]+' | head -n1 | cut -d= 
 
 ledger="tasks/loopeng/${name}.extract.md"
 
-block() { echo "loopeng 0段ゲート: $1" >&2; exit 2; }
+block() {
+  echo "loopeng 0段ゲート: $1" >&2
+  exit 2
+}
 
 [ -f "$ledger" ] || block "抽出台帳 $ledger が無い。loopeng-extract スキルの assets/extract-template.md をコピーして埋めてから loop-* を回せ。"
 
@@ -46,7 +49,7 @@ nums="$(printf '%s' "$ids" | sed 's/^S-0*//' | sort -n)"
 first="$(printf '%s' "$nums" | head -n1)"
 last="$(printf '%s' "$nums" | tail -n1)"
 count="$(printf '%s\n' "$nums" | grep -c .)"
-expected=$(( last - first + 1 ))
+expected=$((last - first + 1))
 if [ "$count" -ne "$expected" ]; then
   block "$ledger の ID 連番に欠番がある(S-$first..S-$last のうち $count 件)。抜けを埋めるか採番し直せ。"
 fi

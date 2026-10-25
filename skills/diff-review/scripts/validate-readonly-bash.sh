@@ -9,14 +9,14 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
 [[ -z "$COMMAND" ]] && exit 0
 
 deny() {
-    echo "Blocked (diff-reviewer is read-only): $1" >&2
-    exit 2
+  echo "Blocked (diff-reviewer is read-only): $1" >&2
+  exit 2
 }
 
 # リダイレクトを拒否。stderr の /dev/null 捨てと 2>&1 のみ許可
 STRIPPED=$(printf '%s' "$COMMAND" | sed -E 's#[0-9]*>>?[[:space:]]*(&[0-9]+|/dev/null)##g')
 if [[ "$STRIPPED" == *'>'* ]]; then
-    deny "リダイレクトによる書き込みは不可: ${COMMAND}"
+  deny "リダイレクトによる書き込みは不可: ${COMMAND}"
 fi
 
 # パイプ・連結・コマンド置換を区切りに分割し、各コマンドの先頭語を検証
@@ -27,42 +27,42 @@ UTIL_RE='^(rg|grep|head|tail|wc|sort|uniq|cut|tr|cat|ls|jq|echo|true|basename|di
 # 差分収集スクリプト(読み取り専用・stdout のみ)。~ / $HOME を展開した上で正規パスとの完全一致のみ許可
 COLLECT_SH="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/collect-diff.sh"
 
-IFS=';' read -ra SEGMENTS <<< "$NORMALIZED"
+IFS=';' read -ra SEGMENTS <<<"$NORMALIZED"
 for seg in "${SEGMENTS[@]}"; do
-    seg="${seg#"${seg%%[![:space:]]*}"}"
-    [[ -z "$seg" ]] && continue
-    read -ra words <<< "$seg"
-    first="${words[0]}"
+  seg="${seg#"${seg%%[![:space:]]*}"}"
+  [[ -z "$seg" ]] && continue
+  read -ra words <<<"$seg"
+  first="${words[0]}"
 
-    first_path="${first//\"/}"
-    first_path="${first_path//\'/}"
-    first_path="${first_path/#\~/$HOME}"
-    first_path="${first_path/#\$HOME/$HOME}"
-    first_path="${first_path//\$\{CLAUDE_PLUGIN_ROOT\}/${CLAUDE_PLUGIN_ROOT:-}}"
-    first_path="${first_path//\$CLAUDE_PLUGIN_ROOT/${CLAUDE_PLUGIN_ROOT:-}}"
-    if [[ -e "$first_path" && "$(readlink -f "$first_path" 2>/dev/null)" == "$COLLECT_SH" ]]; then
-        continue
-    elif [[ "$first" == "git" ]]; then
-        # グローバルフラグ(-C <path> / -c <k=v> 等)を飛ばしてサブコマンドを特定
-        sub=""
-        i=1
-        while (( i < ${#words[@]} )); do
-            w="${words[$i]}"
-            case "$w" in
-                -C | -c) i=$((i + 2)) ;;
-                -*) i=$((i + 1)) ;;
-                *)
-                    sub="$w"
-                    break
-                    ;;
-            esac
-        done
-        if ! [[ "$sub" =~ $GIT_SUB_RE ]]; then
-            deny "git ${sub:-(サブコマンドなし)} は不可(参照系サブコマンドのみ許可)"
-        fi
-    elif ! [[ "$first" =~ $UTIL_RE ]]; then
-        deny "コマンド ${first} は許可リスト外(git 参照系と基本テキスト処理のみ使用可)"
+  first_path="${first//\"/}"
+  first_path="${first_path//\'/}"
+  first_path="${first_path/#\~/$HOME}"
+  first_path="${first_path/#\$HOME/$HOME}"
+  first_path="${first_path//\$\{CLAUDE_PLUGIN_ROOT\}/${CLAUDE_PLUGIN_ROOT:-}}"
+  first_path="${first_path//\$CLAUDE_PLUGIN_ROOT/${CLAUDE_PLUGIN_ROOT:-}}"
+  if [[ -e "$first_path" && "$(readlink -f "$first_path" 2>/dev/null)" == "$COLLECT_SH" ]]; then
+    continue
+  elif [[ "$first" == "git" ]]; then
+    # グローバルフラグ(-C <path> / -c <k=v> 等)を飛ばしてサブコマンドを特定
+    sub=""
+    i=1
+    while ((i < ${#words[@]})); do
+      w="${words[$i]}"
+      case "$w" in
+        -C | -c) i=$((i + 2)) ;;
+        -*) i=$((i + 1)) ;;
+        *)
+          sub="$w"
+          break
+          ;;
+      esac
+    done
+    if ! [[ "$sub" =~ $GIT_SUB_RE ]]; then
+      deny "git ${sub:-(サブコマンドなし)} は不可(参照系サブコマンドのみ許可)"
     fi
+  elif ! [[ "$first" =~ $UTIL_RE ]]; then
+    deny "コマンド ${first} は許可リスト外(git 参照系と基本テキスト処理のみ使用可)"
+  fi
 done
 
 exit 0

@@ -15,6 +15,7 @@ Usage:
 ponytail: line-oriented parse of TLC's text trace, no TLA value parser. Handles
 the flat `name = value` form TLC prints; nested records pass through verbatim.
 """
+
 import re
 import sys
 
@@ -48,8 +49,7 @@ def parse_states(text):
 def to_gherkin(states, name="Counterexample trace"):
     if not states:
         return None
-    lines = ["Feature: design counterexample (auto-generated from TLC trace)",
-             "", f"  Scenario: {name}"]
+    lines = ["Feature: design counterexample (auto-generated from TLC trace)", "", f"  Scenario: {name}"]
     init_action, init_vars = states[0]
     if init_vars:
         first = True

@@ -43,6 +43,7 @@ ponytail: only the machine form (When <Action> / Then <var> becomes <value>)
 from trace_to_gherkin.py is parsed. Hand-written prose Then lines are skipped --
 keep those in your own test source.
 """
+
 import json
 import re
 import sys
@@ -72,19 +73,18 @@ def emit_scenario(mapping, name, steps):
         if kind == "When":
             act = text.strip()
             if act in param_actions:
-                pending = act           # need the next Then to know the value
+                pending = act  # need the next Then to know the value
             elif act in actions:
                 out.append(f"    {actions[act]}")
             else:
-                raise SystemExit(f"unknown action {act!r} in scenario {name!r} "
-                                 f"(add it to actions or param_actions)")
+                raise SystemExit(f"unknown action {act!r} in scenario {name!r} (add it to actions or param_actions)")
         elif kind in ("Then", "And", "But"):
             m = ASSIGN_RE.match(text.strip())
             if not m:
-                continue                # narrative/prose Then: skip
+                continue  # narrative/prose Then: skip
             var, val = m.group(1), m.group(2)
             if var not in vars_:
-                continue                # var out of this mapping's scope: skip
+                continue  # var out of this mapping's scope: skip
             if pending and param_actions[pending]["var"] == var:
                 _, cv = cval(mapping, var, val)
                 out.append("    " + param_actions[pending]["call"].format(value=cv))
@@ -147,11 +147,16 @@ EXAMPLE = {
         "StartFrag": {"var": "frag", "call": "ws_lc_start_frag(&c, {value});"},
     },
     "vars": {
-        "state": {"field": "c.state", "values": {
-            "CONNECTING": "WS_CONNECTING", "OPEN": "WS_OPEN",
-            "CLOSING": "WS_CLOSING", "CLOSED": "WS_CLOSED"}},
-        "frag": {"field": "c.frag", "values": {
-            "NONE": "WS_FRAG_NONE", "TEXT": "WS_FRAG_TEXT", "BIN": "WS_FRAG_BIN"}},
+        "state": {
+            "field": "c.state",
+            "values": {
+                "CONNECTING": "WS_CONNECTING",
+                "OPEN": "WS_OPEN",
+                "CLOSING": "WS_CLOSING",
+                "CLOSED": "WS_CLOSED",
+            },
+        },
+        "frag": {"field": "c.frag", "values": {"NONE": "WS_FRAG_NONE", "TEXT": "WS_FRAG_TEXT", "BIN": "WS_FRAG_BIN"}},
         "sentClose": {"field": "c.sent_close", "values": {"TRUE": "1", "FALSE": "0"}},
         "rcvdClose": {"field": "c.rcvd_close", "values": {"TRUE": "1", "FALSE": "0"}},
     },
@@ -168,7 +173,7 @@ def main():
     if "--map" in args:
         i = args.index("--map")
         mapping = json.load(open(args[i + 1]))
-        del args[i:i + 2]
+        del args[i : i + 2]
     if mapping is None:
         raise SystemExit("need --map <mapping.json> (or --example to print one)")
     src = open(args[0]).read() if args else sys.stdin.read()
@@ -208,8 +213,8 @@ Feature: x
     assert "    counter c;" in txt, txt
     assert "c_inc(&c);" in txt, txt
     assert 'CHECK(c.x == 1, "inc then set: x=1");' in txt, txt
-    assert "c_set_mode(&c, MODE_FAST);" in txt, txt          # param_action resolved
-    assert 'CHECK(c.mode == MODE_FAST' in txt, txt
+    assert "c_set_mode(&c, MODE_FAST);" in txt, txt  # param_action resolved
+    assert "CHECK(c.mode == MODE_FAST" in txt, txt
     # an unmapped var must be skipped, not crash
     txt2 = render(mapping, parse("Feature: y\n  Scenario: s\n    When Inc\n    Then ghost becomes 9\n"))
     assert "ghost" not in txt2, txt2

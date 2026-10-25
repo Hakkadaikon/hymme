@@ -27,19 +27,22 @@
 set -euo pipefail
 
 if [ $# -ne 2 ]; then
-    echo "Usage: template-check.sh <template-file> <draft-body-file>" >&2
-    exit 2
+  echo "Usage: template-check.sh <template-file> <draft-body-file>" >&2
+  exit 2
 fi
 
 tmpl="$1"
 draft="$2"
 for f in "$tmpl" "$draft"; do
-    [ -f "$f" ] || { echo "ERROR: ファイルが見つかりません: $f" >&2; exit 2; }
+  [ -f "$f" ] || {
+    echo "ERROR: ファイルが見つかりません: $f" >&2
+    exit 2
+  }
 done
 
 # 骨組み抽出。interval 正規表現（{1,6}）に依存しないよう awk 側で長さを数える。
 skeleton() {
-    awk '
+  awk '
     {
         line = $0
         # --- 見出し: 行頭ハッシュ 1〜6 個 + 空白 ---
@@ -69,11 +72,11 @@ skeleton() {
 ts=$(mktemp)
 ds=$(mktemp)
 trap 'rm -f "$ts" "$ds"' EXIT
-skeleton "$tmpl" > "$ts"
-skeleton "$draft" > "$ds"
+skeleton "$tmpl" >"$ts"
+skeleton "$draft" >"$ds"
 
 count() { [ -z "$1" ] && echo 0 || printf '%s\n' "$1" | grep -c .; }
-label() { case "$1" in H*) echo "見出し ${1#H$'\t'}";; C*) echo "チェック項目 ${1#C$'\t'}";; *) echo "$1";; esac; }
+label() { case "$1" in H*) echo "見出し ${1#H$'\t'}" ;; C*) echo "チェック項目 ${1#C$'\t'}" ;; *) echo "$1" ;; esac }
 
 missing=$(comm -23 <(sort "$ts") <(sort "$ds") || true)
 extra=$(comm -13 <(sort "$ts") <(sort "$ds") || true)
@@ -81,34 +84,34 @@ n_missing=$(count "$missing")
 n_extra=$(count "$extra")
 
 echo "=== TEMPLATE SKELETON ==="
-if [ -s "$ts" ]; then while IFS= read -r l; do label "$l"; done < "$ts"; else echo "(見出し・チェック項目なし)"; fi
+if [ -s "$ts" ]; then while IFS= read -r l; do label "$l"; done <"$ts"; else echo "(見出し・チェック項目なし)"; fi
 echo ""
 echo "=== DRAFT SKELETON ==="
-if [ -s "$ds" ]; then while IFS= read -r l; do label "$l"; done < "$ds"; else echo "(見出し・チェック項目なし)"; fi
+if [ -s "$ds" ]; then while IFS= read -r l; do label "$l"; done <"$ds"; else echo "(見出し・チェック項目なし)"; fi
 echo ""
 
 echo "=== DIFF ==="
 if [ "$n_missing" -gt 0 ]; then
-echo "MISSING（テンプレにあるが下書きに無い＝削り違反。該当なしでも見出しは残す）:"
-while IFS= read -r l; do [ -n "$l" ] && echo "  - $(label "$l")"; done <<< "$missing"
+  echo "MISSING（テンプレにあるが下書きに無い＝削り違反。該当なしでも見出しは残す）:"
+  while IFS= read -r l; do [ -n "$l" ] && echo "  - $(label "$l")"; done <<<"$missing"
 fi
 if [ "$n_extra" -gt 0 ]; then
-echo "EXTRA（下書きにあるがテンプレに無い＝勝手追加。補足はテンプレ末尾に最小限）:"
-while IFS= read -r l; do [ -n "$l" ] && echo "  - $(label "$l")"; done <<< "$extra"
+  echo "EXTRA（下書きにあるがテンプレに無い＝勝手追加。補足はテンプレ末尾に最小限）:"
+  while IFS= read -r l; do [ -n "$l" ] && echo "  - $(label "$l")"; done <<<"$extra"
 fi
 if [ "$n_missing" -eq 0 ] && [ "$n_extra" -eq 0 ]; then
-if diff -q "$ts" "$ds" >/dev/null 2>&1; then
-echo "(差分なし)"
-else
-echo "REORDER（見出し・チェック項目の並び順がテンプレと違う＝加工。テンプレ順に戻す）"
-fi
+  if diff -q "$ts" "$ds" >/dev/null 2>&1; then
+    echo "(差分なし)"
+  else
+    echo "REORDER（見出し・チェック項目の並び順がテンプレと違う＝加工。テンプレ順に戻す）"
+  fi
 fi
 echo ""
 
 echo "=== RESULT ==="
 if [ "$n_missing" -eq 0 ] && [ "$n_extra" -eq 0 ] && diff -q "$ts" "$ds" >/dev/null 2>&1; then
-echo "OK — 骨組みはテンプレと一致。承認フローに進んでよい。"
-exit 0
+  echo "OK — 骨組みはテンプレと一致。承認フローに進んでよい。"
+  exit 0
 fi
 echo "DRIFT DETECTED — テンプレの骨組みと不一致。下書きをテンプレ構造に戻してから再チェックする。"
 echo "（入力箇所を埋める・[ ]→[x] にするのは可。見出し/チェック項目の削除・追加・改名・並べ替えは不可）"

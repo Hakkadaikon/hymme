@@ -12,10 +12,16 @@
 set -uo pipefail
 
 spec="${1:-}"
-[ -n "$spec" ] && [ -f "$spec" ] || { echo "tla_lint: no such spec: ${spec:-<none>}" >&2; exit 2; }
+[ -n "$spec" ] && [ -f "$spec" ] || {
+  echo "tla_lint: no such spec: ${spec:-<none>}" >&2
+  exit 2
+}
 # 判定に使うコマンドが無いと、エラーを見逃して通してしまう。先に確かめる。
 for c in grep dirname basename mktemp tail; do
-  command -v "$c" >/dev/null 2>&1 || { echo "tla_lint: \`$c\` が PATH に無い" >&2; exit 2; }
+  command -v "$c" >/dev/null 2>&1 || {
+    echo "tla_lint: \`$c\` が PATH に無い" >&2
+    exit 2
+  }
 done
 dir="$(cd "$(dirname "$spec")" && pwd)"
 base="$(basename "$spec")"
@@ -25,7 +31,8 @@ if command -v sany >/dev/null 2>&1; then
 elif [ -n "${TLA_JAR:-}" ] && command -v java >/dev/null 2>&1; then
   sany_cmd=(java -cp "$TLA_JAR" tla2sany.SANY)
 else
-  echo "tla_lint: no \`sany\` on PATH and no java+TLA_JAR fallback" >&2; exit 2
+  echo "tla_lint: no \`sany\` on PATH and no java+TLA_JAR fallback" >&2
+  exit 2
 fi
 
 out="$(cd "$dir" && "${sany_cmd[@]}" "$base" 2>&1)"
@@ -37,7 +44,10 @@ fi
 echo "SANY ok: $spec"
 
 if grep -q '@type:' "$spec"; then
-  command -v apalache-mc >/dev/null 2>&1 || { echo "tla_lint: @type 注釈があるが apalache-mc が無い" >&2; exit 2; }
+  command -v apalache-mc >/dev/null 2>&1 || {
+    echo "tla_lint: @type 注釈があるが apalache-mc が無い" >&2
+    exit 2
+  }
   scratch="$(mktemp -d "${TMPDIR:-/tmp}/tla_lint.XXXXXX")"
   trap 'rm -rf "$scratch"' EXIT
   if ! out="$(cd "$dir" && apalache-mc --out-dir="$scratch" typecheck "$base" 2>&1)"; then

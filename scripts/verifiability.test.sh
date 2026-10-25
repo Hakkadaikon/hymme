@@ -10,7 +10,10 @@ trap 'rm -rf "$tmp"' EXIT
 fail=0
 
 ok() { echo "ok   $1"; }
-ng() { echo "FAIL $1"; fail=1; }
+ng() {
+  echo "FAIL $1"
+  fail=1
+}
 
 mkdir -p "$tmp/src" "$tmp/tasks/verifiability"
 cat >"$tmp/src/rules.py" <<'EOF'
@@ -316,9 +319,12 @@ run 2 BadWaiver "理由"
 # --- hook: 検証の入口を台帳と指標で止める ---
 gate() { # gate <want-exit> <command> [cwd]
   local got=0
-  printf '{"tool_input":{"command":%s}}' "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$2")" \
-    | (cd "${3:-$tmp}" && PATH="$tmp/bin:$PATH" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ]; then ok "gate '$2' -> $got"; else ng "gate '$2': exit $got (want $1)"; cat "$tmp/gate.out"; fi
+  printf '{"tool_input":{"command":%s}}' "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$2")" |
+    (cd "${3:-$tmp}" && PATH="$tmp/bin:$PATH" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
+  if [ "$got" -eq "$1" ]; then ok "gate '$2' -> $got"; else
+    ng "gate '$2': exit $got (want $1)"
+    cat "$tmp/gate.out"
+  fi
 }
 
 gate 0 'loop-middle SPEC=Good'
@@ -437,21 +443,30 @@ gate 0 'loop-middle SPEC=NoCodeTmpl'
 # hook 入力の cwd を作業ディレクトリとして使う
 got=0
 printf '{"cwd":"%s","tool_input":{"command":"lake build"}}' "$tmp/tasks/fv/Fold" | (cd / && PATH="$tmp/bin:$PATH" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-if [ "$got" -eq 2 ]; then ok "gate uses the payload cwd"; else ng "payload cwd: exit $got"; cat "$tmp/gate.out"; fi
+if [ "$got" -eq 2 ]; then ok "gate uses the payload cwd"; else
+  ng "payload cwd: exit $got"
+  cat "$tmp/gate.out"
+fi
 gate 0 'echo loop-middle SPEC=Ccn'
 gate 0 'grep smt_oracle.py README.md'
-gate 2 'loop-middle'  # SPEC 省略は Makefile.loopeng の既定 Spec
+gate 2 'loop-middle' # SPEC 省略は Makefile.loopeng の既定 Spec
 
 # 指標の道具が無い環境では止める(検証の入口を素通りさせない)
 mkdir -p "$tmp/nobin"
 for c in bash cat grep awk sed head cut dirname basename python3; do ln -s "$(command -v "$c")" "$tmp/nobin/$c"; done
 got=0
 printf '{"tool_input":{"command":"loop-middle SPEC=Good"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-if [ "$got" -eq 2 ] && grep -q 'verifiability.py' "$tmp/gate.out"; then ok "gate blocks without verifiability.py"; else ng "gate without tool: exit $got"; cat "$tmp/gate.out"; fi
+if [ "$got" -eq 2 ] && grep -q 'verifiability.py' "$tmp/gate.out"; then ok "gate blocks without verifiability.py"; else
+  ng "gate without tool: exit $got"
+  cat "$tmp/gate.out"
+fi
 # 写すコードが無い台帳は、計測の道具が無くても通す
 got=0
 printf '{"tool_input":{"command":"loop-middle SPEC=NoCodeNoReview"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-if [ "$got" -eq 0 ]; then ok "no-code ledger passes without verifiability.py"; else ng "no-code without tool: exit $got"; cat "$tmp/gate.out"; fi
+if [ "$got" -eq 0 ]; then ok "no-code ledger passes without verifiability.py"; else
+  ng "no-code without tool: exit $got"
+  cat "$tmp/gate.out"
+fi
 # 作業中のリポジトリに json.py があっても hook はそれを読み込まない
 printf 'raise SystemExit(0)\n' >"$tmp/json.py"
 gate 2 'loop-middle SPEC=Ccn'
@@ -464,7 +479,10 @@ for c in "2 loop-middle SPEC=Good" "0 ls -la"; do
   set -- $c
   got=0
   printf '{"tool_input":{"command":"%s"}}' "${*:2}" | (cd "$tmp" && PATH="$tmp/nopy" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ]; then ok "no python3: '${*:2}' -> $got"; else ng "no python3 '${*:2}': exit $got (want $1)"; cat "$tmp/gate.out"; fi
+  if [ "$got" -eq "$1" ]; then ok "no python3: '${*:2}' -> $got"; else
+    ng "no python3 '${*:2}': exit $got (want $1)"
+    cat "$tmp/gate.out"
+  fi
 done
 
 python3 loopeng/bin/verifiability.py --selfcheck >/dev/null && ok "--selfcheck" || ng "--selfcheck"

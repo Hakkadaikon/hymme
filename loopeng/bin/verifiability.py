@@ -29,6 +29,7 @@ Usage:
 Exit: 0 every target passes or is waived, 1 a metric fails, 2 bad ledger
 (missing section, unknown function, waiver without a reason).
 """
+
 import ast
 import re
 import sys
@@ -42,19 +43,34 @@ FOLD = "エラーを真偽値に畳む"
 METRICS = (*LIMITS, SIDE, FOLD)
 
 # shortcut: token patterns, not data flow; a waiver with a reason covers false positives.
-SIDE_MODULES = ("requests", "urllib", "socket", "subprocess", "os", "sys", "shutil", "logging", "time", "datetime",
-                "random", "uuid", "secrets")
+SIDE_MODULES = (
+    "requests",
+    "urllib",
+    "socket",
+    "subprocess",
+    "os",
+    "sys",
+    "shutil",
+    "logging",
+    "time",
+    "datetime",
+    "random",
+    "uuid",
+    "secrets",
+)
 SIDE_PATTERNS = {
     ".py": r"\b(open|print|input)\s*\(|\b(" + "|".join(SIDE_MODULES) + r")\.|\b(global|nonlocal)\b",
     ".js": r"\b(fetch|require)\s*\(|\b(fs|console|process|localStorage|document|window|crypto)\.|"
-           r"\bDate\.now\b|\bnew Date\s*\(|\bMath\.random\b",
+    r"\bDate\.now\b|\bnew Date\s*\(|\bMath\.random\b",
     ".go": r"\b(os|io|ioutil|net|http|log|fmt|rand|syscall)\.|\btime\.(Now|Since|Sleep)\b",
     ".rs": r"\b(std::(fs|io|net|env|process|time)|println!|eprintln!|rand::|SystemTime::now|Instant::now)",
     ".java": r"\bSystem\.(out|err|currentTimeMillis|nanoTime|getenv)\b|\bnew (File|Random|Socket)\b|\bLocalDateTime\.now\b",
 }
 SIDE_PATTERNS[".ts"] = SIDE_PATTERNS[".tsx"] = SIDE_PATTERNS[".jsx"] = SIDE_PATTERNS[".js"]
-FOLD_PATTERN = (r"(catch\s*(\([^)]*\))?\s*\{[^}]*return\s+(true|false)\b)|"
-                r"(unwrap_or\((true|false)\))|(recover\(\)[\s\S]*return\s+(true|false)\b)")
+FOLD_PATTERN = (
+    r"(catch\s*(\([^)]*\))?\s*\{[^}]*return\s+(true|false)\b)|"
+    r"(unwrap_or\((true|false)\))|(recover\(\)[\s\S]*return\s+(true|false)\b)"
+)
 
 
 class LedgerError(Exception):
@@ -96,19 +112,24 @@ def find_function(path, name):
     info = lizard.analyze_file(str(path))
     if path.suffix == ".py" and "." in name:  # lizard names Python methods without their class
         cls, meth = name.rsplit(".", 1)
-        lines = {f.lineno for c in ast.walk(ast.parse(path.read_text()))
-                 if isinstance(c, ast.ClassDef) and c.name == cls
-                 for f in c.body if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)) and f.name == meth}
+        lines = {
+            f.lineno
+            for c in ast.walk(ast.parse(path.read_text()))
+            if isinstance(c, ast.ClassDef) and c.name == cls
+            for f in c.body
+            if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)) and f.name == meth
+        }
         hits = [f for f in info.function_list if f.start_line in lines]
     else:  # lizard names Java/C#/C++ methods Class::method; accept Class.method for them too
         want = name.replace(".", "::")
-        hits = [f for f in info.function_list
-                if f.name in (name, want) or re.split(r"\.|::", f.name)[-1] == name]
+        hits = [f for f in info.function_list if f.name in (name, want) or re.split(r"\.|::", f.name)[-1] == name]
     if not hits:
         raise LedgerError(f"{path}: 関数 {name} が見つからない")
     if len(hits) > 1:
-        raise LedgerError(f"{path}: {name} が複数ある({', '.join(f.name for f in hits)})。Class.method の形で指定する"
-                          "(Go の型違いの同名メソッドとオーバーロードは区別できないので、判定を別名の関数に切り出す)")
+        raise LedgerError(
+            f"{path}: {name} が複数ある({', '.join(f.name for f in hits)})。Class.method の形で指定する"
+            "(Go の型違いの同名メソッドとオーバーロードは区別できないので、判定を別名の関数に切り出す)"
+        )
     return hits[0]
 
 
@@ -125,14 +146,22 @@ def python_findings(tree, start_line):
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             value, names = node.value, [node.target.id]
         if isinstance(value, (ast.Dict, ast.List, ast.Set)) or (
-                isinstance(value, ast.Call) and getattr(value.func, "id", getattr(value.func, "attr", "")) in MUTABLE_CALLS):
+            isinstance(value, ast.Call) and getattr(value.func, "id", getattr(value.func, "attr", "")) in MUTABLE_CALLS
+        ):
             mutable.update(names)
         if isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] in SIDE_MODULES:
             imported.update(a.asname or a.name for a in node.names)
         if isinstance(node, ast.Import):  # import time as t: t.time() escapes the "time." token
             imported.update(a.asname for a in node.names if a.asname and a.name.split(".")[0] in SIDE_MODULES)
-    func = next((n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
-                 and start_line in (n.lineno, *(d.lineno for d in n.decorator_list))), None)
+    func = next(
+        (
+            n
+            for n in ast.walk(tree)
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and start_line in (n.lineno, *(d.lineno for d in n.decorator_list))
+        ),
+        None,
+    )
     if func is None:
         return [], []
     a = func.args
@@ -140,16 +169,24 @@ def python_findings(tree, start_line):
     assigned = {n.id for n in ast.walk(func) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
     used = {n.id for n in ast.walk(func) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)} - params - assigned
     side = [f"module-level {n}" for n in sorted(used & mutable)] + [f"imported {n}" for n in sorted(used & imported)]
-    fold = [f"line {h.lineno}" for h in ast.walk(func) if isinstance(h, ast.ExceptHandler)
-            and any(isinstance(r, ast.Return) and isinstance(r.value, ast.Constant)
-                    and isinstance(r.value.value, bool) for r in ast.walk(h))]
+    fold = [
+        f"line {h.lineno}"
+        for h in ast.walk(func)
+        if isinstance(h, ast.ExceptHandler)
+        and any(
+            isinstance(r, ast.Return) and isinstance(r.value, ast.Constant) and isinstance(r.value.value, bool)
+            for r in ast.walk(h)
+        )
+    ]
     return side, fold
 
 
 def is_method(source, line):
-    return any(isinstance(c, ast.ClassDef) and any(isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))
-                                                  and f.lineno == line for f in c.body)
-               for c in ast.walk(ast.parse(source)))
+    return any(
+        isinstance(c, ast.ClassDef)
+        and any(isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)) and f.lineno == line for f in c.body)
+        for c in ast.walk(ast.parse(source))
+    )
 
 
 def measure(path, name):
@@ -162,7 +199,7 @@ def measure(path, name):
         raise LedgerError(f"{path}: リポジトリ直下からの相対パスで、その配下の通常ファイルを書く")
     f = find_function(path, name)
     source = path.read_text()
-    body = "\n".join(source.splitlines()[f.start_line - 1:f.end_line])
+    body = "\n".join(source.splitlines()[f.start_line - 1 : f.end_line])
     params = list(f.parameters)
     if path.suffix == ".py" and params[:1] in (["self"], ["cls"]) and is_method(source, f.start_line):
         params = params[1:]
@@ -209,7 +246,9 @@ def _selfcheck():
     assert python_findings(ast.parse(src), 2) == (["module-level S"], ["line 5"]), python_findings(ast.parse(src), 2)
     assert python_findings(ast.parse("def g(S):\n    return S\n"), 1) == ([], [])
     src = "import re\nfrom time import time as now\nP = re.compile('x')\nC: dict = {}\ndef h(x):\n    return P.match(x) and now() in C\n"
-    assert python_findings(ast.parse(src), 5) == (["module-level C", "imported now"], []), python_findings(ast.parse(src), 5)
+    assert python_findings(ast.parse(src), 5) == (["module-level C", "imported now"], []), python_findings(
+        ast.parse(src), 5
+    )
     src = "import time as t\nS = {}\ndef k(x, /):\n    S = set()\n    return x in S and t.time()\n"
     assert python_findings(ast.parse(src), 3) == (["imported t"], []), python_findings(ast.parse(src), 3)
     assert section("## 対象\n- a::b\n## 例外\n", "対象").strip() == "- a::b"

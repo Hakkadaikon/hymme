@@ -71,9 +71,11 @@ case "$rc" in
   1)
     echo "loopeng 静的検査ゲート: $spec が静的検査を通らない。直してから TLC を回せ。" >&2
     printf '%s\n' "$out" >&2
-    exit 2 ;;
+    exit 2
+    ;;
   *)
     echo "loopeng 静的検査ゲート: 静的検査を実行できなかった(spec の誤りではない)。TLC はそのまま通す。" >&2
     printf '%s\n' "$out" >&2
-    exit 0 ;;
+    exit 0
+    ;;
 esac

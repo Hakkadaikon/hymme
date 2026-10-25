@@ -26,6 +26,7 @@ JSON -> TLA+: numbers, strings, booleans, lists as sequences, objects as records
 shortcut: no model values or functions with non-string domains; write the log
 in records/sequences, or extend to_tla() when a spec needs them.
 """
+
 import argparse
 import json
 import re
@@ -36,9 +37,26 @@ import tempfile
 from pathlib import Path
 
 PREFIX = "TC_"  # generated names; a spec using this prefix would collide
-CFG_KEYWORDS = {"CONSTANT", "CONSTANTS", "INIT", "NEXT", "SPECIFICATION", "INVARIANT", "INVARIANTS",
-                "PROPERTY", "PROPERTIES", "SYMMETRY", "VIEW", "CONSTRAINT", "CONSTRAINTS",
-                "ACTION_CONSTRAINT", "ACTION_CONSTRAINTS", "CHECK_DEADLOCK", "POSTCONDITION", "ALIAS"}
+CFG_KEYWORDS = {
+    "CONSTANT",
+    "CONSTANTS",
+    "INIT",
+    "NEXT",
+    "SPECIFICATION",
+    "INVARIANT",
+    "INVARIANTS",
+    "PROPERTY",
+    "PROPERTIES",
+    "SYMMETRY",
+    "VIEW",
+    "CONSTRAINT",
+    "CONSTRAINTS",
+    "ACTION_CONSTRAINT",
+    "ACTION_CONSTRAINTS",
+    "CHECK_DEADLOCK",
+    "POSTCONDITION",
+    "ALIAS",
+}
 
 
 class InputError(Exception):
@@ -138,8 +156,13 @@ def trace_module(spec_name, variables, steps):
     observed = observed_variables(spec_name, variables, steps)
 
     def obs(at, prime):
-        return "\n".join(f'    /\\ ("{v}" \\in DOMAIN {PREFIX}Trace[{at}] => {v}{prime} = {PREFIX}Trace[{at}].{v})'
-                         for v in observed) or "    /\\ TRUE"
+        return (
+            "\n".join(
+                f'    /\\ ("{v}" \\in DOMAIN {PREFIX}Trace[{at}] => {v}{prime} = {PREFIX}Trace[{at}].{v})'
+                for v in observed
+            )
+            or "    /\\ TRUE"
+        )
 
     return f"""{module_head(spec_name, "i", steps)}
 {PREFIX}Init ==
@@ -161,8 +184,10 @@ def step_module(spec_name, variables, steps):
     observed_variables(spec_name, variables, steps)
     partial = [no for no, obj in steps if set(obj) != set(variables)]
     if partial:
-        raise InputError(f"--all needs every variable on every line ({', '.join(variables)}); "
-                         f"line {partial[0]} lacks some. Drop --all to let the spec choose hidden variables")
+        raise InputError(
+            f"--all needs every variable on every line ({', '.join(variables)}); "
+            f"line {partial[0]} lacks some. Drop --all to let the spec choose hidden variables"
+        )
     bind = "\n".join(f"    /\\ {v} = {PREFIX}Trace[{PREFIX}k].{v}" for v in variables)
     nxt = " /\\ ".join(f"{v}' = {PREFIX}Trace[{PREFIX}k + 1].{v}" for v in variables)
     return f"""{module_head(spec_name, "k", steps)}
@@ -190,8 +215,18 @@ def run_tlc(spec, name, module, cfg_body, extra, timeout):
             shutil.copy(other, work / other.name)
         (work / f"{name}_Trace.tla").write_text(module)
         (work / f"{name}_Trace.cfg").write_text(cfg_body)
-        cmd = tlc_command() + ["-workers", "1", "-metadir", str(work / "meta"), "-dump", str(work / "states"),
-                               *extra, "-config", f"{name}_Trace.cfg", f"{name}_Trace.tla"]
+        cmd = tlc_command() + [
+            "-workers",
+            "1",
+            "-metadir",
+            str(work / "meta"),
+            "-dump",
+            str(work / "states"),
+            *extra,
+            "-config",
+            f"{name}_Trace.cfg",
+            f"{name}_Trace.tla",
+        ]
         try:
             res = subprocess.run(cmd, cwd=work, capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
@@ -213,15 +248,19 @@ def mismatch_init(name, steps):
 def mismatch_step(name, steps, k):
     """Step from the k-th to the (k+1)-th state (1-based)."""
     (pno, pobj), (no, obj) = steps[k - 1], steps[k]
-    return (f"MISMATCH: line {no} is not a step {name} allows after line {pno}\n"
-            f"  line {pno}: {json.dumps(pobj, ensure_ascii=False)}\n  line {no}: {json.dumps(obj, ensure_ascii=False)}")
+    return (
+        f"MISMATCH: line {no} is not a step {name} allows after line {pno}\n"
+        f"  line {pno}: {json.dumps(pobj, ensure_ascii=False)}\n  line {no}: {json.dumps(obj, ensure_ascii=False)}"
+    )
 
 
 def check_all(spec, name, variables, steps, constants, log, timeout):
     """--all: (exit code, message) listing every step no Next step explains."""
     module = step_module(name, variables, steps)
-    cfg_body = (f"{constants}\nINIT {PREFIX}Init\nNEXT {PREFIX}Stay\n"
-                f"INVARIANT {PREFIX}InitOK\nINVARIANT {PREFIX}StepOK\nCHECK_DEADLOCK FALSE\n")
+    cfg_body = (
+        f"{constants}\nINIT {PREFIX}Init\nNEXT {PREFIX}Stay\n"
+        f"INVARIANT {PREFIX}InitOK\nINVARIANT {PREFIX}StepOK\nCHECK_DEADLOCK FALSE\n"
+    )
     out, _ = run_tlc(spec, name, module, cfg_body, ["-continue"], timeout)
     if "Model checking completed" not in out:
         raise tlc_failure(out)
@@ -236,7 +275,9 @@ def check_all(spec, name, variables, steps, constants, log, timeout):
             bad_init = True
         else:
             bad_steps.add(int(k.group(1)))
-    lines = ([mismatch_init(name, steps)] if bad_init else []) + [mismatch_step(name, steps, k) for k in sorted(bad_steps)]
+    lines = ([mismatch_init(name, steps)] if bad_init else []) + [
+        mismatch_step(name, steps, k) for k in sorted(bad_steps)
+    ]
     if lines:
         return 1, "\n".join(lines) + f"\n{len(lines)} mismatch(es) in {len(steps)} states"
     return 0, f"OK: all {len(steps)} states of {log} are a behavior of {name} (each step checked on its own)"

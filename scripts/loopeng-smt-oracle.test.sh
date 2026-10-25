@@ -9,7 +9,10 @@ trap 'rm -rf "$tmp"' EXIT
 fail=0
 
 ok() { echo "ok   $1"; }
-ng() { echo "FAIL $1"; fail=1; }
+ng() {
+  echo "FAIL $1"
+  fail=1
+}
 
 model() { # model <name> <python body of properties()>
   printf 'from z3 import *\n\ndef properties():\n    x = Int("x")\n%s\n' "$2" >"$tmp/$1.py"
@@ -76,7 +79,10 @@ run 2 pybool "z3 Bool expression"
 run_t() { # run_t <want-exit> <model> <want-substring>  (Z3 を 200ms で打ち切る: 線形の性質は解け、非線形は決めきれない)
   local got=0
   python3 loopeng/bin/smt_oracle.py --timeout 200 "$tmp/$2.py" >"$tmp/out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ] && grep -qF -- "$3" "$tmp/out"; then ok "$2 -> $got ($3)"; else ng "$2: exit $got (want $1)"; cat "$tmp/out"; fi
+  if [ "$got" -eq "$1" ] && grep -qF -- "$3" "$tmp/out"; then ok "$2 -> $got ($3)"; else
+    ng "$2: exit $got (want $1)"
+    cat "$tmp/out"
+  fi
 }
 run_t 3 unknown "UNKNOWN"
 run_t 1 unknownmixed "Bad: VIOLATED"

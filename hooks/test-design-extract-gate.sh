@@ -18,7 +18,7 @@ file_path="$(printf '%s' "$payload" | python3 -I -c 'import sys,json; print(json
 
 # テストファイルでなければ対象外(実装ファイル・ドキュメント編集まで縛らない)
 case "$file_path" in
-  *.test.*|*.spec.*|*test_*|*_test.*) ;;
+  *.test.* | *.spec.* | *test_* | *_test.*) ;;
   *) exit 0 ;;
 esac
 
@@ -50,7 +50,10 @@ ledger_dir="tasks/test-design"
 ledgers="$(find "$ledger_dir" -maxdepth 1 -name '*.md' 2>/dev/null || true)"
 [ -n "$ledgers" ] || exit 0
 
-block() { echo "test-design 0段ゲート: $1" >&2; exit 2; }
+block() {
+  echo "test-design 0段ゲート: $1" >&2
+  exit 2
+}
 
 for ledger in $ledgers; do
   in_scope "$ledger" || continue
@@ -68,7 +71,7 @@ for ledger in $ledgers; do
     first="$(printf '%s' "$nums" | head -n1)"
     last="$(printf '%s' "$nums" | tail -n1)"
     count="$(printf '%s\n' "$nums" | grep -c .)"
-    expected=$(( last - first + 1 ))
+    expected=$((last - first + 1))
     if [ "$count" -ne "$expected" ]; then
       block "$ledger の T-ID 連番に欠番がある(T-$first..T-$last のうち $count 件)。抜けを埋めるか採番し直せ。"
     fi

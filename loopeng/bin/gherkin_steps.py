@@ -31,9 +31,11 @@ Override Model.normalize if your representation differs from TLC's text form.
 
 Run:  pytest --gherkin-terminal-reporter   (needs: pip install pytest-bdd)
 """
+
 try:
-    from pytest_bdd import given, when, then, parsers
+    from pytest_bdd import given, parsers, then, when
 except ModuleNotFoundError:  # let --selfcheck run without the test deps installed
+
     def _noop_deco(*_a, **_k):
         return lambda fn: fn
 
@@ -47,11 +49,12 @@ except ModuleNotFoundError:  # let --selfcheck run without the test deps install
 
 # --- the expected state the Gherkin describes, accumulated across steps -------
 
+
 class Expected:
     """Mutable bag the Given/Then steps fill in; the When step drives the Model."""
 
     def __init__(self):
-        self.vars = {}        # var -> expected value (TLC text form)
+        self.vars = {}  # var -> expected value (TLC text form)
 
 
 def register_steps():
@@ -85,13 +88,11 @@ def register_steps():
     def then_unchanged(expected):
         for var, value in expected.vars.items():
             actual = expected.last.get(var)
-            assert actual == value, (
-                f"state was meant to be unchanged but {var} = {actual!r} "
-                f"(expected {value!r})"
-            )
+            assert actual == value, f"state was meant to be unchanged but {var} = {actual!r} (expected {value!r})"
 
 
 # --- the hook you implement per project --------------------------------------
+
 
 class Model:
     """Bridge from Gherkin actions to your real implementation.
@@ -115,9 +116,7 @@ class Model:
     def step(self, action):
         """Apply one action, return the resulting state dict {var: value}.
         MUST be overridden -- this is the only truly project-specific part."""
-        raise NotImplementedError(
-            f"Model.step({action!r}): wire this to your implementation"
-        )
+        raise NotImplementedError(f"Model.step({action!r}): wire this to your implementation")
 
     def normalize(self, state):
         """Coerce the implementation's state into the TLC text form the Gherkin
@@ -138,9 +137,9 @@ def _selfcheck():
             return self.state
 
     m = CounterModel()
-    m.seed("x", "0")                       # Given x = 0
-    last = m.normalize(m.step("Inc"))      # When Inc
-    assert last["x"] == "1", last          # Then x becomes 1  -> matches
+    m.seed("x", "0")  # Given x = 0
+    last = m.normalize(m.step("Inc"))  # When Inc
+    assert last["x"] == "1", last  # Then x becomes 1  -> matches
     # an unchanged var must compare equal to its Given value
     m2 = Model.__new__(CounterModel)
     m2.state = {}
@@ -151,6 +150,7 @@ def _selfcheck():
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1 and sys.argv[1] == "--selfcheck":
         _selfcheck()
     else:

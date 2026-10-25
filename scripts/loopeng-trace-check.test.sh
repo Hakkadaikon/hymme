@@ -10,7 +10,10 @@ export TMPDIR="$tmp" _JAVA_OPTIONS="-Djava.io.tmpdir=$tmp"
 fail=0
 
 ok() { echo "ok   $1"; }
-ng() { echo "FAIL $1"; fail=1; }
+ng() {
+  echo "FAIL $1"
+  fail=1
+}
 
 cat >"$tmp/Cap.tla" <<'EOF'
 ---- MODULE Cap ----
@@ -86,7 +89,10 @@ for case in "0 branch OK" "1 branchbad line 3"; do
   set -- $case
   got=0
   python3 loopeng/bin/trace_check.py "$tmp/Step.tla" "$tmp/$2.jsonl" >"$tmp/out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ] && grep -qF "${*:3}" "$tmp/out"; then ok "$2 -> $got"; else ng "$2: exit $got"; tail -20 "$tmp/out"; fi
+  if [ "$got" -eq "$1" ] && grep -qF "${*:3}" "$tmp/out"; then ok "$2 -> $got"; else
+    ng "$2: exit $got"
+    tail -20 "$tmp/out"
+  fi
 done
 
 # --all: 全変数を観測した行は、ステップごとに独立に判定してずれを全件出す
@@ -105,7 +111,10 @@ fi
 run_all() { # run_all <want-exit> <jsonl> <want-substring>
   local got=0
   python3 loopeng/bin/trace_check.py --all "$tmp/Cap.tla" "$tmp/$2.jsonl" >"$tmp/out" 2>&1 || got=$?
-  if [ "$got" -eq "$1" ] && grep -qF -- "$3" "$tmp/out"; then ok "--all $2 -> $got ($3)"; else ng "--all $2: exit $got"; cat "$tmp/out"; fi
+  if [ "$got" -eq "$1" ] && grep -qF -- "$3" "$tmp/out"; then ok "--all $2 -> $got ($3)"; else
+    ng "--all $2: exit $got"
+    cat "$tmp/out"
+  fi
 }
 run_all 0 good "OK"
 run_all 1 badinit "line 1 is not an initial state"
@@ -131,18 +140,27 @@ run_all 2 unknown "nosuch"
 printf '%s\n' '---- MODULE NoVar ----' 'Init == TRUE' 'Next == TRUE' '====' >"$tmp/NoVar.tla"
 got=0
 python3 loopeng/bin/trace_check.py "$tmp/NoVar.tla" "$tmp/good.jsonl" >"$tmp/out" 2>&1 || got=$?
-[ "$got" -eq 2 ] && grep -qF "no VARIABLE" "$tmp/out" && ok "spec without VARIABLE -> 2" || { ng "NoVar: exit $got"; cat "$tmp/out"; }
+[ "$got" -eq 2 ] && grep -qF "no VARIABLE" "$tmp/out" && ok "spec without VARIABLE -> 2" || {
+  ng "NoVar: exit $got"
+  cat "$tmp/out"
+}
 # TLC 自体が失敗したら判定と取り違えず exit 2(CONSTANT が無い cfg、構文エラーの spec)
 printf 'INIT Init\nNEXT Next\n' >"$tmp/noconst.cfg"
 for mode in "" "--all"; do
   got=0
   python3 loopeng/bin/trace_check.py $mode --cfg "$tmp/noconst.cfg" "$tmp/Cap.tla" "$tmp/good.jsonl" >"$tmp/out" 2>&1 || got=$?
-  [ "$got" -eq 2 ] && grep -qF "TLC failed" "$tmp/out" && ok "TLC failure ${mode:-default} -> 2" || { ng "TLC failure ${mode:-default}: exit $got"; cat "$tmp/out"; }
+  [ "$got" -eq 2 ] && grep -qF "TLC failed" "$tmp/out" && ok "TLC failure ${mode:-default} -> 2" || {
+    ng "TLC failure ${mode:-default}: exit $got"
+    cat "$tmp/out"
+  }
 done
 printf '%s\n' '---- MODULE Broken ----' 'VARIABLE x' 'Init == x = = 0' "Next == x' = x" '====' >"$tmp/Broken.tla"
 got=0
 python3 loopeng/bin/trace_check.py "$tmp/Broken.tla" "$tmp/partial.jsonl" >"$tmp/out" 2>&1 || got=$?
-[ "$got" -eq 2 ] && ok "syntax error spec -> 2" || { ng "Broken: exit $got"; cat "$tmp/out"; }
+[ "$got" -eq 2 ] && ok "syntax error spec -> 2" || {
+  ng "Broken: exit $got"
+  cat "$tmp/out"
+}
 # 非 ASCII の文字列は通す。spec が Integers を読まなくても、ログの負の数は TLC のエラーでなく不一致になる
 cat >"$tmp/Str.tla" <<'EOF2'
 ---- MODULE Str ----
@@ -158,7 +176,10 @@ for mode in "" "--all"; do
     set -- $c
     got=0
     python3 loopeng/bin/trace_check.py $mode "$tmp/Str.tla" "$tmp/$2.jsonl" >"$tmp/out" 2>&1 || got=$?
-    if [ "$got" -eq "$1" ] && grep -qF "${*:3}" "$tmp/out"; then ok "$2 ${mode:-default} -> $got"; else ng "$2 ${mode:-default}: exit $got"; cat "$tmp/out"; fi
+    if [ "$got" -eq "$1" ] && grep -qF "${*:3}" "$tmp/out"; then ok "$2 ${mode:-default} -> $got"; else
+      ng "$2 ${mode:-default}: exit $got"
+      cat "$tmp/out"
+    fi
   done
 done
 # --all: 長い値で TLC が状態を折り返しても、ずれを TLC のエラーと取り違えない

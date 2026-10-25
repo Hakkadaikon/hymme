@@ -10,6 +10,7 @@ are parsed as commands of their own. A heredoc body is text, unless a shell read
 cat <<EOF | sh), then it is parsed too. An entry point hidden where it cannot be read (eval, xargs,
 python3 -c) is a BLOCK, not a pass.
 """
+
 import json
 import os
 import re
@@ -18,17 +19,30 @@ import sys
 
 LOOP = re.compile(r"loop-(outer|middle|inner)")
 # an entry point as it would be run, not merely mentioned (git commit -m "... lake ..." is text)
-RUNS_ENTRY = re.compile(r"(^|[\s;&|(`])(loop-(outer|middle|inner)\b|\S*(smt_oracle|trace_check)\.py\b|lake\b[^;&|]*\bbuild\b)")
+RUNS_ENTRY = re.compile(
+    r"(^|[\s;&|(`])(loop-(outer|middle|inner)\b|\S*(smt_oracle|trace_check)\.py\b|lake\b[^;&|]*\bbuild\b)"
+)
 OPS = {";", "&", "&&", "|", "||", "|&", "(", ")", ";;"}
 RESERVED = {"if", "then", "do", "else", "elif", "while", "until", "!", "{", "}", "fi", "done"}
 # prefixes that run the rest of the words as a command; value-taking options per prefix
-WRAPPERS = {"export": (), "nice": ("-n", "--adjustment"), "command": (), "exec": ("-a",), "nohup": (),
-            "builtin": (), "time": ("-f", "-o"), "stdbuf": ("-i", "-o", "-e"),
-            "sudo": ("-u", "-g", "-C", "-D", "-h", "-p", "-r", "-t", "-U"), "caffeinate": ("-t", "-w")}
+WRAPPERS = {
+    "export": (),
+    "nice": ("-n", "--adjustment"),
+    "command": (),
+    "exec": ("-a",),
+    "nohup": (),
+    "builtin": (),
+    "time": ("-f", "-o"),
+    "stdbuf": ("-i", "-o", "-e"),
+    "sudo": ("-u", "-g", "-C", "-D", "-h", "-p", "-r", "-t", "-U"),
+    "caffeinate": ("-t", "-w"),
+}
 SHELLS = ("bash", "sh", "zsh", "dash", "fish")
 REDIRECTS = {">", ">>", "<", ">&", "<&", ">|", "<>"}
 # rest: the rest of the opening line (kept); body: dropped unless a shell reads it
-HEREDOC = re.compile(r"<<-?\s*(?P<q>['\"]?)(?P<tag>\w+)(?P=q)(?P<rest>[^\n]*)\n(?P<body>.*?)\n[ \t]*(?P=tag)[ \t]*(?=\n|$)", re.S)
+HEREDOC = re.compile(
+    r"<<-?\s*(?P<q>['\"]?)(?P<tag>\w+)(?P=q)(?P<rest>[^\n]*)\n(?P<body>.*?)\n[ \t]*(?P=tag)[ \t]*(?=\n|$)", re.S
+)
 FEEDS_SHELL = re.compile(r"(^|[\s|;&(])(bash|sh|zsh|dash|fish)\b")
 FEEDS_PYTHON = re.compile(r"(^|[\s|;&(])python3?(\.\d+)?\b(?!(\s+-\w+)*\s+-m\b)")
 
@@ -57,13 +71,13 @@ def substitutions(text, quotes=True):
             while j < len(text) and depth:
                 depth += {"(": 1, ")": -1}.get(text[j], 0)
                 j += 1
-            out.append((i, j, text[i + 2:j - 1]))
+            out.append((i, j, text[i + 2 : j - 1]))
             i = j
         elif text[i] == "`":
             j = text.find("`", i + 1)
             if j < 0:
                 break
-            out.append((i, j + 1, text[i + 1:j]))
+            out.append((i, j + 1, text[i + 1 : j]))
             i = j + 1
         else:
             i += 1
@@ -115,8 +129,9 @@ class Gate:
 
     def parse(self, text, cwd, env, depth=0):
         """env: variables exported so far in this command (SPEC= reaches make through the environment)."""
+
         def heredoc(m):
-            opening = text[text.rfind("\n", 0, m.start()) + 1:m.start()] + m.group("rest")
+            opening = text[text.rfind("\n", 0, m.start()) + 1 : m.start()] + m.group("rest")
             body = m.group("body")
             if FEEDS_SHELL.search(opening) and depth < 4:
                 self.parse(body, cwd, dict(env), depth + 1)
@@ -126,6 +141,7 @@ class Gate:
                 for _, _, sub in substitutions(body, quotes=False):
                     self.parse(sub, cwd, dict(env), depth + 1)
             return m.group("rest")
+
         text = HEREDOC.sub(heredoc, text)
         if depth < 4:
             # parse each substitution on its own (a cd inside it stays inside), then blank it out
@@ -174,7 +190,7 @@ class Gate:
                     toks = self.skip_opts(toks[1:], ("-k", "--kill-after", "-s", "--signal"))[1:]
                 elif t == "nix" and ("-c" in toks or "--command" in toks):
                     i = min(toks.index(x) for x in ("-c", "--command") if x in toks)
-                    toks = toks[i + 1:]
+                    toks = toks[i + 1 :]
                 elif re.match(r"^python3?(\.\d+)?$", base):
                     rest, toks, inline = toks[1:], [], False
                     while rest and rest[0].startswith("-") and rest[0] != "-":
@@ -202,7 +218,9 @@ class Gate:
                         self.parse(rest[1], cwd, {**env, **local}, depth + 1)
                     elif "<<<" in rest and rest.index("<<<") + 1 < len(rest) and depth < 4:
                         self.parse(rest[rest.index("<<<") + 1], cwd, {**env, **local}, depth + 1)
-                    elif not [a for a in rest if a not in ("-", "-s")] and (RUNS_ENTRY.search(feed) or LOOP.search(feed)):
+                    elif not [a for a in rest if a not in ("-", "-s")] and (
+                        RUNS_ENTRY.search(feed) or LOOP.search(feed)
+                    ):
                         # a shell reading its stdin (echo … | bash): the script is not visible here
                         self.block(f"{base} の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する")
                     toks = []
@@ -221,11 +239,21 @@ class Gate:
 
     def entry(self, verb, args, cwd, env):
         if verb in ("loop-outer", "loop-middle", "loop-inner") or (
-                verb == "make" and any(LOOP.fullmatch(a) for a in args)):
+            verb == "make" and any(LOOP.fullmatch(a) for a in args)
+        ):
             here = cwd
             for i, a in enumerate(args if verb == "make" else []):
-                d = args[i + 1] if a in ("-C", "--directory") and i + 1 < len(args) else (
-                    a[2:] if a.startswith("-C") and len(a) > 2 else a.split("=", 1)[1] if a.startswith("--directory=") else None)
+                d = (
+                    args[i + 1]
+                    if a in ("-C", "--directory") and i + 1 < len(args)
+                    else (
+                        a[2:]
+                        if a.startswith("-C") and len(a) > 2
+                        else a.split("=", 1)[1]
+                        if a.startswith("--directory=")
+                        else None
+                    )
+                )
                 if d:
                     here = os.path.normpath(os.path.join(here, d))
             specs = [m.group(1) for a in args for m in [re.fullmatch(r"SPEC=(.*)", a)] if m]
@@ -238,8 +266,11 @@ class Gate:
             while rest:  # options may also follow the positional arguments
                 if not rest[0].startswith("-"):
                     path = os.path.normpath(os.path.join(cwd, rest[0]))
-                    self.ok(root_of(path, cwd), re.sub(r"(\.smt)?\.py$|\.tla$", "", os.path.basename(path)),
-                            "trace_check" if verb == "trace_check.py" else "other")
+                    self.ok(
+                        root_of(path, cwd),
+                        re.sub(r"(\.smt)?\.py$|\.tla$", "", os.path.basename(path)),
+                        "trace_check" if verb == "trace_check.py" else "other",
+                    )
                     break
                 rest = self.skip_opts(rest, ("--cfg", "--timeout"))
         elif verb == "lake" and "build" in args:
@@ -252,8 +283,11 @@ class Gate:
                 return
             here = cwd
             for i, a in enumerate(args):
-                d = args[i + 1] if a in ("-d", "--dir") and i + 1 < len(args) else (
-                    a.split("=", 1)[1] if a.startswith("--dir=") else None)
+                d = (
+                    args[i + 1]
+                    if a in ("-d", "--dir") and i + 1 < len(args)
+                    else (a.split("=", 1)[1] if a.startswith("--dir=") else None)
+                )
                 if d:
                     here = os.path.normpath(os.path.join(cwd, d))
             m = re.match(r"(.*)/tasks/fv/([^/]+)", here)

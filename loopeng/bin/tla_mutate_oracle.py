@@ -33,6 +33,7 @@ raise --mut-timeout when mutants time out (a timeout counts as killed).
 edit; run the full set when a change touches definitions that many actions or
 properties read.
 """
+
 import argparse
 import concurrent.futures
 import os
@@ -53,7 +54,9 @@ MUTATIONS = [
 ]
 
 
-PARSE_FAIL = re.compile(r"Parsing or semantic analysis failed|\*\*\* ?Parse Error ?\*\*\*|Semantic errors|Fatal errors while parsing")
+PARSE_FAIL = re.compile(
+    r"Parsing or semantic analysis failed|\*\*\* ?Parse Error ?\*\*\*|Semantic errors|Fatal errors while parsing"
+)
 VIOLATION = re.compile(r"\b(is|was|were) violated\b")
 
 
@@ -86,8 +89,11 @@ def run_tlc(spec_path, cfg, workers, timeout=600):
     cmd.append(os.path.basename(spec_path))
     try:
         proc = subprocess.run(
-            cmd, cwd=os.path.dirname(spec_path) or ".",
-            capture_output=True, text=True, timeout=timeout,
+            cmd,
+            cwd=os.path.dirname(spec_path) or ".",
+            capture_output=True,
+            text=True,
+            timeout=timeout,
         )
     except subprocess.TimeoutExpired:
         return "timeout", f"TLC timed out after {timeout}s (treated as killed)"
@@ -108,7 +114,7 @@ def apply_one_mutation(src, name, pat, repl):
     """Return list of (label, mutated_src) -- one per matched site."""
     out = []
     for i, m in enumerate(pat.finditer(src)):
-        mutated = src[: m.start()] + re.sub(pat, repl, m.group(), count=1) + src[m.end():]
+        mutated = src[: m.start()] + re.sub(pat, repl, m.group(), count=1) + src[m.end() :]
         if mutated != src:
             out.append((f"{name}#{i}@{m.start()}", mutated))
     return out
@@ -126,8 +132,7 @@ class SinceError(Exception):
 
 
 def git(spec, *args):
-    return subprocess.run(["git", *args], cwd=os.path.dirname(spec),
-                          capture_output=True, text=True)
+    return subprocess.run(["git", *args], cwd=os.path.dirname(spec), capture_output=True, text=True)
 
 
 def changed_lines(spec, rev):
@@ -158,7 +163,10 @@ def run_mutant(spec, mutated, cfg, workers, timeout):
     """TLC on one mutant, written next to the spec (so EXTENDS resolve)
     under a module name equal to its file name, as SANY requires."""
     with tempfile.NamedTemporaryFile(
-        "w", suffix=".tla", dir=os.path.dirname(spec), delete=False,
+        "w",
+        suffix=".tla",
+        dir=os.path.dirname(spec),
+        delete=False,
         prefix=os.path.basename(spec)[:-4] + "_mut_",
     ) as tf:
         mod = os.path.basename(tf.name)[:-4]
@@ -174,14 +182,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("spec", help="path to the .tla spec")
     ap.add_argument("--cfg", help="TLC config (defaults to <spec>.cfg if present)")
-    ap.add_argument("--workers", default=None,
-                    help="TLC workers per run (default auto; only with --jobs 1)")
-    ap.add_argument("--mut-timeout", type=int, default=60,
-                    help="per-mutant TLC timeout in seconds (default 60)")
-    ap.add_argument("--jobs", type=int, default=usable_cpus(),
-                    help="mutants run at once (default: CPUs this process may use)")
-    ap.add_argument("--since", metavar="REV",
-                    help="mutate only the lines changed since this git revision")
+    ap.add_argument("--workers", default=None, help="TLC workers per run (default auto; only with --jobs 1)")
+    ap.add_argument("--mut-timeout", type=int, default=60, help="per-mutant TLC timeout in seconds (default 60)")
+    ap.add_argument(
+        "--jobs", type=int, default=usable_cpus(), help="mutants run at once (default: CPUs this process may use)"
+    )
+    ap.add_argument("--since", metavar="REV", help="mutate only the lines changed since this git revision")
     args = ap.parse_args()
 
     spec = os.path.abspath(args.spec)
@@ -210,8 +216,7 @@ def main():
         print(base_out[-2000:])
         return 2
 
-    mutants = [m for name, pat, repl in MUTATIONS
-               for m in apply_one_mutation(src, name, pat, repl)]
+    mutants = [m for name, pat, repl in MUTATIONS for m in apply_one_mutation(src, name, pat, repl)]
     if changed is not None:
         mutants = [m for m in mutants if line_of(src, m[0]) in changed]
         print(f"mutating {len(mutants)} sites on {len(changed)} lines changed since {args.since}")
@@ -219,8 +224,7 @@ def main():
     # With several mutants at once, give each TLC one worker.
     workers = 1 if args.jobs > 1 else (args.workers or "auto")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(args.jobs, 1)) as pool:
-        kinds = list(pool.map(
-            lambda m: run_mutant(spec, m[1], cfg, workers, args.mut_timeout), mutants))
+        kinds = list(pool.map(lambda m: run_mutant(spec, m[1], cfg, workers, args.mut_timeout), mutants))
 
     survivors, unverified, killed, invalid, total = [], [], 0, 0, len(mutants)
     for (label, _), kind in zip(mutants, kinds):
@@ -239,13 +243,16 @@ def main():
 
     timeouts = sum(1 for k in kinds if k == "timeout")
     if timeouts and args.jobs > 1:
-        print(f"warning: {timeouts} mutants timed out with --jobs {args.jobs}; a timeout counts as killed. "
-              "Rerun them with a lower --jobs or a longer --mut-timeout before trusting those kills.")
-    print(f"\nmutants: {total}  killed: {killed}  survivors: {len(survivors)}"
-          f"  unverified: {len(unverified)}  invalid: {invalid}")
+        print(
+            f"warning: {timeouts} mutants timed out with --jobs {args.jobs}; a timeout counts as killed. "
+            "Rerun them with a lower --jobs or a longer --mut-timeout before trusting those kills."
+        )
+    print(
+        f"\nmutants: {total}  killed: {killed}  survivors: {len(survivors)}"
+        f"  unverified: {len(unverified)}  invalid: {invalid}"
+    )
     if unverified:
-        print("stopped on a TLC error, not a property -- re-check with a semantic variant:",
-              ", ".join(unverified))
+        print("stopped on a TLC error, not a property -- re-check with a semantic variant:", ", ".join(unverified))
     if survivors:
         print("spec is TOO WEAK to catch:", ", ".join(survivors))
         return 1
