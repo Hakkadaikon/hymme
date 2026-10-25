@@ -11,13 +11,13 @@ ng() {
   fail=1
 }
 
-for tool in tla_mutate_oracle.py trace_to_gherkin.py feature_to_c.py tla_lint.sh; do
+for tool in tla_mutate_oracle.py trace_to_gherkin.py feature_to_c.py trace_check.py smt_oracle.py verifiability.py tla_lint.sh; do
   if [ -x "$bin/$tool" ]; then ok "$tool is installed"; else ng "$tool is missing"; fi
 done
 
 # python のスクリプトが PATH から起動できる(shebang が nix の python を指す)
 if "$bin/tla_mutate_oracle.py" --help >/dev/null 2>&1; then ok 'tla_mutate_oracle.py --help'; else ng 'tla_mutate_oracle.py --help failed'; fi
-for tool in trace_to_gherkin.py feature_to_c.py; do
+for tool in trace_to_gherkin.py feature_to_c.py trace_check.py smt_oracle.py verifiability.py; do
   if "$bin/$tool" --selfcheck >/dev/null 2>&1; then ok "$tool --selfcheck"; else ng "$tool --selfcheck failed"; fi
 done
 

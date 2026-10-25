@@ -48,11 +48,14 @@
           --set JAVA_HOME ${pkgs.jdk}
       '';
 
+      # python3 with what the oracles import: Z3 (smt_oracle.py), lizard (verifiability.py).
+      python = pkgs.python3.withPackages (ps: [ ps.z3-solver ps.lizard ]);
+
       # The loop oracles and lint (loopeng/bin) as commands on PATH, so a
       # repository can call them without pointing at a versioned plugin cache.
-      loopengTools = pkgs.runCommand "hymme-loopeng-tools" { buildInputs = [ pkgs.python3 pkgs.bashNonInteractive ]; } ''
+      loopengTools = pkgs.runCommand "hymme-loopeng-tools" { buildInputs = [ python pkgs.bashNonInteractive ]; } ''
         mkdir -p $out/bin
-        install -m 755 ${./loopeng/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps}.py ${./loopeng/bin}/tla_lint.sh $out/bin/
+        install -m 755 ${./loopeng/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability}.py ${./loopeng/bin}/tla_lint.sh $out/bin/
         patchShebangs $out/bin
       '';
 
@@ -61,7 +64,7 @@
         tlaplus
         apalache
         pkgs.gnumake
-        pkgs.python3 # runs the loop oracles (mutate / trace->gherkin)
+        python       # runs the loop oracles (mutate / trace->gherkin / trace check / smt)
         pkgs.elan    # formal verification: Lean 4 toolchain manager (lake + lean)
         # ponytail: doorstop isn't in nixpkgs; `uv pip install doorstop` only when
         # requirement traceability is actually needed. python3 alone runs the loop.
@@ -103,6 +106,23 @@
       checks.loopeng-lint = pkgs.runCommand "loopeng-lint" { nativeBuildInputs = [ tlaplus apalache pkgs.python3 pkgs.git ]; } ''
         cp -r ${self} src && chmod -R u+w src
         bash src/scripts/loopeng-lint.test.sh
+        touch $out
+      '';
+
+      checks.loopeng-trace-check = pkgs.runCommand "loopeng-trace-check" { nativeBuildInputs = [ tlaplus python ]; } ''
+        cp -r ${self} src && chmod -R u+w src
+        bash src/scripts/loopeng-trace-check.test.sh
+        touch $out
+      '';
+
+      checks.loopeng-smt-oracle = pkgs.runCommand "loopeng-smt-oracle" { nativeBuildInputs = [ python ]; } ''
+        bash ${self}/scripts/loopeng-smt-oracle.test.sh
+        touch $out
+      '';
+
+      checks.verifiability = pkgs.runCommand "verifiability" { nativeBuildInputs = [ python ]; } ''
+        cp -r ${self} src && chmod -R u+w src
+        bash src/scripts/verifiability.test.sh
         touch $out
       '';
 
