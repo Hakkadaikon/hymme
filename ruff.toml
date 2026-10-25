@@ -1,4 +1,4 @@
-# hymme の Python スクリプト(loopeng/bin, hooks)の静的解析とフォーマット。scripts/lint.sh が使う。
+# hymme の Python スクリプト(hooks, loopeng, scripts, skills の *.py)の静的解析とフォーマット。scripts/lint.sh が使う。
 line-length = 120
 target-version = "py312"
 

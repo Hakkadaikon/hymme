@@ -129,7 +129,7 @@
         touch $out
       '';
 
-      checks.lint = pkgs.runCommand "lint" { nativeBuildInputs = lintTools ++ [ pkgs.bashNonInteractive pkgs.findutils ]; } ''
+      checks.lint = pkgs.runCommand "lint" { nativeBuildInputs = lintTools ++ [ pkgs.bashNonInteractive pkgs.findutils pkgs.python3 ]; } ''
         cp -r ${self} src && chmod -R u+w src
         bash src/scripts/lint.sh
         touch $out

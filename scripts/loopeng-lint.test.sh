@@ -14,7 +14,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   case "$1" in
     ok) printf '合格   %s\n' "$2" ;;
     ng) printf '不合格 %s\n' "$2" ;;
-    want_exit) printf '%s: exit %s(期待 %s)' "$2" "$3" "$4" ;;
+    want_exit) printf '%s: exit %s(期待は %s)' "$2" "$3" "$4" ;;
     summary) printf '%s、要約: %s' "$2" "$3" ;;
     gate_warns) printf 'lint を実行できないとき、ゲートは警告して通す' ;;
     gate_no_warn) printf 'ゲートが lint を実行できない分岐に届いていない' ;;
@@ -25,7 +25,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
     ttrace_left) printf 'oracle が spec の隣に *_TTrace_* を残した' ;;
     ttrace_clean) printf 'oracle は *_TTrace_* を残さない' ;;
     since_ok) printf 'oracle --since %s -> exit %s、変異 %s 個' "$2" "$3" "$4" ;;
-    since_ng) printf 'oracle --since %s: exit %s(期待 %s)、変異は %s 個のはず' "$2" "$3" "$4" "$5" ;;
+    since_ng) printf 'oracle --since %s: exit %s(期待は %s)、変異は %s 個のはず' "$2" "$3" "$4" "$5" ;;
     next_only) printf 'oracle --since は Next の行だけに変異を入れる' ;;
     next_outside) printf 'oracle --since が Next の行の外に変異を入れた' ;;
     untracked_ok) printf 'oracle --since は git 管理外の spec を全行新規として扱う' ;;

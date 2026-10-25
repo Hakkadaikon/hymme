@@ -12,7 +12,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   case "$1" in
     ok) printf '合格   %s\n' "$2" ;;
     ng) printf '不合格 %s\n' "$2" ;;
-    exit_ne) printf '%s: exit %s(期待 %s)\n' "$2" "$3" "$4" ;;
+    exit_ne) printf '%s: exit %s(期待は %s)\n' "$2" "$3" "$4" ;;
     lacks) printf "%s: 出力に '%s' が無い\n" "$2" "$3" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac

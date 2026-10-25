@@ -46,7 +46,7 @@ ensure_nix() {
   }
   curl -fsSL https://install.determinate.systems/nix | sh -s -- install
   # The installer adds Nix to new shells; load it into this one.
-  # shellcheck disable=SC1091
+  # shellcheck disable=SC1091 # nix-daemon.sh は実行時にしか存在せず、静的には辿れない
   if [ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
   fi

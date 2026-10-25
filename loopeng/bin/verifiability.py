@@ -70,7 +70,7 @@ MESSAGES = {
 
 def msg(code, **kw):
     """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
-    return MESSAGES[code].format(**kw)
+    return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 
 LIMITS = {"CCN": 10, "NLOC": 50, "引数": 5}

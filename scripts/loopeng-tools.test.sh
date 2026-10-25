@@ -13,7 +13,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
     failed) printf '%s が失敗した' "$2" ;;
     imports) printf 'tla_mutate_oracle.py をモジュールとして読み込める' ;;
     no_import) printf 'tla_mutate_oracle.py をモジュールとして読み込めない' ;;
-    want_exit) printf '%s: exit %s(期待 %s)' "$2" "$3" "$4" ;;
+    want_exit) printf '%s: exit %s(期待は %s)' "$2" "$3" "$4" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac
 }

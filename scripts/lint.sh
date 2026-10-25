@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# hymme 自身のスクリプトの品質ゲート: Python は ruff(静的解析とフォーマット)、シェルは shellcheck と shfmt。
+# hymme 自身のスクリプトの品質ゲート: Python は ruff(静的解析とフォーマット)、シェルは shellcheck と shfmt、
+# 両方で msg() のコードが対応表にあるか(check-messages.py)。
 # 使い方: lint.sh [--fix]   (--fix はフォーマットと自動修正を書き戻す)
 # 要: ruff, shellcheck, shfmt が PATH にあること(nix develop か flake の checks が用意する)。
 set -euo pipefail
@@ -35,6 +36,8 @@ msg start "shellcheck"
 shellcheck -x "${sh[@]}" || failed+=("shellcheck")
 msg start "shfmt -d"
 shfmt -d "${sh[@]}" || failed+=("shfmt")
+msg start "メッセージコード"
+python3 scripts/check-messages.py "${py[@]}" "${sh[@]}" || failed+=("メッセージコード")
 
 if [ "${#failed[@]}" -eq 0 ]; then
   msg ok

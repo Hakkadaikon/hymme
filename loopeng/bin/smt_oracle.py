@@ -43,7 +43,7 @@ MESSAGES = {
     "bad_expect": "{name}: expect は HOLDS か VIOLATED にする({got} は不可)",
     "not_bool": "{name}: {key} は z3 の Bool 式にする({got} は不可)",
     "verdict": "{name}: {verdict}",
-    "witness": "  witness: {w}",
+    "witness": "  witness(破る入力): {w}",
     "gave_up": "  <- Z3 が判定を諦めた。性質を書き直す",
     "mismatch": "  <- 期待は {expect}",
     "no_broken": "  <- 壊した版が無い。性質が何かを縛っていると示すために足す",
@@ -56,7 +56,7 @@ MESSAGES = {
 
 def msg(code, **kw):
     """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
-    return MESSAGES[code].format(**kw)
+    return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 
 class ModelError(Exception):

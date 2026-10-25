@@ -13,7 +13,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   case "$1" in
     ok) printf '合格   %s\n' "$2" ;;
     ng) printf '不合格 %s\n' "$2" ;;
-    want_exit) printf '%s: exit %s(期待 %s)\n' "$2" "$3" "$4" ;;
+    want_exit) printf '%s: exit %s(期待は %s)\n' "$2" "$3" "$4" ;;
     lacks) printf "%s: 出力に '%s' が無い\n" "$2" "$3" ;;
     has) printf "%s: 出力に '%s' がある\n" "$2" "$3" ;;
     left) printf '生成した _Trace モジュールが spec の隣に残った\n' ;;
@@ -139,7 +139,7 @@ printf 'INIT Init\nNEXT Next\n' >"$tmp/noconst.cfg"
 check "TLC failure default" 2 "TLC が失敗した" --cfg "$tmp/noconst.cfg" "$tmp/Cap.tla" "$tmp/good.jsonl"
 check "TLC failure --all" 2 "TLC が失敗した" --all --cfg "$tmp/noconst.cfg" "$tmp/Cap.tla" "$tmp/good.jsonl"
 printf '%s\n' '---- MODULE Broken ----' 'VARIABLE x' 'Init == x = = 0' "Next == x' = x" '====' >"$tmp/Broken.tla"
-check "syntax error spec" 2 "" "$tmp/Broken.tla" "$tmp/partial.jsonl"
+check "構文エラーの spec" 2 "" "$tmp/Broken.tla" "$tmp/partial.jsonl"
 # 非 ASCII の文字列は通す。spec が Integers を読まなくても、ログの負の数は TLC のエラーでなく不一致になる
 cat >"$tmp/Str.tla" <<'EOF2'
 ---- MODULE Str ----
