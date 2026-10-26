@@ -41,7 +41,7 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
-2 点でコントローラが `hymme:verification-reviewer`(対象 `test-design`) サブエージェントを dispatch して外側から検査させる:
+2 点でコントローラが `hymme:verification-reviewer`(対象 `test-design`) サブエージェントを dispatch して外側から検査させる: 合格が返るまでの往復の運用は [`../_shared/reviewer-loop.md`](../_shared/reviewer-loop.md)。
 
 1. **0 段を閉じた直後**(plan の Task に失敗テストを書く前。単発なら テストを1件でも書く前): 台帳の未完・欠番、理由なしの優先度落としを検査。
 2. **完了扱いにする前**: 手法名のみで reference 未開封、T-ID とテストの存在不一致、実行ログ無しの「緑」報告を検査。

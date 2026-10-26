@@ -49,7 +49,7 @@ description: 形式検証(SMT・TLA+・実ログ突き合わせ・Lean)に入る
    - CCN・行数 → 条件の組み合わせを判定表(データ)にして、表を引く小さな関数にする。入れ子のルール評価は、演算子ごとの小さな関数に分ける。判定表は `verifiability.py` の計測の外に出るので、表の名前を「## 判定の在り処」の担う欄に書き、モデルが表も写す対象だと明記する。
    - 引数 → 意味のまとまり(ユーザー・ルール・環境)ごとに値オブジェクトにまとめる。
 6. **再計測と振る舞いの確認**: 4 と 3 のテストを回し、出力を台帳の「## 指標の記録」「## 振る舞いの保全」に貼る。
-7. **レビューと修正の往復**: `hymme:verification-reviewer`(対象 `verifiability`) を dispatch し、指摘を直して再度呼ぶ。合格が出たら文言を「## レビュー」に引用して `[x]` にする。
+7. **レビューと修正の往復**: `hymme:verification-reviewer`(対象 `verifiability`) を dispatch し、指摘を直して再度呼ぶ。合格が出たら文言を「## レビュー」に引用して `[x]` にする。 合格が返るまでの往復の運用は [`../_shared/reviewer-loop.md`](../_shared/reviewer-loop.md)。
 8. 検証の段(loopeng-smt / loopeng-formalize / loopeng-tracecheck / formal-verification)へ進む。モデルは「## 対象」の関数を写す。
 
 ## やらないこと
