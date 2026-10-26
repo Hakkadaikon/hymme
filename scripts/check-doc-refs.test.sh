@@ -23,7 +23,7 @@ expect 0 '' repo .
 mk() { # mk <名前>: 作業コピーを作ってパスを返す
   mkdir -p "$tmp/$1"
   cp -R README.md agents skills hooks "$tmp/$1/"
-  chmod -R u+w "$tmp/$1"
+  find "$tmp/$1" -exec chmod u+w {} +
   printf '%s' "$tmp/$1"
 }
 
@@ -38,5 +38,10 @@ expect 1 'hymme:test-extract は一覧から隠したスキル' hidden "$r"
 r="$(mk link)"
 printf '\n[切れたリンク](../nowhere/SKILL.md)\n' >>"$r/skills/test-design/SKILL.md"
 expect 1 'リンク先が無い: ../nowhere/SKILL.md' broken-link "$r"
+
+r="$(mk path)"
+# shellcheck disable=SC2016 # 変数名そのものの文字列を書き込む
+printf '\n${CLAUDE_PLUGIN_ROOT}/skills/nowhere/SKILL.md を Read する。\n' >>"$r/README.md"
+expect 1 'プラグイン内のパスが無い: skills/nowhere/SKILL.md' missing-path "$r"
 
 exit "$fail"

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""文書の参照の整合を検査する: `hymme:<name>` が実在の agent / 一覧に出るスキルを指すか、相対リンクが実在するか。
+"""文書の参照の整合を検査する: `hymme:<name>` が実在の agent / 一覧に出るスキルを指すか、相対リンクと
+`${CLAUDE_PLUGIN_ROOT}/...` のパスが実在するか。
 
 スキルや agent を改名・削除・一覧から隠したときの書き換え漏れを静的に止める。一覧から隠したスキル
 (disable-model-invocation: true)は Skill ツールで呼べないので、`hymme:<隠したスキル>` と書くこと自体を誤りとする。
@@ -16,6 +17,7 @@ MESSAGES = {
     "unknown": "{path}:{line}: hymme:{name} という agent / スキルは無い",
     "hidden": "{path}:{line}: hymme:{name} は一覧から隠したスキル。SKILL.md のパスで Read させる",
     "broken_link": "{path}:{line}: リンク先が無い: {target}",
+    "missing_path": "{path}:{line}: プラグイン内のパスが無い: {target}",
 }
 
 
@@ -56,6 +58,12 @@ def main():
                     errors.append(msg("hidden", path=path, line=i, name=name))
                 elif name not in agents and name not in skills:
                     errors.append(msg("unknown", path=path, line=i, name=name))
+            for target in re.findall(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\s`)'\"(\\]+)", line):
+                target = target.rstrip(".,、。")
+                if "<" in target or "*" in target or not target:
+                    continue
+                if not os.path.exists(target):
+                    errors.append(msg("missing_path", path=path, line=i, target=target))
             if path.endswith(".md"):
                 for target in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", line):
                     if "://" in target or target.startswith("mailto:"):

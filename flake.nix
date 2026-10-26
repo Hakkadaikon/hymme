@@ -93,6 +93,17 @@
         touch $out
       '';
 
+      checks.collect-diff = pkgs.runCommand "collect-diff" { nativeBuildInputs = [ pkgs.git ]; } ''
+        export HOME=$TMPDIR
+        bash ${self}/scripts/collect-diff.test.sh
+        touch $out
+      '';
+
+      checks.session-start = pkgs.runCommand "session-start" { nativeBuildInputs = [ pkgs.python3 pkgs.gawk ]; } ''
+        bash ${self}/scripts/session-start.test.sh
+        touch $out
+      '';
+
       checks.doc-refs = pkgs.runCommand "doc-refs" { nativeBuildInputs = [ pkgs.python3 ]; } ''
         cd ${self}
         bash scripts/check-doc-refs.test.sh
