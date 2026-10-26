@@ -36,7 +36,7 @@ JSTQB/ISTQB が定めるテストの7原則。個々の技法(同値分割、mut
 
 欠陥は開発の後工程で見つかるほど修正コストが跳ね上がる。テスト活動はコーディング前(要件・設計段階)から始める。
 
-- 対応先: `../SKILL.md` の 0段抽出ワークフロー(実装前にテストすべき振る舞いを洗い出す)がこの原則の実践。
+- 対応先: [`test-extract`](../test-extract/SKILL.md) の 0段抽出ワークフロー(実装前にテストすべき振る舞いを洗い出す)がこの原則の実践。
   [`process-static.md`](../process-static/SKILL.md) の静的レビュー・静的解析も、実行前に欠陥を検出する早期テストの一形態。
 
 ## 4. 欠陥はモジュールに偏在する
@@ -59,7 +59,7 @@ JSTQB/ISTQB が定めるテストの7原則。個々の技法(同値分割、mut
 
 正しいテストの手法・厳密さは、対象のドメイン、リスク、契約、法規制によって変わる。すべての対象に同じ厳密さを適用しない。
 
-- 対応先: `../SKILL.md` の役割分担(通常は TDD、状態遷移や並行があれば loop-engineering、critical なら formal-verification)は、
+- 対応先: [`test-design`](../test-design/SKILL.md) の役割分担(通常は TDD、状態遷移や並行があれば loop-engineering、critical なら formal-verification)は、
   この原則の具体化。[`nonfunctional-*.md`](../nonfunctional-attributes/SKILL.md) の非機能テストも対象の性質に応じて選択的に適用する。
 
 ## 7. 「バグゼロ」の落とし穴

@@ -13,7 +13,7 @@ disable-model-invocation: true
 
 個々のテスト一本を、本体の中でどう構成するかの型をまとめる。
 テスト一本の内部を、準備、実行、検証の段に切り分ける配置の規範であり、どんな順序で実装を駆動するかとは別の話題である。
-出典は t-wada(和田卓人)の TDD 観点。
+AAA は Bill Wake、Given-When-Then は Dan North による。
 
 このファイルはテスト本体の**内部構成**(段の切り方)を扱う。
 リソースのライフサイクル(setup/teardown)とテストデータの供給(Builder / Object Mother)は [`test-structure-lifecycle.md`](../test-structure-lifecycle/SKILL.md) を参照。

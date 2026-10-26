@@ -4,7 +4,7 @@ description: >
   ホワイトボックス構造網羅のうち、命令・分岐・条件レベルの基本基準を扱う。
   ステートメントカバレッジ(命令網羅 C0)、ブランチ/デシジョンカバレッジ(分岐網羅 C1)、
   コンディションカバレッジ(条件網羅)、判定/条件網羅(Decision/Condition Coverage)を
-  強さの順(C0 < C1 < 条件網羅/判定条件網羅)に扱う。test-catalog の手法カタログの一部。
+  強さの順(C0 < C1 < 判定条件網羅。条件網羅は C1 と包含関係なし)に扱う。test-catalog の手法カタログの一部。
   制御フローの構造網羅を基本レベルで押さえたい、複合条件の各項が効いているか確かめたいときに使う。
   通常は test-catalog スキルの索引経由で手法が選定された後にこのスキルを直接参照する。
 disable-model-invocation: true
@@ -13,7 +13,7 @@ disable-model-invocation: true
 # ホワイトボックス技法とカバレッジ（制御フロー・基本系）
 
 コードの内部構造を見て到達を測る制御フロー系のうち、命令・分岐・条件レベルの基本基準（C0、C1、条件網羅、判定/条件網羅）を扱う。
-強さは C0 < C1 < 条件網羅 / 判定条件網羅 の順に上がる。各条件の独立影響まで見る MC/DC・多重条件網羅・経路系は [whitebox-controlflow-path.md](../whitebox-controlflow-path/SKILL.md) を参照。
+強さは C0 < C1 < 判定条件網羅 の順に上がる(条件網羅は C1 と包含関係が無い)。各条件の独立影響まで見る MC/DC・多重条件網羅・経路系は [whitebox-controlflow-path.md](../whitebox-controlflow-path/SKILL.md) を参照。
 
 カバレッジは到達の指標であって検証の指標ではない。通したことと正しさを確かめたことは別物で、その溝を埋める手法は [mutation-testing.md](../mutation-testing/SKILL.md) で扱う。
 ループとデータの流れは [whitebox-dataflow-loop.md](../whitebox-dataflow-loop/SKILL.md) を参照。
@@ -146,7 +146,8 @@ import { describe, it, expect } from "vitest";
 import { canAccess } from "./access";
 
 describe("canAccess 条件網羅", () => {
-  // admin: T/F、active: T/F を各々出す2ケース
+  // admin: T/F、active: T/F を各々出す2ケース(短絡評価が無いとみなした場合。
+  // 実際の || は admin=T で active を評価しないので、active=F は評価されない)
   it("admin=T, active=F", () => {
     expect(canAccess(true, false)).toBe(true);
   });

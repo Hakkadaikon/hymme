@@ -13,7 +13,7 @@ disable-model-invocation: true
 
 本物の協力者の代わりに差し込む偽物(テストダブル)の種類と使い分けをまとめる。
 出典は Gerard Meszaros の用語を Vladimir Khorikov が整理したもの。
-TDD の手順は superpowers:test-driven-development が基底で、hymme の差分は [`tdd-cycle.md`](../tdd-cycle/SKILL.md)(サイクルの運用)と [`tdd-green-strategy.md`](../tdd-green-strategy/SKILL.md)(Green の戦略)、良いテストの規範(特にモック濫用の回避)は [`good-test-principles.md`](../good-test-principles/SKILL.md) を参照。
+TDD の手順は superpowers:test-driven-development が基底で、hymme の差分は [`tdd-cycle.md`](../tdd-cycle/SKILL.md)(サイクルの運用)と [`tdd-green-strategy.md`](../tdd-green-strategy/SKILL.md)(Green の戦略)、良いテストの規範は [`good-test-principles.md`](../good-test-principles/SKILL.md) を参照。
 ここはダブルの**役割整理**(各種別が何を担うか)を扱う。どの依存をモックにしてよいかの**配置原則**(管理下/管理外、プロセス内/外)は [`test-design-quality.md`](../test-design-quality/SKILL.md) のモック濫用の回避にある。
 
 各項目は「概要」「目的/いつ使う」「TypeScript example(vitest 想定)」「落とし穴」の構成で示す。
