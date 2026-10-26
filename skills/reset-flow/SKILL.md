@@ -1,6 +1,6 @@
 ---
 name: reset-flow
-description: "git reset（HEAD / ブランチポインタの移動）の安全運用ルール。reset --hard は未コミット変更をどこにも残さず消せる唯一の日常操作であり、git reset を 1 つでも実行する前に必ず本スキルを参照する。「reset して」「巻き戻して」「直前のコミットを取り消して」「コミットをやり直したい」「変更を全部捨てて」「HEAD を◯◯に戻して」と依頼される、rebase-flow の失敗から backup へ復旧する、reflog から復元する、といった場面すべてが対象。決定論スクリプトで失われるもの（外れるコミット・push 済み範囲・消える未コミット変更）を判定 → 計画提示 → ユーザー承認 → safety branch 作成（arm）→ 実行 → 検証、のゲートを固定化する。同梱の git-guard hook により arm なしの git reset は機械的にブロックされる。unstage 目的なら reset ではなく git restore --staged を使う。"
+description: git reset の前に必ず使う安全手順。「reset して」「巻き戻して」「直前のコミットを取り消して」「変更を全部捨てて」と頼まれたとき、backup や reflog から戻すときが対象。safety branch なしの reset は git-guard hook が止める。unstage だけなら git restore --staged。
 user-invocable: true
 argument-hint: "[target-ref と mode（例: backup/rebase/foo-20260707 hard）]"
 ---

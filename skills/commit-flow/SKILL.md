@@ -2,7 +2,7 @@
 name: commit-flow
 user-invocable: true
 argument-hint: "[コミット対象の範囲や粒度の指示(任意)]"
-description: gitコミット運用ルール。**主目的は論理的に独立した修正を都度・適切な粒度でコミットすること**、および実装計画(superpowers:writing-plans 文書の各 Task の Commit ステップ、または plan モードの plan 本文)に必ずコミット計画を含めること。メッセージ形式は Conventional Commits。「コミットして」「コミット分けて」「コミット計画を立てて」「分けてコミット」「実装計画を立てて」「planを立てて」「実行計画を作って」「リファクタリング計画」と依頼される、writing-plans で plan を書く、`git commit`を実行する、ExitPlanMode 前に plan を提示する、複数の独立した修正をまとめるか分けるか判断する、レビューコメント対応をコミットする、rebase/squash で履歴を整える、`gh pr create`時にPRタイトルをコミット流儀に揃える等の場面で必ず参照する。変更を約30〜50行の論理単位へ分割してコミットを積む実務手順は micro-commit スキル側が担い、本スキルは粒度の判断基準・plan 段階のコミット計画・メッセージ規約を定める(併用時は本スキルの基準で分割単位を決め、micro-commit で実行する)。
+description: コミットの粒度と、実装計画に入れるコミット計画の決め方(Conventional Commits)。plan を書くとき、独立した修正をまとめるか分けるか迷うとき、レビュー対応や PR タイトルをコミット流儀に揃えるときに参照する。実際の分割とコミットは micro-commit。
 ---
 
 # コミット運用ルール

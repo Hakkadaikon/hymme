@@ -1,6 +1,6 @@
 ---
 name: rebase-flow
-description: "git rebase / git pull --rebase を伴う操作の安全運用ルール。履歴書き換えは復旧不能な事故になり得るため、rebase 系コマンドを 1 つでも実行する前に必ず本スキルを参照する。「rebase して」「main に追従して」「ブランチを最新化して」「コミットをまとめて / 整理して」「squash して」「fixup を畳んで」「履歴をきれいにして」「force-push して」と依頼される、PR 前に履歴を整える、コンフリクト解消のために rebase する、といった場面すべてが対象。決定論スクリプトによるガードレール判定（保護ブランチ・push 済み範囲・子ブランチ・進行中操作・コンフリクト予測）→ 計画提示 → ユーザー承認 → backup ブランチ作成 → 非対話実行 → range-diff / tree 同一性による機械検証、のゲートを固定化する。同梱の git-guard hook により backup 作成（解錠）なしの git rebase は機械的にブロックされる。"
+description: git rebase / pull --rebase / squash / force-push の前に必ず使う安全手順。「rebase して」「main に追従して」「コミットをまとめて」「履歴を整理して」と頼まれたとき、コンフリクト解消で rebase するときが対象。backup ブランチなしの rebase は git-guard hook が止める。
 user-invocable: true
 argument-hint: "[base-ref と目的（例: origin/main に追従 / HEAD~4 を squash）]"
 ---

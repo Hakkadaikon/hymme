@@ -1,16 +1,6 @@
 ---
 name: test-design
-description: >
-  テスト設計と既存テストレビューの入口(ルーター)。対象(機能、モジュール、API、PR 差分)から
-  「テストすべき振る舞い」を網羅抽出し、手法を選定し、実装・回帰へ橋渡しする工程を
-  test-extract → test-catalog → test-verify の各スキルへ委譲する。
-  ユーザーが「テスト設計」「テストケースを洗い出す」「テスト観点」「テストレビュー」
-  「どんなテストを書くべき」「どうテストする」「カバレッジ」「テスト戦略」「TDD」「テストファースト」
-  「単体テストの考え方」と言ったとき、「テストが甘い/薄い/脆い/flaky/たまに落ちる」「テストしにくい」
-  「リファクタ前にテストで固めたい」と困っているとき、
-  または個別のテスト手法名(同値分割、境界値、property based、mutation、ゴールデン、
-  テストダブル、LLM のテスト等)を挙げたときに使用する。
-  TDD のサイクル自体は superpowers:test-driven-development、設計の網羅検査は loop-engineering(TLA+)、実装の証明は formal-verification(Lean)。
+description: テスト設計と既存テストレビューの入口。テストすべき振る舞いを網羅抽出し、手法を選び、実装と回帰へ渡す。「テスト設計」「テストケースを洗い出して」「テスト観点」「どうテストする」「テスト戦略」「テストが甘い/脆い/flaky」と言われたとき、テスト手法名(境界値、property based、mutation 等)が出たときに使う。TDD のサイクルは superpowers:test-driven-development。
 user-invocable: true
 argument-hint: "[テスト設計/レビューの対象(機能・ファイル・PR 差分)]"
 ---

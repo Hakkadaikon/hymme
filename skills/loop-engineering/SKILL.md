@@ -1,15 +1,6 @@
 ---
 name: loop-engineering
-description: >
-  自然言語の要求を EARS 記法 + 状態/ドメインモデルへ構造化し、TLA+ で設計を網羅検査し、
-  TLC の反例を Gherkin の受け入れ仕様に落とすまでの 3 重フィードバックループの入口(ルーター)。
-  状態を持たない判定(ルール・設定・条件式)は Z3 の SMT 経路、実装後は実ログを spec に流す突き合わせへも振り分ける。
-  ユーザーが「ループエンジニアリング」「EARS」「TLA+」「Gherkin」「設計を検証」「状態機械を検査」
-  「要求を形式化」「Z3」「SMT」「設定の矛盾」と言ったとき、または並行・状態遷移・プロトコル設計や
-  判定ロジックの正しさを実装前に機械検査で固めたいときに使用する。道具の選び方を通った後、工程は
-  loopeng-extract → loopeng-formalize → loopeng-modelcheck → loopeng-gherkin(TLA+ 経路)、
-  loopeng-extract → loopeng-smt(SMT 経路)、実装後の loopeng-tracecheck の各スキルへ委譲する。
-  設計は TLA+、実装の数学的証明は formal-verification(Lean)。
+description: 設計を実装前に機械検査する入口(ループエンジニアリング)。要求を EARS と状態モデルへ構造化して TLA+ で網羅検査し、反例を Gherkin に落とす。状態を持たない判定は Z3 の SMT 経路、実装後は実ログと spec の突き合わせへ振り分ける。「TLA+」「EARS」「Gherkin」「設計を検証」「状態機械を検査」「Z3」「SMT」「設定の矛盾」と言われたとき、並行・状態遷移・プロトコルや判定ロジックの正しさを実装前に固めたいときに使う。実装の証明は formal-verification。
 user-invocable: true
 argument-hint: "[検証したい要求/仕様(ファイルパス or 説明)]"
 ---

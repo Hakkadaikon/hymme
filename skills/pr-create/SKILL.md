@@ -1,6 +1,6 @@
 ---
 name: pr-create
-description: "Pull Request / Merge Request を作成するときに必ず参照する。`gh pr create`/`glab mr create` で PR/MR を作る、コミット済みの作業をレビューに出す、並列・stacked 作業の各ブランチで PR を起こす、といった場面で使う。リポジトリの pull_request_template/merge_request_template を決定論スクリプトで検出して優先し、テンプレの骨組み（見出し・チェックリスト・順序）を改変せず入力箇所を埋めるだけにする（作成前に骨組み照合ゲートで機械検証）。無ければ汎用観点で本文を構成。作成前に diff-review でのセルフレビュー反復（must ゼロまで）を必須とし、証跡を hook が検査する。本文の素材は対象リポジトリの git 差分のみに限定し、他リポジトリ・他タスクの内容を混入させない。draft 既定・作成前にユーザー承認。未 push のときは AskUserQuestion で承認を取ってから push。GitHub(gh) 基本、GitLab(glab) 等にも対応。 superpowers:finishing-a-development-branch の「Push and create a Pull Request」はこのスキルへ引き渡す。"
+description: PR / MR を作るときに使う(`gh pr create` / `glab mr create`、作業をレビューに出す、stacked ブランチごとの PR)。テンプレートの骨組みを守って埋め、作成前に diff-review のセルフレビューを通し(hook が検査)、draft 既定でユーザー承認を取ってから作る。superpowers:finishing-a-development-branch の PR 作成はここへ渡す。
 user-invocable: true
 argument-hint: "[ベースブランチ名や追加指示（任意）]"
 ---

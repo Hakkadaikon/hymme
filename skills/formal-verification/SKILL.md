@@ -1,10 +1,6 @@
 ---
 name: formal-verification
-description: >
-  雑な仕様を Lean 4 の形式仕様へ落とし込み、証明で検証し、そこから test-first で実装へ繋ぐワークフロー。
-  ユーザーが「形式検証」「formal verification」「FV」「証明したい」「不変条件を保証」「Lean で書いて」
-  「仕様を形式化」と言ったとき、またはアルゴリズム・プロトコル・セキュリティ性質の正しさを
-  数学的に保証したいときに使用する。autoformalization と proof repair のループを回す。
+description: 仕様を Lean 4 で形式化して証明し、証明した性質を test-first の実装へ渡す。「形式検証」「FV」「証明したい」「不変条件を保証」「Lean で書いて」と言われたとき、アルゴリズム・プロトコル・セキュリティ性質の正しさを数学的に保証したいときに使う。
 user-invocable: true
 argument-hint: "[証明したい性質/仕様(ファイルパス or 説明)]"
 ---

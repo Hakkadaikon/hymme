@@ -1,13 +1,6 @@
 ---
 name: micro-commit
-description: >
-  Automatically create conventional commit-style micro-commits by splitting changes into logical units of ~30-50 lines each.
-  Use this skill whenever the user asks to commit, says "コミットして", "commit this", or when a feature, fix, or
-  refactoring task is completed and changes need to be committed. Also trigger when the user mentions
-  "マイクロコミット", "micro commit", "conventional commit", or asks to split changes into smaller commits.
-  If you detect that a coding task has just been completed and there are uncommitted changes, suggest using this skill.
-  Grain-size judgment and plan-stage commit planning are handled by the commit-flow skill; when both apply,
-  commit-flow decides the split and this skill executes it.
+description: 変更を約30〜50行の論理単位に分け、Conventional Commits で連続コミットする。「コミットして」「commit this」「マイクロコミット」と頼まれたとき、実装が終わって未コミットの変更があるときに使う。粒度の判断基準は commit-flow。
 ---
 
 # Micro Commit

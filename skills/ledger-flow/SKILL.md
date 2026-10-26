@@ -2,7 +2,7 @@
 name: ledger-flow
 user-invocable: true
 argument-hint: "[対象の台帳・計画文書のパス(任意)]"
-description: "進捗台帳と計画・引き継ぎ文書の運用ルール。todo・計画書・テストリスト・STATUS 等のチェックボックス付き文書を作る/更新する、「台帳を更新して」「進捗をまとめて」「引き継ぎ文書を書いて」「todo を整理して」と頼まれる、作業完了で台帳を消し込む、スナップショット文書(STATUS/RESUME)を発行する、といった場面で参照する。記法の凡例を一本化し、消し込み先を1ファイルに固定し、完了主張に証跡ポインタを義務付け、完了文書を closed で閉じる。台帳が緑を偽らない・履歴が消えない・読み手が考古学をしないための規範。コミット粒度は commit-flow、教訓の記録は review-feedback が担う。 superpowers の SDD 台帳(.superpowers/sdd/<plan>/progress.md)は superpowers が所有し、本スキルは hymme 側の台帳を担う。"
+description: 進捗台帳と計画・引き継ぎ文書(todo・テストリスト・STATUS 等のチェックボックス付き文書)を作る/更新する/閉じるときの規範。「台帳を更新して」「進捗をまとめて」「引き継ぎ文書を書いて」と頼まれたときに使う。superpowers の SDD 台帳は対象外。
 ---
 
 # ledger-flow — 進捗台帳と文書ライフサイクルの運用
