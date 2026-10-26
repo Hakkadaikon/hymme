@@ -1,5 +1,6 @@
 ---
 name: loopeng-tracecheck
+disable-model-invocation: true
 description: >
   loop-engineering の実装突き合わせ。実システムの状態ログ(JSONL)を TLA+ spec に流し、
   観測した状態の列が spec の許す振る舞いかを TLC に判定させ、spec が許さない最初の行を特定する。

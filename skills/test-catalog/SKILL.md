@@ -1,5 +1,6 @@
 ---
 name: test-catalog
+disable-model-invocation: true
 description: >
   test-design の手法選定工程。テスト手法カタログ(個別スキル 40 本)への索引と、
   T-ID 台帳の各振る舞いに手法を割り当てるワークフロー。

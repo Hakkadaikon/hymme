@@ -1,5 +1,6 @@
 ---
 name: loopeng-modelcheck
+disable-model-invocation: true
 description: >
   loop-engineering の中ループ(設計検証)。TLC で TLA+ spec をモデル検査し、さらに spec 自体へ
   機械的ミューテーションを注入して「検査の強さ」を mutation oracle で検証し、最後に初期状態・不変条件・temporal 性質・遷移の文面を

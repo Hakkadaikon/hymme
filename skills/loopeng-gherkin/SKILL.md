@@ -1,5 +1,6 @@
 ---
 name: loopeng-gherkin
+disable-model-invocation: true
 description: >
   loop-engineering の内ループ(受け入れ仕様化)。TLC の反例トレースを Gherkin の Scenario へ機械変換し、
   設計が固まったら正常系の受け入れシナリオを足して実装のテストへ橋渡しする。

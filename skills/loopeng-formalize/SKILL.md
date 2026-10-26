@@ -1,5 +1,6 @@
 ---
 name: loopeng-formalize
+disable-model-invocation: true
 description: >
   loop-engineering の外ループ(要求形式化)。抽出済みの要件を EARS 記法 + 状態/ドメインモデルへ構造化し、
   TLA+ spec(<Name>.tla / <Name>.cfg)と Gherkin の骨格(<Name>.feature)に落とす。

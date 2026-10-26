@@ -1,5 +1,6 @@
 ---
 name: loopeng-extract
+disable-model-invocation: true
 description: >
   loop-engineering の 0 段(抽出ループ)。元仕様(RFC、標準、自然言語の要求、既存コード)から要件を
   採番チェックリスト台帳へ網羅的に抜き出し、トレーサビリティ・マトリクスを立てる。

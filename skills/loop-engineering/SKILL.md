@@ -43,6 +43,8 @@ argument-hint: "[検証したい要求/仕様(ファイルパス or 説明)]"
 | IaC の動的側面 | create/update/replace/destroy と置換順序、依存グラフと apply 順序、並行 apply / state lock、ロールバック整合・冪等性・drift 収束、Step Functions / blue-green / フェイルオーバ | TLA+ |
 | どちらでもない | 通常の CRUD・UI・逐次処理、IaC の静的宣言(命名・タグ・必須フィールド) | 通常の TDD / property-based。IaC は `terraform validate`・tflint・OPA/Conftest・`terrashark` |
 
+各工程スキルは Skill ツールの一覧に出していない。工程に入るときは `${CLAUDE_PLUGIN_ROOT}/skills/<工程名>/SKILL.md` を Read して従う。
+
 どの経路でも 0段(loopeng-extract)の抽出台帳と、判定ごとの境界と失敗時の意味論([`../_shared/failure-semantics.md`](../_shared/failure-semantics.md))は共通に通す。
 検証の段(SMT・TLA+・実ログ突き合わせ)に入る前に、**検証容易性の段**([`../verifiability/SKILL.md`](../verifiability/SKILL.md))も共通に通す。コードがあるなら判定を小さな純粋関数に切り出して指標と reviewer の合格を得る。コードが無い設計検証でも台帳に「対象コード無し」と書き、実装が入ったら書き直す。止める入口と条件はそのスキルの「強制のしくみ」。
 

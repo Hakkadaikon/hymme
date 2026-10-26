@@ -1,5 +1,6 @@
 ---
 name: test-verify
+disable-model-invocation: true
 description: >
   test-design の橋渡しと固定の工程。手法割り当て済みの T-ID 台帳を実装(superpowers:writing-plans の Task → SDD implementer の TDD、
   または hymme:coder)へ渡し、実行ゲート(網羅逆引き・緑・カバレッジ・flaky・mutation)で

@@ -1,5 +1,6 @@
 ---
 name: loopeng-smt
+disable-model-invocation: true
 description: >
   loop-engineering の SMT 経路。状態を持たない判定(述語・許可/拒否ルール・設定やルール集合・
   形式変換)が「どんな入力でも」成り立つかを Z3 で検査する。性質ごとに期待(HOLDS/VIOLATED)と

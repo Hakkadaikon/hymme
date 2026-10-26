@@ -1,5 +1,6 @@
 ---
 name: test-extract
+disable-model-invocation: true
 description: >
   test-design の 0 段(振る舞い抽出)。対象(機能、モジュール、API、PR 差分)から「テストすべき振る舞い」を
   T-ID 採番チェックリスト台帳(tasks/test-design/<対象名>.md)へ網羅的に出し切る。
