@@ -146,4 +146,4 @@ describe("slugify: error guessing", () => {
 - 乱数・即興で壊す非形式技法(ランダムファジング、探索的、アドホック)：[`experience-exploratory.md`](../experience-exploratory/SKILL.md)
 - 業務フロー起点の非形式技法(ユースケース、シナリオ、構文テスト)：[`experience-scenario.md`](../experience-scenario/SKILL.md)
 - 入力空間の分割と履歴(同値分割、境界値、状態遷移)：[`blackbox-partition.md`](../blackbox-partition/SKILL.md) / [`blackbox-state.md`](../blackbox-state/SKILL.md)
-- oracle 代替・関係/モデル(メタモルフィック、モデルベース、形式検証連携)：[`oracle-relational.md`](../oracle-relational/SKILL.md)
+- oracle 代替・関係/モデル(メタモルフィック、形式検証連携)：[`oracle-relational.md`](../oracle-relational/SKILL.md)、モデルベース：[`oracle-model-based.md`](../oracle-model-based/SKILL.md)

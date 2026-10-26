@@ -66,7 +66,7 @@ describe("parse: random fuzzing (crash-only)", () => {
     for (let i = 0; i < 1000; i++) {
       const len = Math.floor(rand() * 64);
       const s = Array.from({ length: len }, () =>
-        String.fromCharCode(Math.floor(rand() * 0x110000)),
+        String.fromCodePoint(Math.floor(rand() * 0x110000)),
       ).join("");
       expect(() => parse(s)).not.toThrow();
     }
@@ -91,7 +91,7 @@ describe("parse: random fuzzing (crash-only)", () => {
 2. **再現可能な生成器を用意する**：`Math.random` を直接使わず、**固定 seed の PRNG**(上例の `mulberry32` 等)から入力を作る。seed をテスト内に明記し、失敗時に同じ列を再生できるようにする。
 3. **入力分布を対象に寄せる**:純ランダムは構造を持つ入力(JSON, URL)の深い分岐に届きにくい。対象が構造化入力なら、有効入力に小さな変異(1文字置換/削除/挿入)を加える mutation 寄りの生成も混ぜる。
 4. **打ち切り条件を決めて回す**:試行回数の上限(例 数百〜数千)、または時間上限を先に決める。CI で回すなら毎回 seed を変える運用にするか、固定 seed で決定的にするかを決める(flaky を避けるなら固定 seed、網を広げたいなら seed ローテーション + 失敗 seed の保存)。
-5. **失敗入力を最小化する**:落ちた入力をそのまま回帰にすると巨大で読めない。**delta debugging(縮小)**で、落ち続ける範囲を保ったまま削る — 入力を半分に切って落ちる側を残す、を落ちなくなる直前まで繰り返す。1文字単位まで削れたらそれが最小再現。
+5. **失敗入力を最小化する**:落ちた入力をそのまま回帰にすると巨大で読めない。**delta debugging(ddmin)**で、落ち続ける範囲を保ったまま削る。分割数を増やしながら部分集合と補集合を試し、1要素も削れなくなる(1-minimal)まで縮める。fast-check の shrink や libFuzzer の minimize が使えるならそれに任せる。
 6. **最小入力を固定の回帰テストへ昇格する**:最小化した入力を `it("regression: ...", ...)` として通常テストに固定し、乱数ループとは別に残す(乱数は将来また別の入力を見つける網、固定回帰は既知欠陥の番人)。構文テスト・境界値へも書き戻す([`experience-scenario.md`](../experience-scenario/SKILL.md) の構文テスト)。
 
 ### 完了チェック(もれ確認)
@@ -180,4 +180,4 @@ Coverage: 検証ロジック 70% / 異常系の手応えは薄い
 - 入力空間の分割と履歴(同値分割、境界値、状態遷移)：[`blackbox-partition.md`](../blackbox-partition/SKILL.md) / [`blackbox-state.md`](../blackbox-state/SKILL.md)
 - 本格的な生成系ファジング(coverage-guided)・PBT：[`generative-property.md`](../generative-property/SKILL.md) / [`generative-fuzzing.md`](../generative-fuzzing/SKILL.md)
 - oracle 代替・過去出力(ゴールデン、承認)：[`oracle-past-output.md`](../oracle-past-output/SKILL.md)。別実装との差分：[`oracle-differential.md`](../oracle-differential/SKILL.md)
-- oracle 代替・関係/モデル(メタモルフィック、モデルベース、形式検証連携)：[`oracle-relational.md`](../oracle-relational/SKILL.md)
+- oracle 代替・関係/モデル(メタモルフィック、形式検証連携)：[`oracle-relational.md`](../oracle-relational/SKILL.md)、モデルベース：[`oracle-model-based.md`](../oracle-model-based/SKILL.md)

@@ -52,9 +52,9 @@ flaky テストは「赤を信用できない」状態を生み、本物の退�
 並列度と負荷を上げて反復し、レース窓を広げる。
 
 1. **同じ操作を多重に同時発行する**:`Promise.all(Array.from({ length: N }, () => op()))` で N を 100→1000 と上げ、取りこぼし(期待値との差)を見る。
-2. **反復してレースを引く**:`vitest run path/to.test.ts --repeat=100` で同一テストを多数回回す。1回の緑では競合は見えない。
+2. **反復してレースを引く**:`vitest run path/to.test.ts --repeats=100` で同一テストを多数回回す。1回の緑では競合は見えない。
 3. **負荷を掛けて窓を広げる**:CI の並列ワーカー数を上げる(`vitest --pool=threads --poolOptions.threads.maxThreads=N`)、マシンに別負荷を掛けた状態で回す。
-4. **再現コマンド**:`vitest run path/to.test.ts --repeat=200 --no-isolate` で1つでも赤が出れば競合が残っている。
+4. **再現コマンド**:`vitest run path/to.test.ts --repeats=200 --no-isolate` で1つでも赤が出れば競合が残っている。
 5. **設計の網羅は別手段**:テストは有限回の interleaving しか踏めない。全 interleaving の安全性・活性は `loop-engineering`(TLA+)のモデル検査で網羅する。
 
 ### 封じ込め
@@ -107,9 +107,9 @@ describe("increment: 並列度を上げても取りこぼさない", () => {
 ### 完了チェック(もれ確認)
 
 - **競合区間が直列化されているか**:共有状態への read→write が、ロック/キュー/原子的操作/`await` 連鎖のいずれかで不可分になっているか。裸の read→`await`→write が残れば未封じ込め。
-- **並列度を上げて全緑か**:`vitest run path/to.test.ts --repeat=200 --no-isolate` を高並列ワーカーで回して全緑。並列発行のテストは N=1000 でも期待値ちょうどか。
+- **並列度を上げて全緑か**:`vitest run path/to.test.ts --repeats=200 --no-isolate` を高並列ワーカーで回して全緑。並列発行のテストは N=1000 でも期待値ちょうどか。
 - **設計をモデル検査したか**:状態遷移・順序を含むなら `loop-engineering`(TLA+)で安全性・活性を検査し、反例が回帰テストに落ちているか(テストだけで全 interleaving は踏めない)。
-- **封じ込め完了の判定**:`--repeat=200` 高並列が連続全緑、N=1000 並列発行が取りこぼし無し、設計のモデル検査で反例が尽きたとき封じ込め完了とみなす。
+- **封じ込め完了の判定**:`--repeats=200` 高並列が連続全緑、N=1000 並列発行が取りこぼし無し、設計のモデル検査で反例が尽きたとき封じ込め完了とみなす。
 
 ---
 
@@ -124,7 +124,7 @@ describe("increment: 並列度を上げても取りこぼさない", () => {
 
 順序をシャッフルし、単独実行と全体実行を突き合わせる。
 
-1. **順序をランダム化して反復する**:vitest の `--sequence.shuffle` を有効にし、seed を変えて複数回回す。`for s in (seq 1 30); vitest run --sequence.shuffle --sequence.seed=$s; or echo "RED seed=$s"; end`(fish)。
+1. **順序をランダム化して反復する**:vitest の `--sequence.shuffle` を有効にし、seed を変えて複数回回す。`for s in $(seq 1 30); do vitest run --sequence.shuffle.tests --sequence.seed=$s || echo "RED seed=$s"; done`。
 2. **単独 vs 全体の食い違いを見る**:1テストだけ単独実行(`vitest run -t "テスト名"`)で緑なのに全体実行で赤、またはその逆なら状態漏れ。
 3. **隔離を外して炙り出す**:`vitest run --no-isolate` でモジュール状態の共有を強制し、漏れを露呈させる。
 4. **再現コマンド**:`vitest run --sequence.shuffle --sequence.seed=<seed>` で特定 seed の赤を確定再現する。
@@ -182,7 +182,7 @@ describe("users(各テストで初期化)", () => {
 
 - **確保したものに解放が対応するか**:`beforeEach`/`beforeAll` で作ったもの(レコード・ファイル・スタブ・env)に、`afterEach`/`afterAll` の解放が1対1で対応しているか。`vi.restoreAllMocks` / `vi.unstubAllEnvs` の呼び忘れが無いか grep で確認する。
 - **モジュール共有状態が残っていないか**:`grep -rnE '^(const|let|var) .*=' src/**/*.ts` でモジュールレベルの可変状態を洗い、テストが踏むものが注入か初期化で隔離されているか逆引きする。
-- **シャッフルで全緑か**:`for s in (seq 1 30); vitest run --sequence.shuffle --sequence.seed=$s; or echo RED; end` が 30 seed すべて緑。
+- **シャッフルで全緑か**:`for s in $(seq 1 30); do vitest run --sequence.shuffle.tests --sequence.seed=$s || echo RED; done` が 30 seed すべて緑。
 - **単独=全体か**:代表テストを単独実行と全体実行で比べ、結果が一致するか。
 - **封じ込め完了の判定**:シャッフル 30 seed が連続全緑、`--no-isolate` でも緑、単独/全体の結果が一致したとき封じ込め完了とみなす。
 
@@ -219,7 +219,7 @@ flaky は1回の緑では見えない。揺らぎを意図的に増幅して再�
 
 各要因の「完了チェック」を満たしたうえで、スイート全体で次が連続して緑になったとき、flaky の封じ込めが完了したとみなす。
 
-1. `vitest run --sequence.shuffle --repeat=N`(N は数十)を高並列・seed を振って回し、全緑。
+1. `vitest run --sequence.shuffle --repeats=N`(N は数十)を高並列・seed を振って回し、全緑。
 2. ネット遮断・負荷(CPU 制限)下でも全緑。
 3. 検出法で再現していた赤が、再現コマンドで二度と出ない。
 

@@ -44,7 +44,7 @@ disable-model-invocation: true
 
 ### TypeScript example
 
-ペアワイズの組合せ生成はツール(`@fast-check/...` や allpairs 系)で作るのが筋。
+ペアワイズの組合せ生成はツール(PICT、ACTS、allpairs 系)で作るのが筋。
 ここでは生成済みのペアワイズ表をテストデータとして読み込み回す形を示す。
 
 ```ts
@@ -103,7 +103,7 @@ L8 相当の割付表(2水準の因子3本)をテストデータとして読み�
 import { describe, it, expect } from "vitest";
 import { render } from "./checkout";
 
-// orthogonal array L8(2^3 を使用): 各因子ペアが同回数(2回)ずつ出現する均等割付
+// orthogonal array L4(2^3): 各因子ペアの全値組が同回数(1回)ずつ出現する均等割付
 const rows = [
   { os: "win", browser: "chrome", lang: "ja" },
   { os: "win", browser: "safari", lang: "en" },
@@ -152,7 +152,7 @@ describe("checkout: orthogonal array coverage", () => {
 
 ### TypeScript example
 
-3-way の covering array を制約付きで生成するのはツールの仕事(`@fast-check/...`、PICT、ACTS など)。
+3-way の covering array を制約付きで生成するのはツールの仕事(PICT、ACTS など)。
 ここでは生成済みの3-way 表を読み込み、各行を1ケースで回す。禁止組合せは生成側の制約で既に除いてある前提。
 
 ```ts

@@ -183,4 +183,4 @@ describe("isIsoDate: syntax testing (YYYY-MM-DD)", () => {
 - 組合せの縮約・因子被覆(ペアワイズ、直交表、T-way)：[`blackbox-covering.md`](../blackbox-covering/SKILL.md)
 - 本格的な生成系ファジング・PBT：[`generative-property.md`](../generative-property/SKILL.md) / [`generative-fuzzing.md`](../generative-fuzzing/SKILL.md)
 - oracle 代替・過去出力(ゴールデン、承認)：[`oracle-past-output.md`](../oracle-past-output/SKILL.md)。別実装との差分：[`oracle-differential.md`](../oracle-differential/SKILL.md)
-- oracle 代替・関係/モデル(メタモルフィック、モデルベース、形式検証連携)：[`oracle-relational.md`](../oracle-relational/SKILL.md)
+- oracle 代替・関係/モデル(メタモルフィック、形式検証連携)：[`oracle-relational.md`](../oracle-relational/SKILL.md)、モデルベース：[`oracle-model-based.md`](../oracle-model-based/SKILL.md)
