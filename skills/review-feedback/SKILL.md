@@ -19,7 +19,7 @@ description: レビュー指摘や自分で踏んだ失敗(CI の赤、真因を
 
 **SDD の修正ラウンドでの分担**(superpowers:subagent-driven-development のタスクレビュー / 最終レビューの指摘を直すとき):
 
-- 手順 1(分類)・手順 2(水平展開)・手順 5(コミット)は**修正を適用する側**が行う。SDD では implementer(hymme の `coder`)であり、コントローラは自分で直さない(SDD の規則)。implementer は水平展開の結果(同種箇所 or「他に該当なし」)を fix report に書く。
+- 手順 1(分類)・手順 2(水平展開)・手順 5(コミット)は**修正を適用する側**が行う。SDD では implementer であり、コントローラは自分で直さない(SDD の規則)。implementer は水平展開の結果(同種箇所 or「他に該当なし」)を fix report に書く。
 - 手順 3(埋め込み)・手順 4(lessons)は Task の範囲外なので、implementer は report に「埋め込み候補: <観点> → <候補先>」を 1 行書くだけにとどめる。SDD は最終レビュー後に workspace(report を含む)を `rm -rf` するので、コントローラは削除前に report から埋め込み候補を回収する。埋め込み先が対象リポジトリのテスト・Lint・PR テンプレートなら、最終レビューの fix 波の brief に含めて implementer に直させる(コントローラは自分で直さず、fix 波の後に未レビューのコミットを積まない)。fix 波の後に出た候補と、hymme のレンズ基準(`skills/diff-review/references/`)や hook への埋め込みは、superpowers:finishing-a-development-branch の後の別タスク(別ブランチ / hymme リポジトリ側)として扱う。
 - 手順 1 の「なぜ diff-review で見つけられなかったか」は、SDD では「なぜタスクレビュー(または前ラウンドの re-review)で見つけられなかったか」と読み替える。最終レビューで初めて出た指摘は「タスク単位レビューの視野外(横断)」か「基準の穴」かを分ける。
 

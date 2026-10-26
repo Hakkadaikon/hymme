@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 設計 | brainstorming(spec 化、Architectural 経路) | 設計後・spec 前に loop-engineering の道具の選び方 / formal-verification の性質カタログ |
 | 計画 | writing-plans(Task / Step) | spec 承認後に test-design で T-ID 台帳 → Task に落とす |
-| 実装 | subagent-driven-development / executing-plans、test-driven-development | implementer は coder agent(ponytail + TDD 契約)。prover / modeler は controller が別 dispatch、完了ゲートで各 reviewer |
+| 実装 | subagent-driven-development / executing-plans、test-driven-development | 既定は executing-plans(本体で実装)。SDD を選んだときの implementer は superpowers 既定。prover / modeler は本体が別 dispatch、完了ゲートで verification-reviewer |
 | コミット | (規約なし) | commit-flow(粒度)+ micro-commit(実務) |
 | レビュー | task review(SDD の task-reviewer-prompt.md)/ final review(requesting-code-review) | 多観点 diff-review。PR 前は hook で diff-review 証跡を必須化 |
 | PR | finishing-a-development-branch | pr-create |
@@ -59,13 +59,12 @@ agents として次を同梱する。呼び出しは subagent_type `hymme:<name>
 
 | agent | 説明 |
 | --- | --- |
-| **coder** | SDD の implementer 契約(spec → 実装 → 自己検証 → 報告)を、ponytail(最小・YAGNI)と TDD で遂行する。prover / modeler への委譲はしない。形式検証・モデル検査が必要なら「必要」と報告して controller に返す。 |
 | **modeler** | loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中して結果を返す。verification-reviewer への hand-off は controller が行う。 |
 | **prover** | formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。verification-reviewer への hand-off は controller が行う。 |
 | **diff-reviewer** | diff-review のワーカー(多観点レビュー)。 |
 | **verification-reviewer** | 検証 4 系統(loop-engineering / test-design / formal-verification / verifiability)の完了前の外部検査。controller が系統と成果物の場所を渡し、reviewer は `skills/<系統>/reviewer.md` の規範を読んで検査する。 |
 
-coder は [ponytail](https://github.com/DietrichGebert/ponytail) プラグインを Skill ツールで呼ぶ(soft dependency、未導入なら該当手順をスキップ)。ponytail は自身の marketplace から入れる。`/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`。
+ponytail-review(過剰設計のレビュー)は [ponytail](https://github.com/DietrichGebert/ponytail) プラグインのスキル(soft dependency)。ponytail は自身の marketplace から入れる。`/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`。
 
 ## インストール(Claude Code)
 

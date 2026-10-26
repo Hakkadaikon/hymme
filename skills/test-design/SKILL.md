@@ -27,14 +27,14 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 | --- | --- | --- | --- |
 | 1 | **test-extract** | テストすべき振る舞いを T-ID 採番台帳(`tasks/test-design/<対象名>.md`)へ網羅抽出。レビュー時は既存テストを右側に埋めて両向きに読む | 全 `T-ID` が `[x]`(直し待ちの `[~]` は test-extract 手順5の例外)・欠番なし・機械確認の証跡提示 |
 | 2 | **test-catalog** | 各 T-ID に手法を割り当て、その手法の reference だけを開く | 全 T-ID に「手法名 + reference ファイル名」が埋まる |
-| 3 | **test-verify** | plan の Task(executing-plans か SDD implementer の TDD)または hymme:coder へ橋渡し。実行ゲート(superpowers:verification-before-completion + 網羅逆引き・カバレッジ・flaky・mutation)→ 回帰として CI に固定 | 全 T-ID が実行ログの緑に対応し、CI に載る |
+| 3 | **test-verify** | plan の Task(executing-plans か SDD implementer の TDD)または実装する本人へ橋渡し。実行ゲート(superpowers:verification-before-completion + 網羅逆引き・カバレッジ・flaky・mutation)→ 回帰として CI に固定 | 全 T-ID が実行ログの緑に対応し、CI に載る |
 
 前段の出口条件を満たさず次へ進まない(各スキルが前提として検査する)。
 手法の単発質問(「ペアワイズって何」等)は台帳なしで **test-catalog** の索引だけ引いてよい。
 
 ## superpowers ワークフロー上の位置
 
-- **spec 承認後、superpowers:writing-plans の前(または並走)**に test-extract → test-catalog を回す。plan の各 Task の「Step 1: Write the failing test」は T-ID 台帳と `.feature` シナリオ**から**書く。Bounded パス(spec も plan も無い)では設計承認直後に同じ 0段→手法選定を回し、hymme:coder(または本人)へ渡す。
+- **spec 承認後、superpowers:writing-plans の前(または並走)**に test-extract → test-catalog を回す。plan の各 Task の「Step 1: Write the failing test」は T-ID 台帳と `.feature` シナリオ**から**書く。Bounded パス(spec も plan も無い)では設計承認直後に同じ 0段→手法選定を回し、実装する本人のテストリストにする。
 - **トレーサビリティは台帳の「テスト」列だけが持つ。** 列には plan に書いたテスト名(`it`/`test` 名)を入れる。plan・コード・コミットに `T-xxx` や手法名は書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。台帳は作業 worktree の `tasks/test-design/` に置き(worktree 作成前に作った台帳は SDD Setup 直後に worktree へコピー)、ブランチ完了後は残さない。
 - **実行は superpowers:executing-plans(既定)か superpowers:subagent-driven-development。** 実装する本人(本体か implementer)が Task ごとに superpowers:test-driven-development で消化する。SDD の implementer は台帳を編集しない。`test-design-extract-gate` hook は implementer のテストファイル Write/Edit にも効く: 台帳が閉じていなければ機械的にブロックされ implementer は BLOCKED を返すので、コントローラが台帳を閉じてから再 dispatch する(意図した安全網)。
 - **`hymme:verification-reviewer`(対象 `test-design`) はコントローラが dispatch する**: 0段を閉じた直後(plan にテストを書く前)と、最終 whole-branch レビューの前。

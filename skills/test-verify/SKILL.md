@@ -3,7 +3,7 @@ name: test-verify
 disable-model-invocation: true
 description: >
   test-design の橋渡しと固定の工程。手法割り当て済みの T-ID 台帳を実装(superpowers:writing-plans の Task → executing-plans(既定)か SDD implementer の TDD、
-  または hymme:coder)へ渡し、実行ゲート(網羅逆引き・緑・カバレッジ・flaky・mutation)で
+  または実装する本人)へ渡し、実行ゲート(網羅逆引き・緑・カバレッジ・flaky・mutation)で
   完了を検証し、緑にしたテストを回帰として CI に固定する。
   「テストの実装に渡して」「テストが全部書けたか確認して」「回帰に固定して」と言われたとき、
   または test-design ルーターから最終工程として委譲されたときに使用する。
@@ -19,7 +19,7 @@ description: >
 
 ## 1. 実装/検証へ橋渡しする
 
-- **実装の駆動**: superpowers のワークフロー下では、台帳の `T-ID` 行と `.feature` シナリオから superpowers:writing-plans の各 Task の「Write the failing test」を書き、そのテスト名を台帳の「テスト」列に転記する(`T-xxx` は plan に書かない)。実装は実装する本人(既定は superpowers:executing-plans の本体、SDD なら implementer = hymme:coder か superpowers 既定)が **REQUIRED SUB-SKILL:** superpowers:test-driven-development で1テストずつ消化する。plan の無い単発タスクなら T-ID リストをそのままテストリストとして hymme:coder に直接渡す。
+- **実装の駆動**: superpowers のワークフロー下では、台帳の `T-ID` 行と `.feature` シナリオから superpowers:writing-plans の各 Task の「Write the failing test」を書き、そのテスト名を台帳の「テスト」列に転記する(`T-xxx` は plan に書かない)。実装は実装する本人(既定は superpowers:executing-plans の本体、SDD なら implementer)が **REQUIRED SUB-SKILL:** superpowers:test-driven-development で1テストずつ消化する。plan の無い単発タスクなら T-ID リストをそのままテストリストにして実装する。
 - **設計に状態遷移、並行、順序があるとき**: テストで全 interleaving は踏めない。`loop-engineering`(TLA+)で設計をモデル検査し、反例を Gherkin の受け入れシナリオに落としてから、その述語をテストへ移す。
 - **critical なアルゴリズムやセキュリティ性質**: 通常テストより強い保証が要るなら `formal-verification`(Lean 4)で証明し、証明済み述語を property-based test([`../generative-property/SKILL.md`](../generative-property/SKILL.md))の property として叩く。証明は implementer にやらせず、コントローラが hymme:prover を別 dispatch する。
 - **`[~]` の行(設計の直し待ち)**: plan では1つの Task にまとめ、ほかの Task に混ぜない。ほかの行のテストとも、全状態を探索するような広いテストとも共有させない。共有すると、直し待ちの振る舞いまで期待値として固まる。行が `[x]` に戻るまで、その Task を完了にしない。
