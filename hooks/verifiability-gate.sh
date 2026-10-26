@@ -14,7 +14,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
     post_impl) printf '%s は対象コードが無いが、実ログの突き合わせは実装後の段。対象の関数を「## 対象」に書き直すか、手元に実装が無い理由を「対象コード無し(実装後): 理由」と書く。' "$2" ;;
     no_tool) printf '%s' 'verifiability.py が PATH に(絶対パスで)無い。hymme の skill-tools を入れてから進め(指標を測れないまま検証へ進ませない)。' ;;
     metrics) printf '%s の指標が通らない。判定を小さな純粋関数へ切り出して再計測するか、理由付きの例外を書け:\n%s' "$2" "$3" ;;
-    no_review) printf '%s の「## レビュー」に合格の行(- [x] レビュー合格: ...)が無い。hymme:verifiability-reviewer との往復で合格を得てから進め。' "$2" ;;
+    no_review) printf '%s の「## レビュー」に合格の行(- [x] レビュー合格: ...)が無い。hymme:verification-reviewer(対象 verifiability) との往復で合格を得てから進め。' "$2" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac
 }

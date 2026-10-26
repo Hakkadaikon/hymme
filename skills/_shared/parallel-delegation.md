@@ -6,7 +6,7 @@
 
 - superpowers:subagent-driven-development の implementer は**常に直列**(superpowers 側の規範。implementer の並列 dispatch は禁止)。hymme はこれを変えない。
 - hymme が並列にするのは**検証ワーカー**(hymme:prover / hymme:modeler、SDD 外で台帳からテストを書く subagent)と diff-review の観点 agent。成果物は `tasks/fv/`・`tasks/loopeng/` か作業ツリー上の未コミット差分で、本流へはコミットしない。
-- 検証ワーカーはレビュアーを自分で呼ばない(SDD の「worker は subagent を生まない」と同じ規範)。コンプライアンスレビュー(hymme:*-reviewer)は呼び出し元(コントローラ)が dispatch する。
+- 検証ワーカーはレビュアーを自分で呼ばない(SDD の「worker は subagent を生まない」と同じ規範)。コンプライアンスレビュー(hymme:verification-reviewer)は呼び出し元(コントローラ)が dispatch する。
 
 **委任するかを先に決める:** subagent は受け渡しのたびに詳細が落ち、1本ごとに rules・brief・参考資料を読み直す(実例で1本 20万〜60万トークン)。委任は次のどれかに当たるときだけにする。
 

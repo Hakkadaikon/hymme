@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# hymme 開発用: agents/*-reviewer.md のうち出力フォーマット節に `## チェックリスト` を持つものについて、
+# hymme 開発用: skills/*/reviewer.md(verification-reviewer が読む系統別の規範)のうち出力フォーマット節に `## チェックリスト` を持つものについて、
 # 本文(## 必須ゲート 〜 ## 出力フォーマット)の太字見出し語とチェックリストの項目名が
 # 同じ順で 1 対 1 に一致するか、件数の直書きが無いかを検査する。
 # チェックリストがあるのに ## 必須ゲート 節が無ければエラー。この形式を持たない reviewer は素通りする。
-# usage: check-reviewer-checklist.sh [file...]  (省略時は agents/*-reviewer.md)
+# usage: check-reviewer-checklist.sh [file...]  (省略時は skills/*/reviewer.md)
 set -euo pipefail
 # 件数直書き検出の近さの窓をバイトでなく文字で数える
 export LC_ALL=C.UTF-8
@@ -18,7 +18,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   esac
 }
 
-[ "$#" -gt 0 ] || set -- "$(dirname "$0")"/../agents/*-reviewer.md
+[ "$#" -gt 0 ] || set -- "$(dirname "$0")"/../skills/*/reviewer.md
 
 status=0
 for f in "$@"; do

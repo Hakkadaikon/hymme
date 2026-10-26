@@ -47,11 +47,11 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 - **spec 承認後、superpowers:writing-plans の前(または並走)**に test-extract → test-catalog を回す。plan の各 Task の「Step 1: Write the failing test」は T-ID 台帳と `.feature` シナリオ**から**書く。Bounded パス(spec も plan も無い)では設計承認直後に同じ 0段→手法選定を回し、hymme:coder(または本人)へ渡す。
 - **トレーサビリティは台帳の「テスト」列だけが持つ。** 列には plan に書いたテスト名(`it`/`test` 名)を入れる。plan・コード・コミットに `T-xxx` や手法名は書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。台帳は作業 worktree の `tasks/test-design/` に置き(worktree 作成前に作った台帳は SDD Setup 直後に worktree へコピー)、ブランチ完了後は残さない。
 - **実行は superpowers:subagent-driven-development。** implementer(hymme:coder か superpowers 既定)が Task ごとに superpowers:test-driven-development で消化する。implementer は台帳を編集しない。`test-design-extract-gate` hook は implementer のテストファイル Write/Edit にも効く: 台帳が閉じていなければ機械的にブロックされ implementer は BLOCKED を返すので、コントローラが台帳を閉じてから再 dispatch する(意図した安全網)。
-- **`hymme:test-design-reviewer` はコントローラが dispatch する**: 0段を閉じた直後(plan にテストを書く前)と、SDD の最終 whole-branch レビューの前。
+- **`hymme:verification-reviewer`(対象 `test-design`) はコントローラが dispatch する**: 0段を閉じた直後(plan にテストを書く前)と、SDD の最終 whole-branch レビューの前。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
-2 点でコントローラが `hymme:test-design-reviewer` サブエージェントを dispatch して外側から検査させる:
+2 点でコントローラが `hymme:verification-reviewer`(対象 `test-design`) サブエージェントを dispatch して外側から検査させる:
 
 1. **0 段を閉じた直後**(plan の Task に失敗テストを書く前。単発なら テストを1件でも書く前): 台帳の未完・欠番、理由なしの優先度落としを検査。
 2. **完了扱いにする前**: 手法名のみで reference 未開封、T-ID とテストの存在不一致、実行ログ無しの「緑」報告を検査。

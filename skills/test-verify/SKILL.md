@@ -47,7 +47,7 @@ description: >
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
-完了扱いにする前(SDD なら最終 whole-branch レビューの前)に、コントローラが `hymme:test-design-reviewer` サブエージェントを dispatch して外側から検査させる。
+完了扱いにする前(SDD なら最終 whole-branch レビューの前)に、コントローラが `hymme:verification-reviewer`(対象 `test-design`) サブエージェントを dispatch して外側から検査させる。
 渡すもの: T-ID 台帳のパス、テストファイルと実行ログの場所。
 レビュアーが挙げた違反(手法名のみで reference 未開封、T-ID とテストの存在不一致、実行ログ無しの「緑」報告、理由なしの優先度落とし)を解消してから完了とする。「緑と報告された」を証跡の代わりにしない。
 

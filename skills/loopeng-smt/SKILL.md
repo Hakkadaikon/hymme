@@ -68,4 +68,4 @@ def properties():
 
 ## 次の工程
 
-出口条件を満たしたら loop-engineering ルーターへ戻り、完了前ゲート(コントローラが `hymme:loop-engineering-reviewer` を dispatch)へ進む。受け入れシナリオは test-extract へ渡す。
+出口条件を満たしたら loop-engineering ルーターへ戻り、完了前ゲート(コントローラが `hymme:verification-reviewer`(対象 `loop-engineering`) を dispatch)へ進む。受け入れシナリオは test-extract へ渡す。

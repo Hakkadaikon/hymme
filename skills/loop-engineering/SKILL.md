@@ -78,7 +78,7 @@ flowchart TD
 | 順 | スキル | やること | 出口条件 |
 | --- | --- | --- | --- |
 | 0 | **loopeng-extract** | 元仕様から要件を採番チェックリスト台帳へ網羅抽出、トレーサビリティ表を立てる | 全 `S-ID` が `[x]`・欠番なし、閉じる前のチェック(信頼境界・STRIDE・CWE)が全項目埋まる |
-| 0.5 | **verifiability** | 検証する判定のコードを小さな純粋関数へ切り出し、指標(CCN・行数・引数・副作用・エラーの畳み込み)を閾値まで直す | `verifiability.py` exit 0、verifiability-reviewer 合格(コードが無ければ「対象コード無し」) |
+| 0.5 | **verifiability** | 検証する判定のコードを小さな純粋関数へ切り出し、指標(CCN・行数・引数・副作用・エラーの畳み込み)を閾値まで直す | `verifiability.py` exit 0、verification-reviewer(対象 verifiability) 合格(コードが無ければ「対象コード無し」) |
 | 1 | **loopeng-formalize** | EARS + 状態/ドメインモデル → `<Name>.tla`/`.cfg` | 全 EARS 行が spec の disjunct/Inv に対応 |
 | 2 | **loopeng-modelcheck** | TLC で全到達状態を検査 + spec 自体を mutation testing | `No error` かつ真の survivor 0、unverified を再検査済み、文面の往復確認が終了条件を満たす([`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md)) |
 | 3 | **loopeng-gherkin** | 反例 → Gherkin 機械変換、正常系シナリオ追加 | 反例が尽き「テスト」列が埋まる |
@@ -99,7 +99,7 @@ flowchart TD
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
-完了扱いにする前、または「設計を検証した/網羅した」と報告する前に、**コントローラ(この工程を進めている本人)が** `hymme:loop-engineering-reviewer` サブエージェントを dispatch して外側から検査させる。modeler に委譲していた場合も、modeler は報告して終わり、報告を受けたコントローラが呼ぶ(ワーカーは呼ばない)。
+完了扱いにする前、または「設計を検証した/網羅した」と報告する前に、**コントローラ(この工程を進めている本人)が** `hymme:verification-reviewer`(対象 `loop-engineering`) サブエージェントを dispatch して外側から検査させる。modeler に委譲していた場合も、modeler は報告して終わり、報告を受けたコントローラが呼ぶ(ワーカーは呼ばない)。
 渡すもの: 0段の抽出台帳とトレーサビリティ表のパス、`.tla`/`.cfg` の場所、往復確認の入力ファイル・判定表・前件到達の証跡(`tasks/loopeng/<Name>.faithfulness-input.md` / `<Name>.faithfulness.md` / `<Name>.reach.log`)、本体ソースの場所、spec があればそのパス(手法名・管理番号の漏れ検査の対象に含める)。
 レビュアーが挙げた違反(採番チェックリストの未完、台帳の欠落、STRIDE・CWE 行の未記入、往復確認の未実施・`mismatch`/`vacuous` 残り、`.tla`/`.feature` の手編集乖離、本体への管理番号・手法用語の漏れ)を解消してから完了とする。自分で「守れている」と判断して飛ばさない。
 実装検証時に追加確認する2点(環境パリティ・exit code)は [`references/bridging.md`](references/bridging.md)。

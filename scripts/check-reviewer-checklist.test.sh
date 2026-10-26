@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# check-reviewer-checklist.sh の回帰テスト。fixture は現行の agent 定義を書き換えて作る。
+# check-reviewer-checklist.sh の回帰テスト。fixture は現行の reviewer 規範を書き換えて作る。
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 check=scripts/check-reviewer-checklist.sh
-src=agents/loop-engineering-reviewer.md
+src=skills/loop-engineering/reviewer.md
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fail=0
@@ -40,7 +40,7 @@ with_line() {
   echo "$tmp/$1.md"
 }
 
-for f in agents/*-reviewer.md; do expect 0 '' "repo $(basename "$f")" "$f"; done
+for f in skills/*/reviewer.md; do expect 0 '' "repo $f" "$f"; done
 
 sed 's/^- \*\*生成物の源泉一致\*\*/- **生成物の源泉が一致**/' "$src" >"$tmp/renamed.md"
 expect 1 "$names" renamed-heading "$tmp/renamed.md"
@@ -68,11 +68,11 @@ expect 0 '' gap-21-after "$(with_line ga21 "チェックリストあいうえお
 expect 1 "$names" mixed-files "$src" "$tmp/renamed.md"
 # 1 件目の違反で止まらず、後続ファイルの違反も報告する
 expect 1 "$tmp/dropped.md" all-violations-reported "$tmp/renamed.md" "$src" "$tmp/dropped.md"
-# 引数なしはスクリプト位置基準で agents/*-reviewer.md を見る
-mkdir -p "$tmp/repo/scripts" "$tmp/repo/agents"
+# 引数なしはスクリプト位置基準で skills/*/reviewer.md を見る
+mkdir -p "$tmp/repo/scripts" "$tmp/repo/skills/x"
 cp "$check" "$tmp/repo/scripts/"
-cp "$tmp/renamed.md" "$tmp/repo/agents/x-reviewer.md"
-check="$tmp/repo/scripts/check-reviewer-checklist.sh" expect 1 'x-reviewer.md' default-args
+cp "$tmp/renamed.md" "$tmp/repo/skills/x/reviewer.md"
+check="$tmp/repo/scripts/check-reviewer-checklist.sh" expect 1 'skills/x/reviewer.md' default-args
 expect 1 'ファイルが無い' missing-file "$tmp/nope.md"
 
 # 本文は出力フォーマットの手前まで、チェックリストは閉じ fence までしか数えない

@@ -45,7 +45,7 @@ superpowers の `using-superpowers` と hymme の `using-hymme` はどちらも�
 
 | スキル | 説明 |
 | --- | --- |
-| **diff-review** | 差分を多観点で並列レビューする(diff-reviewer agent が担当)。`conformance` レンズは、不変条件・性質を実装が全経路で守るかを性質ごとに論証させ、論証が切れた経路だけを指摘する。過剰設計だけを見る場合は code-reviewer agent を使う。 |
+| **diff-review** | 差分を多観点で並列レビューする(diff-reviewer agent が担当)。`conformance` レンズは、不変条件・性質を実装が全経路で守るかを性質ごとに論証させ、論証が切れた経路だけを指摘する。過剰設計だけを見る場合は ponytail の ponytail-review スキルを使う。 |
 | **commit-flow** | コミットの粒度判断と計画。実務の分割・実行は micro-commit スキルが担う。 |
 | **micro-commit** | 変更を~30-50行の論理単位に分割し conventional commit で連続コミットする実務手順。 |
 | **test-targeted** | 変更に関係するテストだけを絞り込んで実行する。 |
@@ -60,14 +60,12 @@ agents として次を同梱する。呼び出しは subagent_type `hymme:<name>
 | agent | 説明 |
 | --- | --- |
 | **coder** | SDD の implementer 契約(spec → 実装 → 自己検証 → 報告)を、ponytail(最小・YAGNI)と TDD で遂行する。prover / modeler への委譲はしない。形式検証・モデル検査が必要なら「必要」と報告して controller に返す。 |
-| **modeler** | loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中して結果を返す。loop-engineering-reviewer への hand-off は controller が行う。 |
-| **prover** | formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。formal-verification-reviewer への hand-off は controller が行う。 |
+| **modeler** | loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中して結果を返す。verification-reviewer への hand-off は controller が行う。 |
+| **prover** | formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。verification-reviewer への hand-off は controller が行う。 |
 | **diff-reviewer** | diff-review のワーカー(多観点レビュー)。 |
-| **code-reviewer** | ponytail-review 観点(過剰設計)だけを見るレビュー担当。 |
-| **verifiability-reviewer** | 検証容易性の台帳の完了ゲート。指標を自分で再計測し、対象の選び方・例外・振る舞いの保全を外側から検査する。 |
-| **loop-engineering-reviewer** / **test-design-reviewer** / **formal-verification-reviewer** | 各系統の完了ゲート。controller が modeler / prover / test-design の成果を渡して外部検査させる。 |
+| **verification-reviewer** | 検証 4 系統(loop-engineering / test-design / formal-verification / verifiability)の完了前の外部検査。controller が系統と成果物の場所を渡し、reviewer は `skills/<系統>/reviewer.md` の規範を読んで検査する。 |
 
-coder と code-reviewer は [ponytail](https://github.com/DietrichGebert/ponytail) プラグインを Skill ツールで呼ぶ(soft dependency、未導入なら該当手順をスキップ)。ponytail は自身の marketplace から入れる。`/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`。
+coder は [ponytail](https://github.com/DietrichGebert/ponytail) プラグインを Skill ツールで呼ぶ(soft dependency、未導入なら該当手順をスキップ)。ponytail は自身の marketplace から入れる。`/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`。
 
 ## インストール(Claude Code)
 
@@ -121,4 +119,4 @@ TLC を回す前に、`loopeng/bin/tla_lint.sh` で SANY の構文・意味解�
 hymme 自体の開発では、スクリプト(`hooks/`・`loopeng/`・`scripts/`・`skills/*/scripts/` の `*.py` と `*.sh`)を `scripts/lint.sh` の品質ゲート(ruff の静的解析とフォーマット、shellcheck、shfmt。`nix develop` に入っている)に通す。`scripts/lint.sh --fix` で整形と自動修正を書き戻す。設定は `ruff.toml` と `.editorconfig`。
 スクリプトが端末に出す文言は日本語で書き、各スクリプトの先頭近くの対応表(Python は `MESSAGES` と `msg()`、シェルは `msg()` の case)から引く。`loopeng/Makefile.loopeng` だけは make のレシピなので対応表を置かず、日本語の echo を直接書く(品質ゲートの対象外)。判定の値(HOLDS/VIOLATED)や、他のプログラムやスキルが目印として読むトークンは文言ではないので訳さない。
 hook の中の Python は `python3 -I` で動かす(作業中のリポジトリにある `json.py` などを読み込まないため)。
-`agents/*-reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)、SMT の判定器(`scripts/loopeng-smt-oracle.test.sh`)、実ログの突き合わせ(`scripts/loopeng-trace-check.test.sh`)、検証容易性の指標とゲート(`scripts/verifiability.test.sh`)の回帰テストと、品質ゲート(`scripts/lint.sh`)も走らせる。
+`skills/*/reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)、SMT の判定器(`scripts/loopeng-smt-oracle.test.sh`)、実ログの突き合わせ(`scripts/loopeng-trace-check.test.sh`)、検証容易性の指標とゲート(`scripts/verifiability.test.sh`)の回帰テストと、品質ゲート(`scripts/lint.sh`)も走らせる。
