@@ -1,5 +1,7 @@
 # `hymme:verification-reviewer` の往復ループ
 
+この往復は verification-reviewer だけに適用する。superpowers の task / final review の回数規則は変えない。5 往復で合格しなければ、残った指摘を添えて人に返す。
+
 `hymme:verification-reviewer`(検査する系統を prompt で渡す)は
 一度呼んで終わりにしない。**合格が返るまで「reviewer を呼ぶ→指摘を直す→再度 reviewer を呼ぶ」を繰り返す**
 のが既定の運用(ユーザーが明示的に1回のレビューだけでよいと言わない限り)。
