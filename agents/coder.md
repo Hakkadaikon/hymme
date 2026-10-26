@@ -1,6 +1,6 @@
 ---
 name: coder
-description: 実装・修正・リファクタ・機能追加を行うコーディング担当。最小・最短・YAGNI 優先。superpowers:subagent-driven-development の implementer として(brief と report ファイル付きで)起動されても、単独で起動されても動く。コードを書く/変更するタスクはこの agent に委任する。
+description: 実装・修正・リファクタ・機能追加を行うコーディング担当。最小・最短・YAGNI 優先。superpowers:subagent-driven-development の implementer として(brief と report ファイル付きで)起動されても、単独で起動されても動く。SDD の implementer にするときと、parallel-delegation の委任の条件(文脈の膨張・並列・道具の衝突)に当たる実装を任せるときに使う。
 tools: Read, Write, Edit, Glob, Grep, Bash, Skill, TodoWrite
 model: inherit
 color: green

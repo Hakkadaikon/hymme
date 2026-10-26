@@ -16,7 +16,7 @@ superpowers:subagent-driven-development のタスク単位レビュー(task-revi
 
 - **(a) PR 作成前**: pr-create が必須とし、`hooks/pr-review-gate.sh` が証跡(§4)を検査する。
 - **(b) ユーザーの明示依頼**: 「レビューして」「〇〇観点で見て」。
-- **(c) SDD 最終レビューの多観点補強**(任意): コントローラが code-reviewer.md の最終レビューに**加えて**本スキルを回す。順序は code-reviewer.md → 本スキル(同じ MERGE_BASE..HEAD)。本スキルの指摘は下の対応表で severity を読み替えて最終レビューの指摘リストに合流させ、fix 波(1 回)と scoped re-review は SDD の手順で回す(fix 波の後に本スキルを回して 2 回目の波を作らない)。本スキルの must が残るなら、code-reviewer.md の verdict に関わらず fix 波へ回し、merge 判断は scoped re-review の後にする。証跡ファイル(§4)はこの場面でも書き出す——後続の pr-create ゲートがそれを使う。
+- **(c) SDD 最終レビューの多観点補強**(任意): コントローラが code-reviewer.md の最終レビューに**加えて**本スキルを回す。順序は code-reviewer.md → 本スキル(同じ MERGE_BASE..HEAD)。本スキルの指摘は下の対応表で severity を読み替えて最終レビューの指摘リストに合流させ、fix 波(1 回)と scoped re-review は SDD の手順で回す(fix 波の後に本スキルを回して 2 回目の波を作らない)。本スキルの must が残るなら、code-reviewer.md の verdict に関わらず fix 波へ回し、merge 判断は scoped re-review の後にする。証跡ファイル(§4)はこの場面でも書き出す——後続の pr-create ゲートがそれを使う。executing-plans(inline)の最終レビューに足すときは、本スキルの must を Critical として1回の修正 pass に合流させ、executing-plans の規則どおり再レビューはしない。
 
 diff-reviewer ワーカーはサブエージェントを起動しない。agent の分割はこのスキル(オーケストレータ)だけが決める。
 

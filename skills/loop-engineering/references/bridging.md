@@ -4,7 +4,7 @@
 TLA+ で「設計が正しい」、Lean で「実装が設計通り」を分担。どちらの成果も Gherkin / property test に落とす。両者を機械的に変換しようとしない(YAGNI)。
 
 反例由来の Gherkin や証明済み述語を、機能レベルのテスト群(正常系・境界・異常系)へ展開する段では `test-design` skill 系を使う。設計の網羅は TLA+ がやるので、`test-design` は残りの機能テストの手法選定(同値分割・境界値・property-based 等)を担う。
-その後の実装は superpowers:writing-plans の Task → superpowers:subagent-driven-development の implementer が superpowers:test-driven-development で消化する。Gherkin 由来のテストも implementer が書き、まず Red を見る。plan・テスト名に `S-xxx`/`R-xx`/`Inv` 名は書かない。
+その後の実装は superpowers:writing-plans の Task → superpowers:executing-plans(既定。SDD なら implementer)が superpowers:test-driven-development で消化する。Gherkin 由来のテストも実装する本人が書き、まず Red を見る。plan・テスト名に `S-xxx`/`R-xx`/`Inv` 名は書かない。
 
 **実装検証時の追加ゲート2点**(完了前ゲートの一部。実地教訓: [`../../loopeng-extract/references/lessons.md`](../../loopeng-extract/references/lessons.md)):
 

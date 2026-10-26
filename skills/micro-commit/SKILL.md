@@ -11,9 +11,9 @@ Create clean, conventional commit-style micro-commits by automatically splitting
 
 Small, focused commits make git history readable and bisectable. Each commit should represent one coherent thought — a single function added, a bug fixed, a test written. When commits are too large, `git bisect` becomes useless and code review becomes painful. The goal is ~30-50 changed lines per commit, though this is a guideline, not a hard rule — don't split a single coherent change just to hit a line count.
 
-## SDD implementers
+## Plan execution (executing-plans and SDD implementers)
 
-When dispatched by superpowers:subagent-driven-development, the task brief's `Commit` step(s) are the plan: execute them through this skill. Split a step's diff into ~30-50 line logical units when it is larger, keep the brief's message verbatim when one commit suffices, and never merge two independent changes the brief listed separately. Commit before reporting — the implementer contract requires committed work — without waiting for a separate "commit this" instruction. Never push.
+When executing a plan inline (superpowers:executing-plans), run each task's `Commit` step through this skill yourself. When dispatched by superpowers:subagent-driven-development, the task brief's `Commit` step(s) are the plan: execute them through this skill. Split a step's diff into ~30-50 line logical units when it is larger, keep the brief's message verbatim when one commit suffices, and never merge two independent changes the brief listed separately. Commit before reporting — the implementer contract requires committed work — without waiting for a separate "commit this" instruction. Never push.
 
 ## Workflow
 

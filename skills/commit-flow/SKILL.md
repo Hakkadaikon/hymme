@@ -27,7 +27,7 @@ superpowers:writing-plans の Task 構造は最後のステップが `Step N: Co
 
 - メッセージは §5 の Conventional Commits で、実行時にそのまま貼れる完成形にする(`feat: add X` のような scope 無しの仮置きで済ませない)。
 - 1 Task に論理的に独立した変更が複数あるなら Commit ステップを複数に割る(§3)。Task の境界とコミットの境界は一致しなくてよい。
-- SDD implementer はこの Commit ステップを micro-commit スキルで実行する(~30-50 行の論理単位に更に割ってよいが、Task 内の独立した変更を 1 つに統合はしない)。
+- plan を実装する本人(executing-plans の本体、SDD なら implementer)はこの Commit ステップを micro-commit スキルで実行する(~30-50 行の論理単位に更に割ってよいが、Task 内の独立した変更を 1 つに統合はしない)。
 
 ### 1.2 plan モード(ExitPlanMode)の plan にはコミット計画セクションを置く
 
