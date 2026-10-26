@@ -93,6 +93,12 @@
         touch $out
       '';
 
+      checks.doc-refs = pkgs.runCommand "doc-refs" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+        cd ${self}
+        bash scripts/check-doc-refs.test.sh
+        touch $out
+      '';
+
       checks.test-design-extract-gate = pkgs.runCommand "test-design-extract-gate" { nativeBuildInputs = [ pkgs.python3 pkgs.git ]; } ''
         cp -r ${self} src && chmod -R u+w src
         HOME=$TMPDIR bash src/scripts/test-design-extract-gate.test.sh
