@@ -5,9 +5,9 @@ user-invocable: true
 argument-hint: "[レビュー範囲や観点(例: origin/main 以降 / security 観点も)。省略時は既定レンズで全差分]"
 ---
 
-# diff-review: 並列多観点 diff レビュー
+# diff-review: 多観点 diff レビュー
 
-フローは 4 段階: **1. 差分収集(決定論)→ 2. レンズごとに diff-reviewer agent を並列起動 → 3. 統合報告 → 4. 証跡出力**。
+フローは 4 段階: **1. 差分収集(決定論)→ 2. レンズを決めて diff-reviewer agent を起動 → 3. 統合報告 → 4. 証跡出力**。
 レビューは読み取り専用。修正・コミットはこのスキルの範囲外で、ユーザーの指示があってから別途行う。
 
 ## superpowers との関係
@@ -18,7 +18,7 @@ superpowers:subagent-driven-development のタスク単位レビュー(task-revi
 - **(b) ユーザーの明示依頼**: 「レビューして」「〇〇観点で見て」。
 - **(c) SDD 最終レビューの多観点補強**(任意): コントローラが code-reviewer.md の最終レビューに**加えて**本スキルを回す。順序は code-reviewer.md → 本スキル(同じ MERGE_BASE..HEAD)。本スキルの指摘は下の対応表で severity を読み替えて最終レビューの指摘リストに合流させ、fix 波(1 回)と scoped re-review は SDD の手順で回す(fix 波の後に本スキルを回して 2 回目の波を作らない)。本スキルの must が残るなら、code-reviewer.md の verdict に関わらず fix 波へ回し、merge 判断は scoped re-review の後にする。証跡ファイル(§4)はこの場面でも書き出す——後続の pr-create ゲートがそれを使う。
 
-diff-reviewer ワーカーはサブエージェントを起動しない。並列化はこのスキル(オーケストレータ)がレンズ単位で行うものであり、実装 subagent の並列化ではない(実装は superpowers が直列に回す)。
+diff-reviewer ワーカーはサブエージェントを起動しない。agent の分割はこのスキル(オーケストレータ)だけが決める。
 
 ### severity 対応表
 
@@ -44,7 +44,7 @@ bash <skill-dir>/scripts/collect-diff.sh manifest [<base-ref>]
 
 manifest はメインセッションで **1 回だけ**実行し、出力を次段で各 agent の prompt にそのまま注入する(agent 側に再収集させない)。メインセッションで精読・分析はしない。
 
-## 2. レンズ決定と並列起動
+## 2. レンズ決定と起動
 
 ### レンズ registry
 
@@ -59,13 +59,13 @@ manifest はメインセッションで **1 回だけ**実行し、出力を次�
 - `conformance` を適用するときは、性質一覧の場所(依頼文・spec・`tasks/loopeng/`・`tasks/fv/` のどれか)を agent prompt の「ユーザーの依頼」に含める
 - registry に無い観点を指定されたら、その観点名で agent を 1 体起動し一般知識でレビューさせる
 
-### 並列起動
+### 起動
 
-適用レンズ 1 つにつき diff-reviewer agent を 1 体、**1 メッセージ内で同時に起動**する(直列にしない)。各 agent の prompt には必ず以下を含める:
+適用レンズをまとめて diff-reviewer agent 1 体に渡す。全レンズが同じ差分を読むので、レンズごとに agent を分けると同じ差分と周辺コードを本数分読み直すことになる。`conformance` のように性質ごとの論証で長くなるレンズを足すときと、レンズが4つを超えるときだけ、そのレンズを別の agent に分けて **1 メッセージ内で同時に起動**する。agent の prompt には必ず以下を含める:
 
 ```
-レンズ: <lens>
-基準ファイル: ${CLAUDE_PLUGIN_ROOT}/skills/diff-review/references/<lens>.md(レビュー開始前に Read すること)
+レンズ: <lens>[, <lens>...]
+基準ファイル: ${CLAUDE_PLUGIN_ROOT}/skills/diff-review/references/<lens>.md(レンズごとに、レビュー開始前に Read すること)
 ユーザーの依頼: <元の依頼の要約(範囲・重点の指定があれば含める)>
 
 以下は収集済みの差分 manifest。manifest の再実行はしない。全文 diff が必要な単位のみ

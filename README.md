@@ -45,7 +45,7 @@ superpowers の `using-superpowers` と hymme の `using-hymme` はどちらも�
 
 | スキル | 説明 |
 | --- | --- |
-| **diff-review** | 差分を多観点で並列レビューする(diff-reviewer agent が担当)。`conformance` レンズは、不変条件・性質を実装が全経路で守るかを性質ごとに論証させ、論証が切れた経路だけを指摘する。過剰設計だけを見る場合は ponytail の ponytail-review スキルを使う。 |
+| **diff-review** | 差分を多観点でレビューする(既定は全レンズを diff-reviewer agent 1 本に渡す)。`conformance` レンズは、不変条件・性質を実装が全経路で守るかを性質ごとに論証させ、論証が切れた経路だけを指摘する。過剰設計だけを見る場合は ponytail の ponytail-review スキルを使う。 |
 | **commit-flow** | コミットの粒度判断と計画。実務の分割・実行は micro-commit スキルが担う。 |
 | **micro-commit** | 変更を~30-50行の論理単位に分割し conventional commit で連続コミットする実務手順。 |
 | **test-targeted** | 変更に関係するテストだけを絞り込んで実行する。 |
