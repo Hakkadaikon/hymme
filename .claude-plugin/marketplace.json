@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "superpowers",
-      "description": "hymme の前提プラグイン(obra/superpowers 本体、動作確認版 6.3.0)。brainstorming → writing-plans → subagent-driven-development → finishing-a-development-branch の工程と TDD / systematic-debugging を提供する。",
+      "description": "hymme の前提プラグイン(obra/superpowers 本体、動作確認版 7.0.0)。brainstorming → writing-plans → executing-plans / subagent-driven-development → finishing-a-development-branch の工程と TDD / systematic-debugging を提供する。",
       "category": "development",
       "source": {
         "source": "url",

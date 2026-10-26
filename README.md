@@ -1,6 +1,6 @@
 # hymme
 
-[superpowers](https://github.com/obra/superpowers) を前提に、設計検証(TLA+)・テスト設計・形式検証(Lean 4)の 3 系統と git/レビュー運用のスキル、専用 agents を足す Claude Code プラグイン。superpowers 本体もこの marketplace から入れられる(動作確認版 6.3.0)。工程を決めるのは superpowers で、hymme はその各工程に検証と運用を差し込む。差し込み位置の地図は `using-hymme` スキルが持ち、セッション開始時に自動注入される。
+[superpowers](https://github.com/obra/superpowers) を前提に、設計検証(TLA+)・テスト設計・形式検証(Lean 4)の 3 系統と git/レビュー運用のスキル、専用 agents を足す Claude Code プラグイン。superpowers 本体もこの marketplace から入れられる(動作確認版 7.0.0)。工程を決めるのは superpowers で、hymme はその各工程に検証と運用を差し込む。差し込み位置の地図は `using-hymme` スキルが持ち、セッション開始時に自動注入される。
 
 必要な Nix ツールチェイン(TLA+/Apalache/Lean)も flake で配る。
 
@@ -12,18 +12,18 @@
 | 計画 | writing-plans(Task / Step) | spec 承認後に test-design で T-ID 台帳 → Task に落とす |
 | 実装 | subagent-driven-development / executing-plans、test-driven-development | 既定は executing-plans(本体で実装)。SDD を選んだときの implementer は superpowers 既定。prover / modeler は本体が別 dispatch、完了ゲートで verification-reviewer |
 | コミット | (規約なし) | commit-flow(粒度)+ micro-commit(実務) |
-| レビュー | task review(SDD の task-reviewer-prompt.md)/ final review(requesting-code-review) | 多観点 diff-review。PR 前は hook で diff-review 証跡を必須化 |
+| レビュー | final review(requesting-code-review)。SDD を選んだときは task review も | 多観点 diff-review。PR 前は hook で diff-review 証跡を必須化 |
 | PR | finishing-a-development-branch | pr-create |
 | バグ | systematic-debugging | gh-ci-investigate(Phase 1 の証拠収集) |
 | 訂正 | receiving-code-review | review-feedback(水平展開・lessons) |
-| 台帳 | SDD の ledger 形式 | ledger-flow(それ以外の進捗・引き継ぎ文書) |
+| 台帳 | plan 実行の ledger 形式(executing-plans / SDD 共通) | ledger-flow(それ以外の進捗・引き継ぎ文書) |
 | 履歴 | using-git-worktrees | rebase-flow / reset-flow + git-guard hook |
 
-superpowers の `using-superpowers` と hymme の `using-hymme` はどちらもセッション開始時に注入される。前者が「スキルを使え」、後者が「どこで hymme を使うか」を決める。
+superpowers の `using-superpowers` と hymme の `using-hymme` はどちらもセッション開始時に注入される。前者が「スキルを使え」、後者が「どこで hymme を使うか」を決める。superpowers と食い違う箇所(plan の「SDD 推奨」、brainstorming の承認後の手順、finishing からの PR 作成など)の読み替えも `using-hymme` に書いてある。
 
 ## 収録スキル
 
-検証系は「入口ルーター + 工程スキル」の構成をとる。ルーターが局面を判定し、対応する工程スキルへ振り分ける。
+検証系は「入口ルーター + 工程スキル」の構成をとる。ルーターが局面を判定し、対応する工程スキルへ振り分ける。モデルのスキル一覧に出るのはルーターだけで、工程スキルと test-catalog の技法スキルはルーターの指示でファイルを Read して使う(一覧を短く保ち、説明文が切り捨てられないようにするため)。
 
 | 系統 | 役割 | スキル | 説明 |
 | --- | --- | --- | --- |
@@ -59,10 +59,12 @@ agents として次を同梱する。呼び出しは subagent_type `hymme:<name>
 
 | agent | 説明 |
 | --- | --- |
-| **modeler** | loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中して結果を返す。verification-reviewer への hand-off は controller が行う。 |
-| **prover** | formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。verification-reviewer への hand-off は controller が行う。 |
+| **modeler** | loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中して結果を返す。verification-reviewer への hand-off は呼び出し元が行う。 |
+| **prover** | formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。verification-reviewer への hand-off は呼び出し元が行う。 |
 | **diff-reviewer** | diff-review のワーカー(多観点レビュー)。 |
-| **verification-reviewer** | 検証 4 系統(loop-engineering / test-design / formal-verification / verifiability)の完了前の外部検査。controller が系統と成果物の場所を渡し、reviewer は `skills/<系統>/reviewer.md` の規範を読んで検査する。 |
+| **verification-reviewer** | 検証 4 系統(loop-engineering / test-design / formal-verification / verifiability)の完了前の外部検査。呼び出し元が系統と成果物の場所を渡し、reviewer は `skills/<系統>/reviewer.md` の規範を読んで検査する。 |
+
+実装担当の agent は同梱しない。計画の実行は既定で本体のループ(superpowers:executing-plans)で行い、subagent は「文脈が膨らんで判断が鈍る」「捨ててよい文脈で並列に回したい」「指示や道具が両立しない」のどれかに当たるときだけ使う。判断と並列運用の規範は `skills/_shared/parallel-delegation.md`、verification-reviewer との往復は `skills/_shared/reviewer-loop.md` にある。
 
 ponytail-review(過剰設計のレビュー)は [ponytail](https://github.com/DietrichGebert/ponytail) プラグインのスキル(soft dependency)。ponytail は自身の marketplace から入れる。`/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`。
 
@@ -78,7 +80,7 @@ superpowers が前提。hymme の marketplace から両方入れる。
 
 superpowers は `/plugin install superpowers@claude-plugins-official` で入れても同じ(同一プラグイン)。**どちらか一方だけ**入れる。両方入れるとスキルと SessionStart hook が二重になる。すでに official 版が入っているなら `superpowers@hymme` は入れない。
 
-動作確認版は superpowers 6.3.0。marketplace の entry は sha を固定しない(`/plugin update superpowers@hymme` で上流に追従する)。
+動作確認版は superpowers 7.0.0。marketplace の entry は sha を固定しない(`/plugin update superpowers@hymme` で上流に追従する)。
 
 更新は `/plugin marketplace update hymme` → `/plugin update hymme@hymme`(hymme marketplace は autoUpdate 無効)。反映には再起動が要る。
 
