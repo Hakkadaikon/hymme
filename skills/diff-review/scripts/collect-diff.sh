@@ -74,6 +74,10 @@ format_numstat() {
 }
 
 # numstat の総変更行数(バイナリ "-" は除く)
+line_count() { # line_count <path>: 通常ファイルの行数。ディレクトリ(未追跡のシンボリックリンク先など)は 0
+  if [[ -f "$1" ]]; then wc -l <"$1" | tr -d ' '; else echo 0; fi
+}
+
 sum_numstat() {
   awk -F'\t' '{ if ($1 != "-") t += $1; if ($2 != "-") t += $2 } END { print t + 0 }'
 }
@@ -126,7 +130,7 @@ cmd_manifest() {
   else
     local f
     while IFS= read -r f; do
-      msg untracked_file "$f" "$(wc -l <"$f")"
+      msg untracked_file "$f" "$(line_count "$f")"
     done <<<"$untracked"
   fi
   echo
@@ -146,7 +150,7 @@ cmd_manifest() {
   if [[ -n "$untracked" ]]; then
     local f
     while IFS= read -r f; do
-      untracked_lines=$((untracked_lines + $(wc -l <"$f")))
+      untracked_lines=$((untracked_lines + $(line_count "$f")))
     done <<<"$untracked"
   fi
   echo "== SIZE =="
