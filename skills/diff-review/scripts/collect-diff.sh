@@ -73,11 +73,11 @@ format_numstat() {
   awk -F'\t' '{printf "  %s +%s -%s\n", $3, $1, $2}'
 }
 
-# numstat の総変更行数(バイナリ "-" は除く)
 line_count() { # line_count <path>: 通常ファイルの行数。ディレクトリ(未追跡のシンボリックリンク先など)は 0
   if [[ -f "$1" ]]; then wc -l <"$1" | tr -d ' '; else echo 0; fi
 }
 
+# numstat の総変更行数(バイナリ "-" は除く)
 sum_numstat() {
   awk -F'\t' '{ if ($1 != "-") t += $1; if ($2 != "-") t += $2 } END { print t + 0 }'
 }
