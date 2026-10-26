@@ -89,7 +89,7 @@ BDD/ATDD は受け入れ基準を網羅対象として実装前に固定し、�
 コードや成果物を実行せずに欠陥を見つける。
 ISO/IEC/IEEE 29119 でも一級のテスト活動として扱われ、動的テストより早く安く欠陥を捕まえられる。
 
-- **コードレビュー/ピアレビュー**：他者が差分を読み、欠陥、設計の歪み、過剰設計を指摘する。基底は superpowers:requesting-code-review(code-reviewer.md、正しさ中心・Critical/Important/Minor)。hymme はその上に diff-review(security/perf/design 等の多観点を並列レビュー)と code-reviewer agent(ponytail-review、過剰設計のみ)を重ねる。
+- **コードレビュー/ピアレビュー**：他者が差分を読み、欠陥、設計の歪み、過剰設計を指摘する。基底は superpowers:requesting-code-review(code-reviewer.md、正しさ中心・Critical/Important/Minor)。hymme はその上に diff-review(security/perf/design 等の多観点を並列レビュー)を重ね、過剰設計だけは ponytail の ponytail-review スキルで見る。
 - **静的解析(Linter/型チェッカ)**：ESLint や tsc で、実行前にバグの芽(未使用、型不整合、危険なパターン)を機械的に検出する。
 - **インスペクション/ウォークスルー**：前者は役割を定めた形式的な欠陥検出会、後者は作成者が成果物を説明しながら意見を募る非形式な検討。
 - **仕様設計レビュー**：コードになる前の要件や設計を検証し、下流に流れると高くつく欠陥を上流で止める。
