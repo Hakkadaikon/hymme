@@ -28,7 +28,7 @@ ledger="tasks/loopeng/${name}.extract.md"
 
 msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   case "$1" in
-    no_ledger) printf 'loopeng 0段ゲート: 抽出台帳 %s が無い。loopeng-extract スキルの assets/extract-template.md をコピーして埋めてから loop-* を回せ。\n' "$2" ;;
+    no_ledger) printf 'loopeng 0段ゲート: 抽出台帳 %s が無い。%s をコピーして埋めてから loop-* を回せ。\n' "$2" "$3" ;;
     unchecked) printf 'loopeng 0段ゲート: %s に未チェック(- [ ] S-...)が残っている。全 ID を EARS へ変換して [x] にしてから進め。\n' "$2" ;;
     no_ids) printf 'loopeng 0段ゲート: %s に S-NNN の ID が1つも無い。台帳が空。\n' "$2" ;;
     gap) printf 'loopeng 0段ゲート: %s の ID 連番に欠番がある(S-%s..S-%s のうち %s 件)。抜けを埋めるか採番し直せ。\n' "$2" "$3" "$4" "$5" ;;
@@ -41,7 +41,8 @@ block() { # block <code> [args...]: 文言を stderr に出して exit 2
   exit 2
 }
 
-[ -f "$ledger" ] || block no_ledger "$ledger"
+root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+[ -f "$ledger" ] || block no_ledger "$ledger" "$root/skills/loopeng-extract/assets/extract-template.md"
 
 # 「## 台帳」以降だけを対象にする(テンプレ見出しの例 [ ] を拾わないため)
 body="$(awk '/^## 台帳/{f=1;next} /^## /{if(f)exit} f' "$ledger")"
