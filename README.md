@@ -62,7 +62,7 @@ agents として次を同梱する。呼び出しは subagent_type `hymme:<name>
 | **modeler** | loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中して結果を返す。verification-reviewer への hand-off は呼び出し元が行う。 |
 | **prover** | formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。verification-reviewer への hand-off は呼び出し元が行う。 |
 | **diff-reviewer** | diff-review のワーカー(多観点レビュー)。 |
-| **verification-reviewer** | 検証 4 系統(loop-engineering / test-design / formal-verification / verifiability)の完了前の外部検査。呼び出し元が系統と成果物の場所を渡し、reviewer は `skills/<系統>/reviewer.md` の規範を読んで検査する。 |
+| **verification-reviewer** | 検証 3 系統(loop-engineering / test-design / formal-verification)と verifiability の完了前の外部検査。呼び出し元が系統と成果物の場所を渡し、reviewer は `skills/<系統>/reviewer.md` の規範を読んで検査する。 |
 
 実装担当の agent は同梱しない。計画の実行は既定で本体のループ(superpowers:executing-plans)で行い、subagent は「文脈が膨らんで判断が鈍る」「捨ててよい文脈で並列に回したい」「指示や道具が両立しない」のどれかに当たるときだけ使う。判断と並列運用の規範は `skills/_shared/parallel-delegation.md`、verification-reviewer との往復は `skills/_shared/reviewer-loop.md` にある。
 

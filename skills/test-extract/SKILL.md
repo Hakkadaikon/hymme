@@ -52,7 +52,7 @@ description: >
 
 ## 0 段を閉じた直後のゲート
 
-台帳を閉じたら、テストを1件でも書く前(superpowers:writing-plans なら Task に失敗テストを書く前)に、コントローラが `hymme:verification-reviewer`(対象 `test-design`) サブエージェントを dispatch し、台帳のパスを渡して外側から検査させる(台帳の未完・欠番、理由なしの優先度落とし)。違反を解消してから次工程へ。
+台帳を閉じたら、テストを1件でも書く前(superpowers:writing-plans なら Task に失敗テストを書く前)に、本体(SDD ならコントローラ)が `hymme:verification-reviewer`(対象 `test-design`) サブエージェントを dispatch し、台帳のパスを渡して外側から検査させる(台帳の未完・欠番、理由なしの優先度落とし)。違反を解消してから次工程へ。
 
 ## やらないこと
 
