@@ -15,7 +15,7 @@ disable-model-invocation: true
 共通の型は「測定指標 + 合否しきい値(SLO/SLA)を先に決め、超えたら CI を落とす」ことだ。
 しきい値の無い計測は「走らせただけ」で終わり、回帰を守らない。
 
-品質保証系の非機能(セキュリティ、a11y、互換、信頼性、可用性、カオス、耐障害性、コントラクト、データ品質)は [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md) に分けた。
+品質保証系の非機能(セキュリティ、a11y、互換、信頼性、可用性、カオス、コントラクト)は [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md)、耐障害性とデータ品質は [`nonfunctional-resilience.md`](../nonfunctional-resilience/SKILL.md) に分けた。
 開発プロセスに組み込む戦術(BDD/ATDD/CI/カナリア)、静的テスト、その他の観点(冪等性/並行性)は [`process-static.md`](../process-static/SKILL.md)。
 
 ## 目次
@@ -62,7 +62,7 @@ ISO/IEC 25010 の性能効率性に対応する。負荷の軸(時間 × 量 × 
 
 ## TypeScript example: 負荷テスト
 
-依存を増やさず Node だけで済むので `autocannon` をスクリプトから呼ぶ。
+Node から直接呼べる `autocannon` をスクリプトから使う。
 p99 レイテンシとエラー数を基準にして、超えたら失敗させる。
 
 ```ts
@@ -75,7 +75,7 @@ const result = await autocannon({
 });
 
 // 基準を満たさなければ CI を落とす。これが無いと「走らせただけ」で終わる
-if (result.errors > 0) throw new Error(`errors: ${result.errors}`);
+if (result.errors > 0 || result.non2xx > 0) throw new Error(`errors: ${result.errors}, non2xx: ${result.non2xx}`);
 if (result.latency.p99 > 200) throw new Error(`p99 too high: ${result.latency.p99}ms`);
 ```
 
@@ -99,5 +99,5 @@ if (result.latency.p99 > 200) throw new Error(`p99 too high: ${result.latency.p9
 3. 各しきい値を超えたら CI を落とすテストにする(「走らせただけ」で終わらせない)。
 達成チェック: しきい値の無い計測(走らせただけ)が残っていないか、長時間蓄積(soak)、急変(spike)、限界(stress)など時間と負荷の軸を取りこぼしていないか。
 
-品質保証系(セキュリティ、a11y、信頼性、耐障害性、コントラクト、データ品質)の網羅の定義は [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md) の末尾にある。
+品質保証系(セキュリティ、a11y、信頼性、コントラクト)の網羅の定義は [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md)、耐障害性とデータ品質は [`nonfunctional-resilience.md`](../nonfunctional-resilience/SKILL.md) の末尾にある。
 セキュリティの検出層分け、a11y の WCAG 違反0件など、測定指標が数値レイテンシと異なる観点はそちらを参照する。

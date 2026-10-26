@@ -5,7 +5,7 @@ description: >
   Integration Test)を扱う。
   test-catalog の手法カタログの一部。依存を切り離した最小単位のロジック・分岐・境界
   ・例外の網羅、複数モジュールや実依存(DB、キュー、別サービス)との接続部のずれの
-  検証を検証したい、または割り当てたいときに使う。通常は test-catalog スキルの索引
+  検証をしたい、または割り当てたいときに使う。通常は test-catalog スキルの索引
   経由で手法が選定された後にこのスキルを直接参照する。
 disable-model-invocation: true
 ---

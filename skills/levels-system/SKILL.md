@@ -20,7 +20,7 @@ disable-model-invocation: true
 各レベルは「概要」「目的/いつ使う」「example」「落とし穴」「網羅の定義」「遂行手順(着手→完了)」「完了チェック(もれ確認)」で示す。
 遂行手順は「要件/基準/フローを洗い出す → 代表を選ぶ → 完了を判定する」を番号付きの手順に落とし、完了チェックは漏れを実際に検出する確認項目を並べる。
 
-- サービス内部やサービス間のレベル(単体、結合、コンポーネント、コントラクト)は [levels.md](../levels/SKILL.md) を読む。
+- 単体・結合は [levels.md](../levels/SKILL.md)、コンポーネント・コントラクト・スキーマ検証は [levels-service.md](../levels-service/SKILL.md) を読む。
 - デプロイ前後の足切りや退行防止に使う運用確認の層(スモーク、サニティ、回帰)は [levels-operational.md](../levels-operational/SKILL.md) を読む。
 
 ## 目次

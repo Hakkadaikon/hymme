@@ -32,7 +32,7 @@ disable-model-invocation: true
 
 ### TypeScript example: サーキットブレーカ
 
-依存に遅延を注入し、しきい値で open に遷移して即時フォールバックへ切り替わることを確認する。
+依存に連続エラーを注入し、しきい値で open に遷移して即時フォールバックへ切り替わることを確認する。
 
 ```ts
 import { describe, it, expect, vi } from "vitest";

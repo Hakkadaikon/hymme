@@ -23,7 +23,7 @@ oracle の取り方は大きく3軸に整理できる。
 3. **入力と出力の関係・抽象モデル・上流の形式手法に委ねる**(メタモルフィック、モデルベース、形式検証連携)
 
 このファイルは 1、すなわち「**過去の自分の出力**」を基準に取る手法を扱う。
-2 の別実装基準は [`oracle-differential.md`](../oracle-differential/SKILL.md)、3 の関係・モデル基準は [`oracle-relational.md`](../oracle-relational/SKILL.md) にまとめた。
+2 の別実装基準は [`oracle-differential.md`](../oracle-differential/SKILL.md)、3 の関係基準は [`oracle-relational.md`](../oracle-relational/SKILL.md)、モデル基準は [`oracle-model-based.md`](../oracle-model-based/SKILL.md) にまとめた。
 
 各手法は **概要 / 目的といつ使うか / TypeScript example / 落とし穴 / 遂行手順(着手→完了)/ 完了チェック(もれ確認)/ 網羅の定義** の構成で示す。
 
@@ -105,6 +105,7 @@ describe("renderInvoice: snapshot", () => {
 
 ```ts
 import { describe, it } from "vitest";
+// approvals の provider は実際のランナーに合わせる(下の import は Jest 用の provider 名の例)
 import { verify } from "approvals/lib/Providers/Jest/JestApprovals";
 import { generateReport } from "./report";
 
@@ -208,5 +209,5 @@ describe("legacyCalculateDiscount: characterization (現状固定)", () => {
 ---
 
 別の信頼できる実装を oracle に据える系(差分テスト)は [`oracle-differential.md`](../oracle-differential/SKILL.md) にまとめた。
-関係・抽象モデル・上流の形式手法を oracle に据える系(メタモルフィック、モデルベース、形式検証連携)は [`oracle-relational.md`](../oracle-relational/SKILL.md) にまとめた。
+関係・抽象モデル・上流の形式手法を oracle に据える系(メタモルフィック、形式検証連携)は [`oracle-relational.md`](../oracle-relational/SKILL.md)、モデルベースは [`oracle-model-based.md`](../oracle-model-based/SKILL.md) にまとめた。
 ランダム入力を生成して性質や頑健性を叩く系(PBT、ファジング、コンビナトリアル)は [`generative-property.md`](../generative-property/SKILL.md) にまとめた。

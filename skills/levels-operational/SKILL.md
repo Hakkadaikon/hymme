@@ -20,7 +20,7 @@ disable-model-invocation: true
 遂行手順は「何を最小確認とするか → どう書くか → 合否を判定する」を番号付きの手順に落とし、完了チェックは漏れ(項目過多・スキップ黙殺など)を実際に検出する確認項目を並べる。
 
 - 利用者や発注者の視点で振る舞いを確かめる広域確認の層(システム、E2E、UAT)は [levels-system.md](../levels-system/SKILL.md) を読む。
-- サービス内部やサービス間のレベル(単体、結合、コンポーネント、コントラクト)は [levels.md](../levels/SKILL.md) を読む。
+- 単体・結合は [levels.md](../levels/SKILL.md)、コンポーネント・コントラクト・スキーマ検証は [levels-service.md](../levels-service/SKILL.md) を読む。
 
 ## 目次
 

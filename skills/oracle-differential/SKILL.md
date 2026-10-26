@@ -14,7 +14,7 @@ disable-model-invocation: true
 期待値そのものを1つずつ手で書けないとき、別の信頼できる実装に「正しさの判定」を委ねるテスト群。
 **oracle 問題**(期待値をどう用意するか)への解のうち、このファイルは「**別の信頼できる実装と突き合わせる**」手法(差分テスト)を扱う。
 過去の自分の出力を基準に固める解(スナップショット、承認、仕様化)は [`oracle-past-output.md`](../oracle-past-output/SKILL.md)、
-入力と出力の関係・抽象モデル・上流の形式手法に委ねる解(メタモルフィック、モデルベース、形式検証連携)は [`oracle-relational.md`](../oracle-relational/SKILL.md) にまとめた。
+入力と出力の関係・抽象モデル・上流の形式手法に委ねる解(メタモルフィック、形式検証連携)は [`oracle-relational.md`](../oracle-relational/SKILL.md)、モデルベースは [`oracle-model-based.md`](../oracle-model-based/SKILL.md) にまとめた。
 
 各手法は **概要 / 目的といつ使うか / TypeScript example / 落とし穴 / 遂行手順(着手→完了)/ 完了チェック(もれ確認)/ 網羅の定義** の構成で示す。
 
@@ -65,7 +65,7 @@ describe("fastSum: differential vs reference", () => {
 
 1. **参照実装を確保する**:正しいと信じられる別実装を用意する。移植なら移植元、最適化なら素朴版、置き換えなら旧実装。**参照が新実装と独立した出自であることを確認する**(同じコードベースから派生していると同じ穴を共有する)。参照が無いなら差分テストは成立しない。
 2. **入力空間を共通化する**:両実装に**同一の入力**を渡す経路を作る。型・前処理・前提状態を揃える。片方だけ正規化が掛かると差が出て偽陽性になる。PBT(`fast-check`)の生成器で入力を広く取り、代表値だけでなく境界・極端値も踏ませる([`generative-property.md`](../generative-property/SKILL.md))。
-3. **出力差ゼロを assert する**:同入力に対する両出力を比較する。完全一致が前提なら `expect(new).toStrictEqual(ref)`。浮動小数や順序揺れがあるなら**許容誤差・正規化を比較側に入れる**(`-0`/`+0` や丸め差で flaky に落ちないよう)。
+3. **出力差ゼロを assert する**:同入力に対する両出力を比較する。完全一致が前提なら `expect(next).toStrictEqual(ref)`。浮動小数や順序揺れがあるなら**許容誤差・正規化を比較側に入れる**(`-0`/`+0` や丸め差で flaky に落ちないよう)。
 4. **不一致を切り分ける**:差分が出たら、新実装のバグか、参照側のバグか、比較条件(誤差・順序)の不備かを切り分ける。PBT の shrink で最小反例を得てから原因を特定する。
 5. **移行が終わるまで併走させる**:置き換え目的なら、旧実装を消す前に差分テストを CI で併走させ、十分な入力で差ゼロを継続確認してから旧実装を撤去する。
 
@@ -86,5 +86,5 @@ describe("fastSum: differential vs reference", () => {
 ---
 
 過去の出力を oracle に据える系(ゴールデン、承認、仕様化)は [`oracle-past-output.md`](../oracle-past-output/SKILL.md) にまとめた。
-関係・抽象モデル・上流の形式手法を oracle に据える系(メタモルフィック、モデルベース、形式検証連携)は [`oracle-relational.md`](../oracle-relational/SKILL.md) にまとめた。
+関係・抽象モデル・上流の形式手法を oracle に据える系(メタモルフィック、形式検証連携)は [`oracle-relational.md`](../oracle-relational/SKILL.md)、モデルベースは [`oracle-model-based.md`](../oracle-model-based/SKILL.md) にまとめた。
 ランダム入力を生成して性質や頑健性を叩く系(PBT、ファジング、コンビナトリアル)は [`generative-property.md`](../generative-property/SKILL.md) にまとめた。

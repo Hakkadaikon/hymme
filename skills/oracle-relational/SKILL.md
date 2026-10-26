@@ -109,7 +109,7 @@ describe("sortAsc: metamorphic relations", () => {
   Lean で証明した定理(例: `decode (encode x) = x`、入力検証の健全性、分類の網羅性)を、PBT の property として実装に対して走らせる。
 
 形式手法は性質が「数学的に正しい」ことを保証するが、その性質が**目の前の実装で**成り立つかは別問題。
-PBT はその橋渡し層であり、証明済み述語を実装にぶつけて乖離を検出する。橋渡しテストは implementer が superpowers:test-driven-development で書き、まず落とす(落ちなければ乖離を検出していない)。証明・検査そのものはコントローラが hymme:prover / hymme:modeler へ dispatch し、implementer にはやらせない。
+PBT はその橋渡し層であり、証明済み述語を実装にぶつけて乖離を検出する。橋渡しテストは実装担当(インライン実行なら本体、SDD なら implementer)が superpowers:test-driven-development で書き、まず落とす(落ちなければ乖離を検出していない)。証明・検査そのものは hymme:prover / hymme:modeler へ委任し、実装担当にはやらせない。
 TLA+/Lean を回していない素のロジックに、わざわざこの連携を持ち込む必要はない(YAGNI)。
 
 ### TypeScript example

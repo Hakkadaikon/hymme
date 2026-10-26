@@ -18,7 +18,7 @@ disable-model-invocation: true
 左(設計)へ寄せるか右(本番)へ寄せるかの戦術、コードを読んで欠陥を捕まえる静的テスト、冪等性や並行性といった現場頻出の観点を扱う。
 項目が多いため大半は概要と目的だけを簡潔に記し、欠けやすい代表的な観点(BDD、冪等性)にだけ TypeScript の最小例を厚く添える。
 
-品質特性(ISO/IEC 25010)に沿う非機能テストは、測定系(性能、負荷、ストレス、スパイク、ソーク、スケーラビリティ、キャパシティ)を [`nonfunctional-perf.md`](../nonfunctional-perf/SKILL.md) に、品質保証系(セキュリティ、a11y、互換性、信頼性、耐障害性、コントラクト、データ品質マイグレーション)を [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md) にまとめた。
+品質特性(ISO/IEC 25010)に沿う非機能テストは、測定系(性能、負荷、ストレス、スパイク、ソーク、スケーラビリティ、キャパシティ)を [`nonfunctional-perf.md`](../nonfunctional-perf/SKILL.md) に、品質保証系(セキュリティ、a11y、互換性、信頼性、コントラクト)を [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md) に、耐障害性とデータ品質マイグレーションを [`nonfunctional-resilience.md`](../nonfunctional-resilience/SKILL.md) にまとめた。
 
 ## 目次
 
@@ -89,7 +89,7 @@ BDD/ATDD は受け入れ基準を網羅対象として実装前に固定し、�
 コードや成果物を実行せずに欠陥を見つける。
 ISO/IEC/IEEE 29119 でも一級のテスト活動として扱われ、動的テストより早く安く欠陥を捕まえられる。
 
-- **コードレビュー/ピアレビュー**：他者が差分を読み、欠陥、設計の歪み、過剰設計を指摘する。基底は superpowers:requesting-code-review(code-reviewer.md、正しさ中心・Critical/Important/Minor)。hymme はその上に diff-review(security/perf/design 等の多観点を並列レビュー)を重ね、過剰設計だけは ponytail の ponytail-review スキルで見る。
+- **コードレビュー/ピアレビュー**：他者が差分を読み、欠陥、設計の歪み、過剰設計を指摘する。基底は superpowers:requesting-code-review(code-reviewer.md、正しさ中心・Critical/Important/Minor)。hymme はその上に diff-review(security/perf/design 等の多観点のレンズを、既定で diff-reviewer 1 体にまとめて渡す)を重ね、過剰設計だけは ponytail の ponytail-review スキルで見る。
 - **静的解析(Linter/型チェッカ)**：ESLint や tsc で、実行前にバグの芽(未使用、型不整合、危険なパターン)を機械的に検出する。
 - **インスペクション/ウォークスルー**：前者は役割を定めた形式的な欠陥検出会、後者は作成者が成果物を説明しながら意見を募る非形式な検討。
 - **仕様設計レビュー**：コードになる前の要件や設計を検証し、下流に流れると高くつく欠陥を上流で止める。
@@ -229,16 +229,16 @@ describe("reserve は冪等", () => {
 ### 群Dの網羅の定義
 
 この群は観点ごとに型が分かれる。
-ネガティブ、ポジティブ、境界外極値、冪等性は A 型で網羅できる。
+ネガティブ、ポジティブ、境界外極値、冪等性は、同値分割・境界値で入力集合を出し切れる型で網羅できる。
 正常入力集合(ポジティブ)と不正入力集合および極値入力集合(ネガティブ、境界外)を同値分割と境界値で出し切り、すべて覆う。
 冪等性は対象操作を2回以上適用して1回適用と一致することを、全リトライ対象操作で確認する。
 並行性、レースコンディション、タイムアウト、リトライ、サーキットブレーカは網羅困難である。
 テストでは全 interleaving を踏みきれず、緑は不具合の不在を保証しない。
 停止規範: 代表的な競合シナリオと障害注入(遅延、失敗)で、設計どおりの打ち切り、再試行、遮断を確認する。
 これらの網羅は loop-engineering(TLA+)でモデル検査し、反例をテストへ落とすことで担保する。
-手動、アルファ/ベータ、ドッグフーディングは B 型で、網羅率を定義しない。
+手動、アルファ/ベータ、ドッグフーディングは探索型で、網羅率を定義しない。
 観点リスト、期間、被験者数で停止し、見つけた欠陥は体系的技法へ昇格させる。
 
 ## 非機能、品質特性のテストは別ファイルへ
 
-品質特性(ISO/IEC 25010)に沿う非機能テストは、測定系(性能、負荷、ストレス、スパイク、ソーク、スケーラビリティ、キャパシティ)を [`nonfunctional-perf.md`](../nonfunctional-perf/SKILL.md) に、品質保証系(セキュリティ、a11y、互換、i18n、信頼性、可用性、カオス、耐障害性、コントラクト、データ品質マイグレーション)を [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md) にまとめた。
+品質特性(ISO/IEC 25010)に沿う非機能テストは、測定系(性能、負荷、ストレス、スパイク、ソーク、スケーラビリティ、キャパシティ)を [`nonfunctional-perf.md`](../nonfunctional-perf/SKILL.md) に、品質保証系(セキュリティ、a11y、互換、i18n、信頼性、可用性、カオス、コントラクト)を [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md) に、耐障害性とデータ品質マイグレーションを [`nonfunctional-resilience.md`](../nonfunctional-resilience/SKILL.md) にまとめた。
