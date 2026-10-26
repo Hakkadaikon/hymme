@@ -15,7 +15,7 @@ description: セッション開始時、および superpowers の brainstorming 
 
 - **設計中**(`superpowers:brainstorming` の Architectural、spec 確定前): 状態遷移・並行・順序があり有限化できる → `hymme:loop-engineering`(0→3段)。どんな入力でも成り立つべき判定(ルール・設定・条件式)→ 同スキルの SMT 経路。形式検証(SMT・TLA+・実ログ突き合わせ・Lean)の入口の前に `hymme:verifiability`(hook が強制)。critical なアルゴリズム・セキュリティ性質 → `hymme:formal-verification` の性質カタログ。成果は手法名なしの要件・受け入れ条件として spec へ。
 - **spec 承認後〜`superpowers:writing-plans`**: `hymme:test-design`(test-extract → test-catalog)。plan の失敗テストは T-ID 台帳と Gherkin から書く。ID・手法名は plan に出さない。
-- **実行**(`superpowers:subagent-driven-development`): implementer は原則 `hymme:coder`(superpowers 既定も可)+ `superpowers:test-driven-development`。テストを先に書き、変更したコードの行・分岐カバレッジ 100% をテスト側から満たす(`skills/tdd-cycle/SKILL.md` の「カバレッジ 100% をテストから先に満たす」)。証明・モデル検査は controller が `hymme:prover` / `hymme:modeler` を別 dispatch。`hymme:*-reviewer` も controller が dispatch。
+- **実行**(`superpowers:subagent-driven-development`): implementer は原則 `hymme:coder`(superpowers 既定も可)+ `superpowers:test-driven-development`。テストを先に書き、変更したコードの行・分岐カバレッジ 100% をテスト側から満たす(`skills/tdd-cycle/SKILL.md` の「カバレッジ 100% をテストから先に満たす」)。証明・モデル検査は controller が `hymme:prover` / `hymme:modeler` を別 dispatch。`hymme:*-reviewer` も controller が dispatch。subagent を足す前と、作業を並列に配る前は `${CLAUDE_PLUGIN_ROOT}/skills/_shared/parallel-delegation.md`(委任するかの判断・ゲートの二段化・並列の数・事故の予防)。
 - **完了前**: `superpowers:verification-before-completion` + `hymme:test-verify` の実行ゲート(カバレッジ 100% の計測を含む)。
 - **コミット**: `hymme:micro-commit`。粒度判断は `hymme:commit-flow`。
 - **レビュー**: superpowers の task / final review が基底。多観点は `hymme:diff-review`。PR 前は diff-review 必須(hook が `gh pr create` を止める)。
