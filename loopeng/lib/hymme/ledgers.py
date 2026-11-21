@@ -191,7 +191,11 @@ def fields(text):
     for ln in text.splitlines():
         m = re.match(r"- ([^:：]+)[:：]\s*(.*)$", ln)
         if m:
-            out[m.group(1).strip()] = m.group(2).strip()
+            value = m.group(2).strip()
+            # a value written as `code` is the code: left in, the backticks would run it as a command substitution
+            if value.count("`") == 2 and value.startswith("`") and value.endswith("`"):
+                value = value[1:-1]
+            out[m.group(1).strip()] = value
     return out
 
 

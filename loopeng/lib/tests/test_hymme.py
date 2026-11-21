@@ -203,6 +203,12 @@ class LedgerTest(unittest.TestCase):
         self.assertTrue(ledgers.extract_problems(EXTRACT.split("## 閉じる前")[0]))
         self.assertTrue(ledgers.extract_problems("## 台帳\n\n## 閉じる前のチェック\n- [x] a\n"))
 
+    def test_a_field_value_written_as_code_loses_its_backticks(self):
+        f = ledgers.fields("- テストのコマンド: `sh tests/unit.sh`\n- 症状: `a` と `b`\n- 空: \n")
+        self.assertEqual(f["テストのコマンド"], "sh tests/unit.sh")
+        self.assertEqual(f["症状"], "`a` と `b`")
+        self.assertEqual(f["空"], "")
+
     def test_stage_of_command_and_path(self):
         decl = {
             "commands": [("unit", "pytest tests/unit"), ("e2e", "pytest tests/e2e")],
