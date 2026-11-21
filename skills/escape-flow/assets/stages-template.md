@@ -13,3 +13,4 @@
 - e2e パス: <e2e テストの置き場の glob>
 
 <!-- 後段(integration 以降)のテストが無いリポジトリは段を宣言できない。`hymme exception request stages` で申請し、作業者の承認を取る。 -->
+- ci コマンド: `<CI の結果を待つコマンド。例: gh run watch --exit-status>`

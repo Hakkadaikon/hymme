@@ -190,10 +190,9 @@ def post_tool(payload, key):
     except store.NoRepo:
         return 0
     ctx = checks.Ctx(cwd, key, gate, command)
-    change = ctx.change()
 
     for eroot, name, kind in gate.entries():
-        rec = {"name": name, "entry": kind, "exit": code, "change": change, "inputs": input_hashes(eroot, name)}
+        rec = {"name": name, "entry": kind, "exit": code, "change": ctx.change(), "inputs": input_hashes(eroot, name)}
         if code != 0:
             rec["rule"] = rule_of(text) or f"exit-{code}"
         if "unverified" in text:
@@ -208,26 +207,26 @@ def post_tool(payload, key):
         if verb == "verifiability.py":
             ledger = next((a for a in args if a.endswith(".md")), "")
             store.append(
-                "run", {"name": Path(ledger).stem, "entry": "verifiability", "exit": code, "change": change}, cwd, key
+                "run", {"name": Path(ledger).stem, "entry": "verifiability", "exit": code, "change": ctx.change()}, cwd, key
             )
 
     for name, prefix in ledgers.parity_commands(root).items():
         if command.strip().startswith(prefix):
-            store.append("run", {"name": name, "entry": "parity", "exit": code, "change": change}, cwd, key)
+            store.append("run", {"name": name, "entry": "parity", "exit": code, "change": ctx.change()}, cwd, key)
 
     surf = ledgers.surface(root)
     if surf and surf["command"] and command.strip().startswith(surf["command"]):
-        store.append("run", {"name": "surface", "entry": "surface", "exit": code, "change": change}, cwd, key)
+        store.append("run", {"name": "surface", "entry": "surface", "exit": code, "change": ctx.change()}, cwd, key)
 
     decl = ledgers.stages(root)
     stage = ledgers.stage_of_command(decl, command) if decl else None
     if stage:
-        store.append("stage-run", {"stage": stage, "exit": code, "change": change, "command": command[:200]}, cwd, key)
+        store.append("stage-run", {"stage": stage, "exit": code, "change": ctx.change(), "command": command[:200]}, cwd, key)
         if code != 0 and ledgers.STAGES.index(stage) >= ledgers.STAGES.index("integration"):
             open_escape(ctx, root, decl, stage, command, text)
 
     if leaves(gate, ctx) and code == 0:
-        store.append("integrated", {"branch": current_branch(cwd), "change": change}, cwd, key)
+        store.append("integrated", {"branch": current_branch(cwd), "change": ctx.change()}, cwd, key)
 
     if any(v == "hymme" for v, _a, _c, _e in gate.commands):
         if any("PATH" in e for _v, _a, _c, e in gate.commands) or re.search(r"\bPATH=", command):
