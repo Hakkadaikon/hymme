@@ -209,6 +209,17 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(f["症状"], "`a` と `b`")
         self.assertEqual(f["空"], "")
 
+    def test_the_log_spec_line_is_read_plain_bulleted_or_as_code(self):
+        with tempfile.TemporaryDirectory() as d:
+            ledger = Path(d) / "tasks" / "verifiability" / "Cart.md"
+            ledger.parent.mkdir(parents=True)
+            for line in ("実ログの spec: CartAtomic", "- 実ログの spec: CartAtomic", "実ログの spec: `CartAtomic`"):
+                ledger.write_text(f"# x\n\n{line}\n")
+                self.assertEqual(ledgers.log_spec(d, "Cart"), "CartAtomic", line)
+            ledger.write_text("# x\n")
+            self.assertEqual(ledgers.log_spec(d, "Cart"), "Cart")
+            self.assertEqual(ledgers.log_spec(d, "Other"), "Other")
+
     def test_stage_of_command_and_path(self):
         decl = {
             "commands": [("unit", "pytest tests/unit"), ("e2e", "pytest tests/e2e")],
@@ -491,6 +502,16 @@ class IntegrationTest(Repo):
         self.review()
         sh(self.root, "git", "checkout", "-q", "main")
         self.assertEqual(self.bash("git merge --no-ff work")[1], "")
+        self.assertEqual(self.bash("git merge -m 'take the work' --no-ff work")[1], "")
+        self.assertIn("diff-review の記録が無い", self.bash("git merge")[1])
+        self.assertEqual(hook.merged_ref(["-s", "ours", "--no-ff"]), "HEAD")
+
+    def test_a_remote_default_branch_is_found_without_origin_head(self):
+        sh(self.root, "git", "checkout", "-q", "main")
+        sh(self.root, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("src/rules.py", "def allow(n):\n    return n < 2\n")
+        self.commit("feat: straight onto main")
+        self.assertIn("diff-review の記録が無い", self.bash("git push origin main")[1])
 
     def test_commits_made_on_the_default_branch_cannot_be_pushed_without_a_review(self):
         sh(self.root, "git", "checkout", "-q", "main")
@@ -1022,6 +1043,22 @@ class EscapeClosingTest(EscapeTest):
         self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
         self.request_and_approve("exception", "request", "surface", "--until", "2099-01-01", "--reason", "library")
         self.assertEqual(self.bash("gh pr create --fill")[1], "")
+
+    def test_a_fix_branch_with_its_record_can_be_merged_and_then_pushed_from_the_default_branch(self):
+        eid = self.open_one()
+        self.fill(eid, **{"抜けた理由": "前段では原理的に拾えない"})
+        self.request_and_approve("escape", "unreachable", eid, "--reason", "外部")
+        self.ran(f"hymme escape verify {eid}")
+        self.write("src/rules.py", "def allow(n):\n    return n < 7\n")
+        self.commit("fix: limit")
+        self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
+        self.request_and_approve("exception", "request", "surface", "--until", "2099-01-01", "--reason", "library")
+        sh(self.root, "git", "checkout", "-q", "main")
+        self.assertEqual(self.bash("git merge work")[1], "")
+        sh(self.root, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
+        sh(self.root, "git", "merge", "-q", "work")
+        self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
+        self.assertEqual(self.bash("git push origin main")[1], "")
 
     def test_the_reproduction_must_fail_before_the_fix_and_pass_after(self):
         eid = self.open_one()

@@ -91,8 +91,11 @@ def default_branch(cwd=None):
 
 
 def default_base(cwd=None):
-    """The branch a change is measured against: origin's default, else main, else master."""
-    for ref in ("refs/remotes/origin/HEAD", "refs/heads/main", "refs/heads/master"):
+    """The commit a change is measured against: the default branch as the remote has it, else the local one.
+    A clone made with `remote add` + `push -u` has no origin/HEAD, so the remote branch is tried by name too."""
+    name = default_branch(cwd)
+    remote = [f"refs/remotes/origin/{name}"] if name else []
+    for ref in ("refs/remotes/origin/HEAD", *remote, "refs/heads/main", "refs/heads/master"):
         try:
             return git("rev-parse", "--verify", "--quiet", ref, cwd=cwd)
         except NoRepo:

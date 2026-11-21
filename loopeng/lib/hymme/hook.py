@@ -93,26 +93,38 @@ def pr_body(args):
 
 
 def leaves(gate, ctx):
-    """How a command line would carry a change off the branch: ('pr'|'merge'|'push', body) or None."""
+    """How a command line would carry a change off the branch: ('pr'|'merge'|'push', body, ref) or None.
+    ref is what leaves: HEAD, or for a merge the branch being merged (the default branch it lands on has no change)."""
     for verb, args, _cwd, _env in gate.commands:
         words = [a for a in args if not a.startswith("-")]
         if verb == "gh" and words[:2] == ["pr", "create"] or verb == "glab" and words[:2] == ["mr", "create"]:
-            return "pr", pr_body(args)
+            return "pr", pr_body(args), "HEAD"
         if verb == "gh" and words[:1] == ["api"] and any(re.search(r"/pulls/?$", a) for a in words):
             if any(a in ("POST", "-f", "-F", "--field", "--raw-field", "--input") for a in args):
-                return "pr", None
+                return "pr", None, "HEAD"
         if verb == "git":
             rest = list(args)
             while rest and rest[0].startswith("-"):  # git's own options come before the subcommand
                 rest = rest[2:] if rest[0] in ("-C", "-c", "--git-dir", "--work-tree") else rest[1:]
             sub = rest[0] if rest else None
             if sub == "merge" and "--abort" not in args and on_default_branch(ctx.cwd):
-                # what leaves is the branch being merged, not the default branch it lands on
-                ctx.ref = next((a for a in rest[1:] if not a.startswith("-")), "HEAD")
-                return "merge", None
+                return "merge", None, merged_ref(rest[1:])
+            # shortcut: a push is checked as the current branch's change, whatever refspec it names
             if sub == "push" and (on_default_branch(ctx.cwd) or ctx.recs("integrated", branch=current_branch(ctx.cwd))):
-                return "push", None
+                return "push", None, "HEAD"
     return None
+
+
+def merged_ref(args):
+    """The first branch a `git merge` names, past options and the values -m / -F / -s / -X take."""
+    args = list(args)
+    while args:
+        a = args.pop(0)
+        if a in ("-m", "-F", "-s", "-X", "--message", "--file", "--strategy", "--strategy-option") and args:
+            args.pop(0)
+        elif not a.startswith("-"):
+            return a
+    return "HEAD"
 
 
 def current_branch(cwd):
@@ -146,6 +158,8 @@ def pre_tool(payload, key):
                 checks.extract(ctx) + checks.claims(ctx) + checks.review(ctx) + checks.premise(ctx)
             )
         leave = leaves(gate, ctx)
+        if leave:
+            ctx.ref, ctx._change = leave[2], None
         # a push from the default branch with nothing ahead of the remote carries no change out
         if leave and not (leave[0] == "push" and on_default_branch(cwd) and ctx.change() == "empty"):
             reasons += need_key(key) or checks.integration(ctx, leave[1])
@@ -233,8 +247,10 @@ def post_tool(payload, key):
         if code != 0 and ledgers.STAGES.index(stage) >= ledgers.STAGES.index("integration"):
             open_escape(ctx, root, decl, stage, command, text)
 
-    if leaves(gate, ctx) and code == 0:
-        store.append("integrated", {"branch": current_branch(cwd), "change": ctx.change()}, cwd, key)
+    leave = leaves(gate, ctx)
+    if leave and code == 0:
+        left = store.change_id(cwd, leave[2]) or "none"
+        store.append("integrated", {"branch": current_branch(cwd), "change": left}, cwd, key)
 
     if any(v == "hymme" for v, _a, _c, _e in gate.commands):
         if any("PATH" in e for _v, _a, _c, e in gate.commands) or re.search(r"\bPATH=", command):
