@@ -114,7 +114,9 @@ def red_then_green(root, base, command, overlay, prepare):
             run(prepare, tmp / "w")
         before, _ = run(command, tmp / "w")
     finally:
-        subprocess.run(["git", "worktree", "remove", "--force", str(tmp / "w")], cwd=root, capture_output=True, check=False)
+        subprocess.run(
+            ["git", "worktree", "remove", "--force", str(tmp / "w")], cwd=root, capture_output=True, check=False
+        )
         shutil.rmtree(tmp, ignore_errors=True)
     after, tail = run(command, root)
     return before, after, tail
@@ -162,7 +164,9 @@ def escape(args):
         print(msg("needs_approval", id=args.id, how="要件と一覧を直し、`hymme claims request <名前>` で承認を取り直す"))
         return 0
     base = f.get("修正前のコミット") or store.merge_base(root)
-    before, after, tail = red_then_green(root, base, f["テストのコマンド"], [f["前段に足したテスト"]], f.get("準備のコマンド"))
+    before, after, tail = red_then_green(
+        root, base, f["テストのコマンド"], [f["前段に足したテスト"]], f.get("準備のコマンド")
+    )
     if before == 0:
         return fail("red_expected", base=base[:8], command=f["テストのコマンド"])
     if after != 0:

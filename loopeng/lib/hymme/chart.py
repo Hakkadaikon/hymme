@@ -85,7 +85,9 @@ def trace(out):
 def read_dot(text):
     nodes = {m.group(1): state_label(m.group(2).replace("\\n", "\n").replace("\\\\", "\\").splitlines())
              for m in re.finditer(r'^(-?\d+) \[label="(.*?)"', text, re.M)}  # fmt: skip
-    edges = [(m.group(1), m.group(2), m.group(3)) for m in re.finditer(r'^(-?\d+) -> (-?\d+) \[label="(\w*)"', text, re.M)]
+    edges = [
+        (m.group(1), m.group(2), m.group(3)) for m in re.finditer(r'^(-?\d+) -> (-?\d+) \[label="(\w*)"', text, re.M)
+    ]
     return nodes, edges
 
 
@@ -93,7 +95,7 @@ def mermaid(nodes, edges, broken):
     """Mermaid text; states on a path to a broken rule and the breaking state itself are marked."""
     ids = {n: f"s{i}" for i, n in enumerate(sorted(nodes, key=lambda n: (len(nodes[n]), nodes[n])))}
     lines = ["stateDiagram-v2"]
-    lines += [f'  {ids[n]}: {nodes[n] or "(空)"}' for n in ids]
+    lines += [f"  {ids[n]}: {nodes[n] or '(空)'}" for n in ids]
     seen = set()
     for a, b, action in edges:
         if a != b and (a, b, action) not in seen and a in ids and b in ids:
@@ -139,7 +141,14 @@ def check(spec_dir, name):
             if "Temporal properties were violated" in out:
                 broken["(時相の性質)"] = []
             elif "Model checking completed" not in out:
-                return [], broken, [r for r in rules if r not in broken], {}, [], "\n".join(out.strip().splitlines()[-12:])
+                return (
+                    [],
+                    broken,
+                    [r for r in rules if r not in broken],
+                    {},
+                    [],
+                    "\n".join(out.strip().splitlines()[-12:]),
+                )
             nodes, edges = read_dot(dump.read_text()) if dump.exists() else ({}, [])
             return [r for r in rules if r not in broken], broken, [], nodes, edges, None
         return [], broken, [r for r in rules if r not in broken], {}, [], None
@@ -155,7 +164,14 @@ def spec_hash(spec_dir, name):
 
 
 def report(name, digest, held, broken, unchecked, nodes, edges):
-    lines = [f"# {name} の状態の図", "", f"spec: {digest}", f"到達した状態: {len(nodes)}", f"検査されなかった規則: {len(unchecked)}", ""]
+    lines = [
+        f"# {name} の状態の図",
+        "",
+        f"spec: {digest}",
+        f"到達した状態: {len(nodes)}",
+        f"検査されなかった規則: {len(unchecked)}",
+        "",
+    ]
     lines.append("## 破れた規則")
     lines.append("")
     if not broken:

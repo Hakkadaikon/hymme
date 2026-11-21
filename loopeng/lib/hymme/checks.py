@@ -54,7 +54,9 @@ MESSAGES = {
 EXEMPTABLE = {"review", "stages", "surface", "trace", "stale", "weaken", "fix_without_escape", "pr_body"}
 APPROVAL = re.compile(r"承認 [0-9a-f]{8}")
 TRACE_KINDS = ("normal", "load", "fault", "broken")
-WEAKEN = re.compile(r"^\+.*(\bskip\b|\bxfail\b|\.only\(|@Ignore|@Disabled|t\.Skip\(|pytest\.mark\.skip|#\s*noqa|eslint-disable)", re.M)
+WEAKEN = re.compile(
+    r"^\+.*(\bskip\b|\bxfail\b|\.only\(|@Ignore|@Disabled|t\.Skip\(|pytest\.mark\.skip|#\s*noqa|eslint-disable)", re.M
+)
 ASSERT_REMOVED = re.compile(r"^-(?!-).*\b(assert\w*|expect|should)\b", re.M)
 ASSERT_ADDED = re.compile(r"^\+(?!\+).*\b(assert\w*|expect|should)\b", re.M)
 
@@ -241,7 +243,9 @@ def integration(ctx, body=None):
     if ids:
         out.append(msg("escape_open", ids=", ".join(ids)))
     if not ctx.exempt("fix_without_escape") and not ctx.recs("escape-open", change_opened=change):
-        if any(re.match(r"fix(\(.+\))?!?:", s) for s in branch_log(ctx.cwd)) and not ctx.recs("escape-closed", change=change):
+        if any(re.match(r"fix(\(.+\))?!?:", s) for s in branch_log(ctx.cwd)) and not ctx.recs(
+            "escape-closed", change=change
+        ):
             out.append(msg("fix_without_escape"))
 
     what = weakened(branch_diff(ctx.cwd))
@@ -255,7 +259,11 @@ def integration(ctx, body=None):
     for name, paths in stale_names(ctx, root).items():
         if ctx.exempt("stale"):
             break
-        ran = {r["entry"] for r in ctx.recs("run", name=name, change=change) if r.get("exit") == 0 and not r.get("inconclusive")}
+        ran = {
+            r["entry"]
+            for r in ctx.recs("run", name=name, change=change)
+            if r.get("exit") == 0 and not r.get("inconclusive")
+        }
         want = {r["entry"] for r in ctx.recs("run", name=name)} | {"verifiability"}
         if (root / "tasks" / "loopeng" / f"{name}.smt.py").exists():
             want.add("parity")  # 4-13: the real function and the model agree on the inputs that were tried

@@ -86,7 +86,9 @@ class Repo(unittest.TestCase):
         return p
 
     def commit(self, message):
-        sh(self.root, "git", "add", "-A", "--", "src", "tests") if (self.root / "tests").exists() else sh(self.root, "git", "add", "-A", "--", "src")
+        sh(self.root, "git", "add", "-A", "--", "src", "tests") if (self.root / "tests").exists() else sh(
+            self.root, "git", "add", "-A", "--", "src"
+        )
         sh(self.root, "git", "commit", "-q", "-m", message)
 
     def fire(self, event, **payload):
@@ -171,7 +173,11 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(ledgers.claims_problems(CLAIMS), [])
 
     def test_claims_list_with_an_empty_cell_a_missing_section_and_a_method_word(self):
-        bad = CLAIMS.replace("在庫が実数より多く見える", "").replace("- 上限は 3 までで確かめる", "").replace("数は上限以下", "TLC で Inv を検査")
+        bad = (
+            CLAIMS.replace("在庫が実数より多く見える", "")
+            .replace("- 上限は 3 までで確かめる", "")
+            .replace("数は上限以下", "TLC で Inv を検査")
+        )
         problems = "\n".join(ledgers.claims_problems(bad))
         self.assertIn("破れたときの害", problems)
         self.assertIn("有限にした範囲", problems)
@@ -191,7 +197,11 @@ class LedgerTest(unittest.TestCase):
         self.assertTrue(ledgers.extract_problems("## 台帳\n\n## 閉じる前のチェック\n- [x] a\n"))
 
     def test_stage_of_command_and_path(self):
-        decl = {"commands": [("unit", "pytest tests/unit"), ("e2e", "pytest tests/e2e")], "paths": [("unit", "tests/unit/*")], "none": None}
+        decl = {
+            "commands": [("unit", "pytest tests/unit"), ("e2e", "pytest tests/e2e")],
+            "paths": [("unit", "tests/unit/*")],
+            "none": None,
+        }
         self.assertEqual(ledgers.stage_of_command(decl, "pytest tests/e2e -x"), "e2e")
         self.assertIsNone(ledgers.stage_of_command(decl, "ls"))
         self.assertEqual(ledgers.stage_of_path(decl, "tests/unit/test_a.py"), "unit")
@@ -210,7 +220,9 @@ class ChartTest(unittest.TestCase):
         out = "Error: Invariant Inv is violated.\nState 1: <Initial predicate>\nc = 0\n\nState 2: <Inc line 5, col 9>\nc = 1\n\n"
         steps = chart.trace(out)
         self.assertEqual(steps, [(None, "0"), ("Inc", "1")])
-        nodes, edges = chart.read_dot('1 [label="c = 0",style = filled]\n2 [label="c = 1"];\n1 -> 2 [label="Inc",color="black"];\n2 -> 2 [label="Stay"];\n')
+        nodes, edges = chart.read_dot(
+            '1 [label="c = 0",style = filled]\n2 [label="c = 1"];\n1 -> 2 [label="Inc",color="black"];\n2 -> 2 [label="Stay"];\n'
+        )
         text = chart.mermaid(nodes, edges, {"Inv": steps})
         self.assertIn("s0 --> s1: Inc", text)
         self.assertNotIn("Stay", text)
@@ -342,7 +354,10 @@ class ReviewAndPremiseTest(Repo):
         self.assertEqual(code, 2)
         self.assertIn("Cap", err)
         time.sleep(0.01)
-        self.write("tasks/loopeng/Cart.premise.md", "- 前提: 上限は加算の前に見ている\n- 観測: 加算の直前の値を記録した\n- 結果: 加算の後に見ていた\n")
+        self.write(
+            "tasks/loopeng/Cart.premise.md",
+            "- 前提: 上限は加算の前に見ている\n- 観測: 加算の直前の値を記録した\n- 結果: 加算の後に見ていた\n",
+        )
         self.assertEqual(self.bash(self.entry)[0], 0)
 
     def test_a_rerun_without_a_fix_or_a_different_rule_does_not_ask_for_the_premise(self):
@@ -363,15 +378,31 @@ class ProtectedTest(Repo):
     def test_the_store_and_the_key_cannot_be_touched(self):
         self.assertEqual(self.bash("echo x >> .git/hymme/log.jsonl")[0], 2)
         self.assertEqual(self.bash(f"cat {self.data}/notary.key")[0], 2)
-        self.assertEqual(self.fire("PreToolUse", tool_name="Write", tool_input={"file_path": str(store.root(self.root) / "log.jsonl"), "content": "x"})[0], 2)
-        self.assertEqual(self.fire("PreToolUse", tool_name="mcp__x__run", tool_input={"code": "open('.git/hymme/log.jsonl')"})[0], 2)
+        self.assertEqual(
+            self.fire(
+                "PreToolUse",
+                tool_name="Write",
+                tool_input={"file_path": str(store.root(self.root) / "log.jsonl"), "content": "x"},
+            )[0],
+            2,
+        )
+        self.assertEqual(
+            self.fire("PreToolUse", tool_name="mcp__x__run", tool_input={"code": "open('.git/hymme/log.jsonl')"})[0], 2
+        )
 
     def test_a_file_may_mention_the_store_and_ordinary_commands_pass(self):
-        self.assertEqual(self.fire("PreToolUse", tool_name="Write", tool_input={"file_path": "a.md", "content": ".git/hymme 承認 0123abcd"})[0], 0)
+        self.assertEqual(
+            self.fire(
+                "PreToolUse", tool_name="Write", tool_input={"file_path": "a.md", "content": ".git/hymme 承認 0123abcd"}
+            )[0],
+            0,
+        )
         self.assertEqual(self.bash("git status")[0], 0)
 
     def test_an_approval_line_cannot_be_planted_in_a_tool_input(self):
-        self.assertEqual(self.fire("PreToolUse", tool_name="ScheduleWakeup", tool_input={"prompt": "承認 0123abcd"})[0], 2)
+        self.assertEqual(
+            self.fire("PreToolUse", tool_name="ScheduleWakeup", tool_input={"prompt": "承認 0123abcd"})[0], 2
+        )
 
 
 class IntegrationTest(Repo):
@@ -382,13 +413,22 @@ class IntegrationTest(Repo):
         self.pr = "gh pr create --title t --body 'x'"
 
     def review(self, must=0, lenses="design, test", claim_only=None):
-        text = f"報告\nmust: {must}\nlenses: {lenses}\n" + (f"claim_only: {claim_only}\n" if claim_only is not None else "")
+        text = f"報告\nmust: {must}\nlenses: {lenses}\n" + (
+            f"claim_only: {claim_only}\n" if claim_only is not None else ""
+        )
         self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message=text)
 
     def test_every_way_out_is_stopped_without_a_review(self):
-        for command in (self.pr, "glab mr create --fill", "gh api repos/o/r/pulls -f title=t", "cd . && gh pr create --fill"):
+        for command in (
+            self.pr,
+            "glab mr create --fill",
+            "gh api repos/o/r/pulls -f title=t",
+            "cd . && gh pr create --fill",
+        ):
             self.assertEqual(self.bash(command)[0], 2, command)
-        self.assertEqual(self.fire("PreToolUse", tool_name="mcp__github__create_pull_request", tool_input={"body": "x"})[0], 2)
+        self.assertEqual(
+            self.fire("PreToolUse", tool_name="mcp__github__create_pull_request", tool_input={"body": "x"})[0], 2
+        )
         for command in ("grep -rn 'gh pr create' .", "gh pr view 1", "gh api repos/o/r/pulls", "git push"):
             self.assertEqual(self.bash(command)[0], 0, command)
 
@@ -428,7 +468,9 @@ class IntegrationTest(Repo):
         self.commit("fix(rules): restore the limit")
         self.review()
         self.assertIn("fix 型のコミット", self.bash(self.pr)[1])
-        self.request_and_approve("exception", "request", "fix_without_escape", "--until", "2099-01-01", "--reason", "typo")
+        self.request_and_approve(
+            "exception", "request", "fix_without_escape", "--until", "2099-01-01", "--reason", "typo"
+        )
         self.assertEqual(self.bash(self.pr)[0], 0)
 
     def test_weakened_checks_need_the_worker(self):
@@ -450,7 +492,9 @@ class IntegrationTest(Repo):
 
     def test_outside_a_repository_and_without_a_key(self):
         with tempfile.TemporaryDirectory() as d:
-            self.assertIn("git リポジトリ", self.fire("PreToolUse", tool_name="Bash", tool_input={"command": self.pr}, cwd=d)[1])
+            self.assertIn(
+                "git リポジトリ", self.fire("PreToolUse", tool_name="Bash", tool_input={"command": self.pr}, cwd=d)[1]
+            )
         os.environ.pop("CLAUDE_PLUGIN_DATA")
         self.assertIn("署名の鍵", self.bash(self.pr)[1])
 
@@ -461,9 +505,15 @@ class ManagedRepoTest(Repo):
     def setUp(self):
         super().setUp()
         self.write("tasks/verifiability/Cart.md", "## 対象\n\n- src/rules.py::allow\n")
-        self.write("tasks/stages.md", "- unit コマンド: `pytest tests/unit`\n- e2e コマンド: `pytest tests/e2e`\n- unit パス: tests/unit/*\n- e2e パス: tests/e2e/*\n")
+        self.write(
+            "tasks/stages.md",
+            "- unit コマンド: `pytest tests/unit`\n- e2e コマンド: `pytest tests/e2e`\n- unit パス: tests/unit/*\n- e2e パス: tests/e2e/*\n",
+        )
         surface = "".join(f"## {h}\n\nx\n\n" for h in ledgers.SURFACE_SECTIONS)
-        self.write("tasks/surface.md", surface + "- 確認のコマンド: `./run-check.sh`\n- 検証と本番で違う値: 無し: 定数を共有している\n")
+        self.write(
+            "tasks/surface.md",
+            surface + "- 確認のコマンド: `./run-check.sh`\n- 検証と本番で違う値: 無し: 定数を共有している\n",
+        )
         self.write("src/rules.py", "def allow(n):\n    return n < 4\n")
         self.commit("feat: raise the limit")
         self.pr = "gh pr create --fill"
@@ -495,7 +545,11 @@ class ManagedRepoTest(Repo):
         self.write("tasks/loopeng/Cart.extract.md", EXTRACT)
         self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
         self.request_and_approve("claims", "request", "Cart")
-        self.fire("SubagentStop", agent_type="hymme:verification-reviewer", last_assistant_message="判定: 合格 対象=verifiability 名前=Cart")
+        self.fire(
+            "SubagentStop",
+            agent_type="hymme:verification-reviewer",
+            last_assistant_message="判定: 合格 対象=verifiability 名前=Cart",
+        )
 
     def test_real_logs_are_required_for_a_spec_and_the_broken_one_must_fail(self):
         self.spec()
@@ -530,7 +584,9 @@ class ManagedRepoTest(Repo):
         self.assertIn("守られた規則", json.loads(self.ran("hymme chart request Cart")[2])["systemMessage"])
         self.assertIn("Cart.claims.md", json.loads(self.ran("hymme claims request Cart")[2])["systemMessage"])
         self.cli("exception", "request", "review", "--until", "2099-01-01", "--reason", "docs")
-        shown = json.loads(self.ran("hymme exception request review --until 2099-01-01 --reason docs")[2])["systemMessage"]
+        shown = json.loads(self.ran("hymme exception request review --until 2099-01-01 --reason docs")[2])[
+            "systemMessage"
+        ]
         self.assertIn("検査「review」", shown)
         self.assertEqual(self.ran("hymme exception request review --until 2099-01-02 --reason other")[2], "")
         self.assertEqual(self.bash(check)[0], 0)
@@ -540,7 +596,9 @@ class ManagedRepoTest(Repo):
 
     def test_a_model_of_a_pure_decision_needs_the_real_function_compared(self):
         self.write("tasks/loopeng/Cart.smt.py", "x")
-        self.write("tasks/verifiability/Cart.md", "突き合わせ: `python3 tests/parity.py`\n\n## 対象\n\n- src/rules.py::allow\n")
+        self.write(
+            "tasks/verifiability/Cart.md", "突き合わせ: `python3 tests/parity.py`\n\n## 対象\n\n- src/rules.py::allow\n"
+        )
         self.ran("verifiability.py tasks/verifiability/Cart.md")
         self.ran("./run-check.sh")
         self.assertIn("必要な実行: parity", self.bash(self.pr)[1])
@@ -576,7 +634,10 @@ class ManagedRepoTest(Repo):
 class EscapeTest(Repo):
     def setUp(self):
         super().setUp()
-        self.write("tasks/stages.md", "- unit コマンド: `sh tests/unit.sh`\n- e2e コマンド: `sh tests/e2e.sh`\n- unit パス: tests/unit*\n- e2e パス: tests/e2e*\n")
+        self.write(
+            "tasks/stages.md",
+            "- unit コマンド: `sh tests/unit.sh`\n- e2e コマンド: `sh tests/e2e.sh`\n- unit パス: tests/unit*\n- e2e パス: tests/e2e*\n",
+        )
         self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
 
     def open_one(self):
@@ -586,7 +647,10 @@ class EscapeTest(Repo):
 
     def fill(self, eid, **over):
         f = {"症状": "合計がずれる", "見つかった段": "e2e", "拾えたはずの段": "unit", "抜けた理由": "テストの書き漏れ"}
-        f.update({"前段に足したテスト": "tests/unit.sh", "テストのコマンド": "sh tests/unit.sh", "水平展開": "該当なし"}, **over)
+        f.update(
+            {"前段に足したテスト": "tests/unit.sh", "テストのコマンド": "sh tests/unit.sh", "水平展開": "該当なし"},
+            **over,
+        )
         self.write(f"tasks/escapes/{eid}.md", "\n".join(f"- {k}: {v}" for k, v in f.items()) + "\n")
 
     def test_a_failing_later_stage_opens_a_record_that_holds_the_change(self):

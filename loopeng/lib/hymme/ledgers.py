@@ -8,7 +8,15 @@ from pathlib import Path
 
 STAGES = ["spec", "unit", "integration", "e2e", "trace", "ci"]  # earliest first
 CLAIM_FIELDS = ("示すこと", "示さないこと", "破れたときの害")
-ESCAPE_FIELDS = ("症状", "見つかった段", "拾えたはずの段", "抜けた理由", "前段に足したテスト", "テストのコマンド", "水平展開")
+ESCAPE_FIELDS = (
+    "症状",
+    "見つかった段",
+    "拾えたはずの段",
+    "抜けた理由",
+    "前段に足したテスト",
+    "テストのコマンド",
+    "水平展開",
+)
 ESCAPE_CAUSES = (
     "要件の抜け",
     "モデルで捨てた領域",
@@ -187,7 +195,9 @@ def escape_problems(text, decl):
     if f["抜けた理由"] not in ("要件の抜け", "モデルで捨てた領域", "前段では原理的に拾えない"):
         stage = stage_of_path(decl, f["前段に足したテスト"]) if decl else None
         if stage is None:
-            problems.append(f"前段に足したテスト {f['前段に足したテスト']} が tasks/stages.md のどの段のパスにも当たらない")
+            problems.append(
+                f"前段に足したテスト {f['前段に足したテスト']} が tasks/stages.md のどの段のパスにも当たらない"
+            )
         elif STAGES.index(stage) >= STAGES.index(f["見つかった段"]):
             problems.append(f"前段に足したテストが {stage} の段にあり、見つかった段({f['見つかった段']})より前でない")
     return problems
@@ -218,4 +228,6 @@ def surface(root):
 def managed(root):
     """Whether this repository keeps hymme ledgers at all (a repository that keeps none is left alone)."""
     tasks = Path(root) / "tasks"
-    return any((tasks / d).exists() for d in ("loopeng", "fv", "verifiability", "test-design", "stages.md", "surface.md"))
+    return any(
+        (tasks / d).exists() for d in ("loopeng", "fv", "verifiability", "test-design", "stages.md", "surface.md")
+    )

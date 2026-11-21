@@ -130,7 +130,9 @@ def pre_tool(payload, key):
     ctx = checks.Ctx(cwd, key)
     if tool in ("Write", "Edit", "NotebookEdit", "Read"):
         # a file's content may mention the store (this plugin's own source does); only its path is checked
-        reasons = checks.protected(ctx, " ".join(str(tool_input.get(k, "")) for k in ("file_path", "notebook_path")), False)
+        reasons = checks.protected(
+            ctx, " ".join(str(tool_input.get(k, "")) for k in ("file_path", "notebook_path")), False
+        )
     else:
         reasons = checks.protected(ctx, json.dumps(tool_input, ensure_ascii=False))
     if PR_TOOL.search(tool):
@@ -140,7 +142,9 @@ def pre_tool(payload, key):
         gate.parse(tool_input.get("command", ""), cwd, {})
         ctx.gate, ctx.command = gate, tool_input.get("command", "")
         if gate.entries():
-            reasons += need_key(key) or (checks.extract(ctx) + checks.claims(ctx) + checks.review(ctx) + checks.premise(ctx))
+            reasons += need_key(key) or (
+                checks.extract(ctx) + checks.claims(ctx) + checks.review(ctx) + checks.premise(ctx)
+            )
         leave = leaves(gate, ctx)
         if leave:
             reasons += need_key(key) or checks.integration(ctx, leave[1])
@@ -205,7 +209,9 @@ def post_tool(payload, key):
     for verb, args, _c, _e in gate.commands:
         if verb == "verifiability.py":
             ledger = next((a for a in args if a.endswith(".md")), "")
-            store.append("run", {"name": Path(ledger).stem, "entry": "verifiability", "exit": code, "change": change}, cwd, key)
+            store.append(
+                "run", {"name": Path(ledger).stem, "entry": "verifiability", "exit": code, "change": change}, cwd, key
+            )
 
     for name, prefix in ledgers.parity_commands(root).items():
         if command.strip().startswith(prefix):
@@ -292,22 +298,39 @@ def hymme_results(ctx, root, gate):
         words = [a for a in args if not a.startswith("-")]
         if words[:1] == ["capture"] and len(words) > 1:
             store.append("capture", {"log": store.sha256_file(Path(_c) / words[1]), "path": words[1]}, ctx.cwd, ctx.key)
-        elif words[:2] in (["claims", "request"], ["exception", "request"], ["escape", "unreachable"], ["chart", "request"]):
+        elif words[:2] in (
+            ["claims", "request"],
+            ["exception", "request"],
+            ["escape", "unreachable"],
+            ["chart", "request"],
+        ):
             req = pending(ctx.cwd, requested_code(root, words, args))
             if req:
-                show = {"claims": "show_claims", "exception": "show_exception", "unreachable": "show_unreachable", "chart": "show_chart"}
+                show = {
+                    "claims": "show_claims",
+                    "exception": "show_exception",
+                    "unreachable": "show_unreachable",
+                    "chart": "show_chart",
+                }
                 emit(system=msg(show[req["type"]], **req))
         elif words[:2] == ["escape", "open"]:
             for path in sorted((root / "tasks" / "escapes").glob("E*.md")):
                 if not ctx.recs("escape-open", id=path.stem):
                     stage = ledgers.fields(path.read_text()).get("見つかった段", "")
-                    store.append("escape-open", {"id": path.stem, "stage": stage, "change_opened": ctx.change()}, ctx.cwd, ctx.key)
+                    store.append(
+                        "escape-open",
+                        {"id": path.stem, "stage": stage, "change_opened": ctx.change()},
+                        ctx.cwd,
+                        ctx.key,
+                    )
         elif words[:2] == ["escape", "verify"] and len(words) > 2:
             text = ledgers.read(root / "tasks" / "escapes" / f"{words[2]}.md") or ""
             if ledgers.fields(text).get("抜けた理由") == "前段では原理的に拾えない":
                 if not ctx.recs("approval", type="unreachable", id=words[2], hash=ledgers.sha(text)):
                     continue  # closing this way needs the worker's approval, verify alone does not close it
-            store.append("escape-closed", {"id": words[2], "change": ctx.change(), "hash": ledgers.sha(text)}, ctx.cwd, ctx.key)
+            store.append(
+                "escape-closed", {"id": words[2], "change": ctx.change(), "hash": ledgers.sha(text)}, ctx.cwd, ctx.key
+            )
 
 
 def subagent_stop(payload, key):
@@ -364,7 +387,11 @@ def user_prompt(payload, key):
             text = msg("approve_changed", what=req["path"])
             emit(system=text, context=text, event=event)
             return 0
-        fields = {"type": kind, "hash": req["hash"], **({"id": req["id"]} if kind == "unreachable" else {"name": req["name"]})}
+        fields = {
+            "type": kind,
+            "hash": req["hash"],
+            **({"id": req["id"]} if kind == "unreachable" else {"name": req["name"]}),
+        }
         store.append("approval", fields, cwd, key)
         label = {"claims": "一覧", "chart": "状態の図", "unreachable": "閉じ方"}[kind]
         what = f"{req.get('name') or req.get('id')} の{label}"
