@@ -25,9 +25,9 @@ block() { # block <理由>: 理由を表示して exit 2 で止める
 }
 
 payload="$(cat)"
-# 入口の探し方は gate_targets.py(OK<TAB>台帳のルート<TAB>名前<TAB>種類 か BLOCK<TAB>理由 を出す)。
+# 入口の探し方は loopeng/lib/hymme/cmdparse.py(OK<TAB>台帳のルート<TAB>名前<TAB>種類 か BLOCK<TAB>理由 を出す)。
 # -I: 作業中のリポジトリに json.py などがあっても読み込まない
-if ! targets="$(printf '%s' "$payload" | python3 -I "$(dirname "$0")/gate_targets.py" 2>/dev/null)"; then
+if ! targets="$(printf '%s' "$payload" | python3 -I "$(dirname "$0")/../loopeng/lib/hymme/cmdparse.py" 2>/dev/null)"; then
   # 解析できないときは、入口らしき語があれば止める(lake build は python が無くても動くので素通りさせない)
   printf '%s' "$payload" | grep -qE 'loop-(outer|middle|inner)|smt_oracle\.py|trace_check\.py|lake[^"]*build' || exit 0
   block "$(msg unparsed)"

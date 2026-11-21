@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Find the formal-verification entry points a Bash command would run, for verifiability-gate.sh.
+"""Find the commands a Bash command line would run, and which of them are formal-verification entry points.
 
-Reads the PreToolUse hook JSON on stdin and prints one line per entry point:
+Every gate reads the same parse (Gate.commands, Gate.entries, Gate.blocks). Run as a script it reads
+the PreToolUse hook JSON on stdin (verifiability-gate.sh does) and prints one line per entry point:
     OK<TAB><ledger root><TAB><Name><TAB><entry kind>
     BLOCK<TAB><reason>
 The command is split on operators, newlines and shell keywords; env/timeout/nice/sudo/nix develop -c/
@@ -106,6 +107,15 @@ def substitutions(text, quotes=True):
 class Gate:
     def __init__(self):
         self.lines = []
+        # every simple command the text would run, wrappers peeled: (verb, args, cwd, env)
+        self.commands = []
+
+    def entries(self):
+        """(root, name, kind) of each verification entry point found."""
+        return [tuple(line.split("\t")[1:4]) for line in self.lines if line.startswith("OK\t")]
+
+    def blocks(self):
+        return [line.split("\t", 1)[1] for line in self.lines if line.startswith("BLOCK\t")]
 
     def ok(self, root, name, entry="other"):
         if re.fullmatch(r"[A-Za-z0-9_]+", name):
@@ -251,6 +261,7 @@ class Gate:
                     break
             if not toks:
                 continue
+            self.commands.append((os.path.basename(toks[0]), toks[1:], cwd, {**env, **local}))
             self.entry(os.path.basename(toks[0]), toks[1:], cwd, {**env, **local})
             if os.path.basename(toks[0]) in ("cd", "pushd"):
                 target = next((a for a in toks[1:] if not a.startswith("-")), "~")
@@ -278,8 +289,9 @@ class Gate:
             specs = [m.group(1) for a in args for m in [re.fullmatch(r"SPEC=(.*)", a)] if m]
             if not specs:
                 specs = [env.get("SPEC", "Spec")]  # Makefile.loopeng: SPEC ?= Spec
+            target = verb if verb != "make" else next(a for a in args if LOOP.fullmatch(a))
             for name in specs:
-                self.ok(root_of(here, here), name)
+                self.ok(root_of(here, here), name, target)
         elif verb in ("smt_oracle.py", "trace_check.py"):
             rest = self.skip_opts(args, ("--cfg", "--timeout"))
             while rest:  # options may also follow the positional arguments
@@ -288,10 +300,17 @@ class Gate:
                     self.ok(
                         root_of(path, cwd),
                         re.sub(r"(\.smt)?\.py$|\.tla$", "", os.path.basename(path)),
-                        "trace_check" if verb == "trace_check.py" else "other",
+                        "trace_check" if verb == "trace_check.py" else "smt_oracle",
                     )
                     break
                 rest = self.skip_opts(rest, ("--cfg", "--timeout"))
+        elif verb in ("tlc", "apalache-mc") or (verb == "java" and "tlc2.TLC" in args):
+            # the checker run directly, past the Makefile: the spec is the last *.tla (TLC takes it without .tla too)
+            rest = args[args.index("tlc2.TLC") + 1 :] if verb == "java" else args
+            specs = [a for a in rest if a.endswith(".tla")] or [a for a in rest[-1:] if not a.startswith("-")]
+            for spec in specs[-1:]:
+                path = os.path.normpath(os.path.join(cwd, spec))
+                self.ok(root_of(path, cwd), re.sub(r"\.tla$", "", os.path.basename(path)), "direct")
         elif verb == "lake" and "build" in args:
             if "$" in cwd and "/tasks/fv/" in cwd.split("$", 1)[1] + "/":
                 self.block(msg("var_cd"))
@@ -314,7 +333,7 @@ class Gate:
                     here = os.path.normpath(os.path.join(cwd, d))
             m = re.match(r"(.*)/tasks/fv/([^/]+)", here)
             if m:
-                self.ok(m.group(1), m.group(2))
+                self.ok(m.group(1), m.group(2), "lake")
 
 
 def main():
