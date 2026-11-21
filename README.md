@@ -5,7 +5,7 @@
 - 工程は superpowers が決める。hymme は各工程に検証と git・レビューの運用を差し込む。
 - 検証は3系統ある。設計の検査(TLA+、Z3)、テスト設計、証明(Lean 4)。
 - 守らせたい規則は hook が検査する。満たさなければ、検証や PR の作成を止める。
-- 必要な道具(TLA+、Apalache、Z3、Lean)は Nix の flake で配る。
+- 必要なツール(TLA+、Apalache、Z3、Lean)は Nix の flake で配る。
 
 どの工程でどのスキルを使うかは `using-hymme` スキルに書いてあり、セッションの開始時に自動で読み込まれる。
 
@@ -74,7 +74,7 @@ superpowers が前提。hymme の marketplace から両方入れる。
 - superpowers は `superpowers@claude-plugins-official` で入れても同じ。
 - superpowers は**どちらか一方だけ**入れる。両方入れると、スキルとセッション開始時の hook が二重になる。
 - 動作を確かめたのは superpowers 7.0.0。sha は固定していない。`/plugin update superpowers@hymme` で上流に追従する。
-- `hymme` コマンドと検証の道具は、下の「ツールチェイン」で入れる。検証を使わなくても `hymme` コマンドは要る。
+- `hymme` コマンドと検証のツールは、下の「ツールチェイン」で入れる。検証を使わなくても `hymme` コマンドは要る。
 
 hymme の更新は次の2つ。自動更新は無効。反映には再起動が要る。
 
@@ -85,17 +85,17 @@ hymme の更新は次の2つ。自動更新は無効。反映には再起動が�
 
 ## 収録スキル
 
-検証系は「案内役のスキル + 工程のスキル」でできている。
+検証系は「ルーターのスキル + 工程のスキル」でできている。
 
-- 案内役が局面を見て、工程のスキルへ振り分ける。
-- スキルの一覧に出るのは案内役だけ。工程のスキルと個別のテスト技法は、案内役の指示でファイルを読んで使う。
+- ルーターが局面を見て、工程のスキルへ振り分ける。
+- スキルの一覧に出るのはルーターだけ。工程のスキルと個別のテスト技法は、ルーターの指示でファイルを読んで使う。
 - こうすると一覧が短くなり、説明文が切り捨てられない。
 
 ### 検証
 
-太字が案内役。
+太字がルーター。
 
-| 系統 | スキル | すること | 道具 |
+| 系統 | スキル | すること | ツール |
 | --- | --- | --- | --- |
 | loop-engineering | **loop-engineering** | 要求を TLA+ で検査できる設計にする | |
 | | loopeng-extract | 要件を出し切る | |
@@ -140,7 +140,7 @@ hymme の更新は次の2つ。自動更新は無効。反映には再起動が�
 
 escape-flow では前の段にテストを足す。
 
-- そのテストが修正前に失敗し、修正後に通ることを道具が確かめる。
+- そのテストが修正前に失敗し、修正後に通ることをツールが確かめる。
 - 確かめが済むまで、変更は統合できない。
 
 テストを足せない欠陥は、抜けた理由ごとに作業者の承認を取る。そのあと `hymme escape verify` を実行すると閉じる。
@@ -165,7 +165,7 @@ escape-flow では前の段にテストを足す。
 | --- | --- |
 | **modeler** | TLA+ のモデル検査。1つの spec に集中する |
 | **prover** | Lean 4 の証明。1つの性質に集中する |
-| **diff-reviewer** | diff-review の作業役 |
+| **diff-reviewer** | diff-review のワーカー |
 | **verification-reviewer** | 検証3系統と verifiability の成果物を、完了前に外から検査する |
 
 - modeler と prover の結果は、呼び出し元が verification-reviewer に渡す。
@@ -176,7 +176,7 @@ subagent を使うのは、次のどれかに当たるときだけ(`skills/_shar
 
 - 文脈が膨らんで、本体の判断が鈍る。
 - 捨ててよい文脈で、並列に回したい。
-- 指示や道具が、本体と両立しない。
+- 指示やツールが、本体と両立しない。
 
 ## 強制のしくみ
 
@@ -202,7 +202,7 @@ flowchart LR
 | --- | --- |
 | 記録 | git の共通ディレクトリ(`.git/hymme/`)。別の worktree からも同じものが見える |
 | 署名の鍵 | `CLAUDE_PLUGIN_DATA`。hook だけが使う |
-| hook の起動ファイル | `hooks/hymme_hook.py` |
+| hook のエントリポイント | `hooks/hymme_hook.py` |
 | hook の本体 | `loopeng/lib/hymme/` |
 | 個別の検査の hook | `hooks/` の `verifiability-gate.sh`、`loopeng-lint-gate.sh`、`git-guard.sh`、`test-design-extract-gate.sh` |
 
@@ -303,13 +303,13 @@ hymme exception request <検査> --until <日付> --reason <理由>
 
 ## ツールチェイン(Nix)
 
-スキルは次の道具を外部コマンドとして呼ぶ。flake がまとめて配る。
+スキルは次のツールを外部コマンドとして呼ぶ。flake がまとめて配る。
 
 - TLA+(TLC、SANY)と Apalache
 - python3(Z3 と lizard 入り)と make
 - Lean(elan 経由)
 
-### 入れ方
+### インストール
 
 Nix が無いときは、スクリプトが先に Determinate Nix を入れる。
 
@@ -317,7 +317,7 @@ Nix が無いときは、スクリプトが先に Determinate Nix を入れる�
 - 確認を省くには `HYMME_ASSUME_YES=1` を付ける。
 
 ```sh
-./scripts/bootstrap.sh          # 道具を PATH に載せた開発用シェルに入る
+./scripts/bootstrap.sh          # ツールを PATH に載せた開発用シェルに入る
 ./scripts/bootstrap.sh install  # profile に入れて、常に使えるようにする
 ```
 
@@ -332,7 +332,7 @@ nix profile install .#skill-tools
 
 | 種類 | コマンド |
 | --- | --- |
-| 検証の道具 | `tlc`、`sany`、`apalache-mc`、`lake`、`lean` |
+| 検証のツール | `tlc`、`sany`、`apalache-mc`、`lake`、`lean` |
 | `loopeng/bin` のスクリプト | `loop-outer`、`loop-middle`、`loop-inner`、`smt_oracle.py`、`trace_check.py`、`verifiability.py` など |
 | `hymme` コマンド | 承認の申請、欠陥の記録、状態の図、ログの採取 |
 
@@ -354,7 +354,7 @@ nix profile install .#skill-tools
 
 ### TLA+ と Apalache のバージョン
 
-nixpkgs に公式のパッケージが無いので、flake は固定したリリースの成果物を取得し、JDK で包む。バージョンを上げるときは、`flake.nix` の URL とハッシュを一緒に更新する。
+nixpkgs に公式のパッケージが無いので、flake は固定したリリースの成果物を取得し、JDK でラップする。バージョンを上げるときは、`flake.nix` の URL とハッシュを一緒に更新する。
 
 v1.8.0 の `tla2tools.jar` には注意が要る。
 
@@ -366,7 +366,7 @@ v1.8.0 の `tla2tools.jar` には注意が要る。
 
 必要になったプロジェクトで、個別に入れる。
 
-| 道具 | 入れ方 |
+| ツール | インストール方法 |
 | --- | --- |
 | Gherkin のランナー | `cucumber-js`(npm)や `godog`(`go install`)。nixpkgs に無い |
 | 要求の追跡用の `doorstop` | `uv pip install doorstop` |
@@ -377,12 +377,12 @@ v1.8.0 の `tla2tools.jar` には注意が要る。
 
 | 検査 | コマンド | 見るもの |
 | --- | --- | --- |
-| 静的検査 | `scripts/lint.sh` | ruff(解析と整形)、shellcheck、shfmt、文言のコードが対応表にあること。`--fix` で自動修正を書き戻す |
+| 静的検査 | `scripts/lint.sh` | ruff(解析と整形)、shellcheck、shfmt、メッセージのコードが対応表にあること。`--fix` で自動修正を書き戻す |
 | 回帰テスト | `nix flake check` | 下の一覧と、静的検査 |
 | 実物での確かめ | `bash scripts/real-session.sh` | 実際の Claude Code のセッションで、hook が止めること |
 
 - 静的検査の対象は `hooks/`・`loopeng/`・`scripts/`・`skills/` 以下の `*.py` と `*.sh`。設定は `ruff.toml` と `.editorconfig`。
-- 静的検査の道具は `nix develop` に入っている(`skill-tools` には無い)。
+- 静的検査のツールは `nix develop` に入っている(`skill-tools` には無い)。
 - 実物での確かめは Claude Code が要り、トークンを少し使う。そのため `nix flake check` には入れていない。
 - `nix flake check` は GitHub Actions(`.github/workflows/check.yml`)でも回す。
 
@@ -393,7 +393,7 @@ v1.8.0 の `tla2tools.jar` には注意が要る。
 | `scripts/loopeng-lint.test.sh` | TLC の前の静的検査と、spec を壊す検査の分類 |
 | `scripts/loopeng-smt-oracle.test.sh` | SMT の判定 |
 | `scripts/loopeng-trace-check.test.sh` | 実ログの突き合わせ |
-| `scripts/loopeng-tools.test.sh` | loop の道具 |
+| `scripts/loopeng-tools.test.sh` | loop のツール |
 | `scripts/test-design-extract-gate.test.sh` | test-design の抽出の検査 |
 | `scripts/verifiability.test.sh` | 検証容易性の指標と検査 |
 | `scripts/hymme-core.test.sh` | hook と検査、`hymme` コマンド。`loopeng/lib/tests` の単体テストも回す |
@@ -409,7 +409,7 @@ v1.8.0 の `tla2tools.jar` には注意が要る。
 
 | 対象 | 決まり |
 | --- | --- |
-| 端末に出す文言 | 日本語で書く。各スクリプトの先頭近くの対応表から引く(Python は `MESSAGES` と `msg()`、シェルは `msg()` の case) |
+| 端末に出すメッセージ | 日本語で書く。各スクリプトの先頭近くの対応表から引く(Python は `MESSAGES` と `msg()`、シェルは `msg()` の case) |
 | `loopeng/Makefile.loopeng` | 対応表を置かず、日本語の echo を直接書く。make のレシピなので、静的検査の対象外 |
 | 訳さないもの | 判定の値(HOLDS、VIOLATED)と、他のプログラムやスキルが目印として読むトークン |
 | hook の中の Python | `python3 -I` で動かす。作業中のリポジトリにある `json.py` などを読み込まないため |
