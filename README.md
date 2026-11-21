@@ -1,114 +1,67 @@
 # hymme
 
-[superpowers](https://github.com/obra/superpowers) を前提に、設計検証(TLA+)・テスト設計・形式検証(Lean 4)の 3 系統と git/レビュー運用のスキル、専用 agents を足す Claude Code プラグイン。superpowers 本体もこの marketplace から入れられる(動作確認版 7.0.0)。工程を決めるのは superpowers で、hymme はその各工程に検証と運用を差し込む。差し込み位置の地図は `using-hymme` スキルが持ち、セッション開始時に自動注入される。
+[superpowers](https://github.com/obra/superpowers) に検証と運用を足す Claude Code プラグイン。
 
-必要な Nix ツールチェイン(TLA+/Apalache/Lean)も flake で配る。
+- 工程は superpowers が決める。hymme は各工程に検証と git・レビューの運用を差し込む。
+- 検証は3系統ある。設計の検査(TLA+、Z3)、テスト設計、証明(Lean 4)。
+- 守らせたい規則は hook が検査する。満たさなければ、検証や PR の作成を止める。
+- 必要な道具(TLA+、Apalache、Z3、Lean)は Nix の flake で配る。
+
+どの工程でどのスキルを使うかは `using-hymme` スキルに書いてあり、セッションの開始時に自動で読み込まれる。
+
+## 全体の流れ
+
+枠が工程。枠の中の左が superpowers のスキル、右が hymme の足す部分。
+
+```mermaid
+flowchart TD
+    subgraph S1["設計"]
+        direction LR
+        A["brainstorming"] -.- A1["設計を機械で検査<br>loop-engineering / formal-verification"]
+    end
+    subgraph S2["計画"]
+        direction LR
+        B["writing-plans"] -.- B1["計画の前に、テストする振る舞いを出し切る<br>test-design"]
+    end
+    subgraph S3["実装"]
+        direction LR
+        C["executing-plans + TDD"] -.- C1["小さくコミット<br>micro-commit"]
+    end
+    subgraph S4["完了前の確認"]
+        direction LR
+        D["verification-before-completion"] -.- D1["実物で動かす<br>real-surface"]
+    end
+    subgraph S5["レビュー"]
+        direction LR
+        E["final review"] -.- E1["多観点レビュー<br>diff-review"]
+    end
+    subgraph S6["PR・merge"]
+        direction LR
+        F["finishing-a-development-branch"] -.- F1["PR 作成<br>pr-create"]
+    end
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6
+```
 
 ## superpowers との役割分担
 
-| 局面 | superpowers が担う | hymme が足す |
+| 局面 | superpowers | hymme が足すもの |
 | --- | --- | --- |
-| 設計 | brainstorming(spec 化、Architectural 経路) | 設計後・spec 前に loop-engineering の道具の選び方 / formal-verification の性質カタログ |
-| 計画 | writing-plans(Task / Step) | spec 承認後に test-design で T-ID 台帳 → Task に落とす |
-| 実装 | subagent-driven-development / executing-plans、test-driven-development | 既定は executing-plans(本体で実装)。SDD を選んだときの implementer は superpowers 既定。prover / modeler は本体が別 dispatch、完了ゲートで verification-reviewer |
-| コミット | (規約なし) | commit-flow(粒度)+ micro-commit(実務) |
-| 設計の確認 | brainstorming の承認 | 検証の前に、何を実証するかの一覧を作業者が承認する(hook が記録し、承認が無ければ検証を止める) |
-| レビュー | final review(requesting-code-review)。SDD を選んだときは task review も | 多観点 diff-review。変更がブランチの外へ出る前に、hook が reviewer の判定の記録を確かめる |
-| 完了 | verification-before-completion | real-surface(実物で動かして確かめる)。spec のある設計は実ログの突き合わせ |
+| 設計 | brainstorming | loop-engineering(設計の検査)、formal-verification の性質カタログ(証明する性質の一覧) |
+| 設計の確認 | brainstorming の承認 | 検証の前に、何を実証するかの一覧を作業者が承認する |
+| 計画 | writing-plans | test-design の T-ID 台帳(テストする振る舞いの一覧)。設計書の承認後に作り、Task に落とす |
+| 実装 | executing-plans / subagent-driven-development、test-driven-development | 既定は executing-plans(subagent に任せず、本体のセッションで実装)。証明は prover、モデル検査は modeler に任せられる |
+| コミット | 規約なし | commit-flow(粒度)、micro-commit(実行) |
+| 完了 | verification-before-completion | real-surface(実物で確かめる)。TLA+ の spec がある設計は実ログと突き合わせる |
+| レビュー | final review | diff-review(多観点)。変更がブランチの外へ出る前に hook が記録を確かめる |
 | PR | finishing-a-development-branch | pr-create |
-| バグ | systematic-debugging | gh-ci-investigate(Phase 1 の証拠収集)。escape-flow(後段で見つかった欠陥を、拾えたはずの前の段へ戻す) |
-| 訂正 | receiving-code-review | review-feedback(水平展開・lessons) |
-| 台帳 | plan 実行の ledger 形式(executing-plans / SDD 共通) | ledger-flow(それ以外の進捗・引き継ぎ文書) |
-| 履歴 | using-git-worktrees | rebase-flow / reset-flow + git-guard hook |
+| バグ | systematic-debugging | gh-ci-investigate(CI のログ集め)、escape-flow(欠陥を前の段で拾えるようにする) |
+| 訂正 | receiving-code-review | review-feedback(同種の穴を探し、再発を防ぐ) |
+| 台帳 | plan 実行の ledger | ledger-flow(それ以外の進捗・引き継ぎ文書) |
+| 履歴 | using-git-worktrees | rebase-flow / reset-flow と git-guard hook |
 
-superpowers の `using-superpowers` と hymme の `using-hymme` はどちらもセッション開始時に注入される。前者が「スキルを使え」、後者が「どこで hymme を使うか」を決める。superpowers と食い違う箇所(plan の「SDD 推奨」、brainstorming の承認後の手順、finishing からの PR 作成など)の読み替えも `using-hymme` に書いてある。
+superpowers と食い違う箇所の読み替えも `using-hymme` にある。例は plan の「SDD 推奨」、brainstorming の承認後の手順、finishing からの PR 作成。
 
-## 収録スキル
-
-検証系は「入口ルーター + 工程スキル」の構成をとる。ルーターが局面を判定し、対応する工程スキルへ振り分ける。モデルのスキル一覧に出るのはルーターだけで、工程スキルと test-catalog の技法スキルはルーターの指示でファイルを Read して使う(一覧を短く保ち、説明文が切り捨てられないようにするため)。
-
-| 系統 | 役割 | スキル | 説明 |
-| --- | --- | --- | --- |
-| loop-engineering | ルーター | **loop-engineering** | 自然言語の要求を TLA+ で検査可能な設計へ厳密化する 3 重ループの入口ルーター。 |
-| loop-engineering | 工程(0 段) | ├ **loopeng-extract** | 仕様・要求から要件を網羅抽出する。信頼境界ごとに STRIDE の6観点で異常系の要件を突き合わせ、入力のパースや長さ・オフセットの算術があれば CWE Top 25 も確認する。名前から掘る必要のある原文(依存先・先行研究)は、[imozuru](https://github.com/MaryCache/imozuru) が入っていればそれで集める(任意の依存)。 |
-| loop-engineering | 工程(外) | ├ **loopeng-formalize** | EARS 記法と状態/ドメインモデルへ構造化し、TLA+ spec に落とす。 |
-| loop-engineering | 工程(中) | ├ **loopeng-modelcheck** | TLC でモデル検査し、spec 自体を mutation oracle で点検する。最後に、初期状態・不変条件・temporal 性質・遷移の文面を独立した読み手に平文へ戻させる。その結果が要件と一致するか、向きの取り違えや空成立が無いかを確かめる。 |
-| loop-engineering | 工程(内) | ├ **loopeng-gherkin** | 反例トレースを Gherkin の受け入れ仕様に落とす。 |
-| loop-engineering | SMT 経路 | ├ **loopeng-smt** | 状態を持たない判定(ルール・設定・条件式)がどんな入力でも成り立つかを Z3 で検査する。性質ごとにわざと壊した版を添え、検査が効いていることも確かめる(`smt_oracle.py`)。 |
-| loop-engineering | 実装後 | └ **loopeng-tracecheck** | 実システムの状態ログを TLA+ spec に流し、spec の許さない遷移を特定する(`trace_check.py`)。見えない変数は spec に選ばせる。 |
-| 形式検証の前 | 検証容易性 | **verifiability** | 検証する判定のコードを小さな純粋関数に切り出し、指標(CCN・行数・引数・副作用・エラーの畳み込み)を閾値まで直す(`verifiability.py`)。hook が台帳と指標と reviewer の合格の記録を検査し、満たさなければ形式検証の入口を止める(入口と条件はスキルの「強制のしくみ」)。 |
-| test-design | ルーター | **test-design** | テスト設計・既存テストレビューの入口ルーター。 |
-| test-design | 工程(0 段) | ├ **test-extract** | テストすべき振る舞いを網羅抽出し、台帳にする。 |
-| test-design | 工程 | ├ **test-catalog** | 手法カタログ(索引専用)。各振る舞いへ、同値分割・状態遷移・mutation testing・TDDサイクルなど個別スキル化された40のテスト技法から手法を割り当てる。 |
-| test-design | 工程 | └ **test-verify** | 実装への橋渡し・実行ゲート・回帰固定を行う。 |
-| formal-verification | 単体 | **formal-verification** | 雑な仕様を Lean 4 の形式仕様へ落とし込み、証明で検証し(proof-repair ループ)、証明済みの性質を test-first 実装へ橋渡しする。証明が通った後は、定理の文面を独立した読み手に平文へ戻させて性質カタログと突き合わせ、通っても要件と違うことを言う定理を見つけて直す。 |
-
-開発ワークフロースキル。
-
-| スキル | 説明 |
-| --- | --- |
-| **diff-review** | 差分を多観点でレビューする(既定は全レンズを diff-reviewer agent 1 本に渡す)。`conformance` レンズは、不変条件・性質を実装が全経路で守るかを性質ごとに論証させ、論証が切れた経路だけを指摘する。過剰設計だけを見る場合は ponytail の ponytail-review スキルを使う。 |
-| **commit-flow** | コミットの粒度判断と計画。実務の分割・実行は micro-commit スキルが担う。 |
-| **micro-commit** | 変更を~30-50行の論理単位に分割し conventional commit で連続コミットする実務手順。 |
-| **test-targeted** | 変更に関係するテストだけを絞り込んで実行する。 |
-| **gh-ci-investigate** | GitHub CI の失敗を調査する。 |
-| **review-feedback** | レビュー指摘や自力検知した失敗に対応し、原因分析・水平展開・観点の埋め込みまで行う。 |
-| **ledger-flow** | 進捗台帳・計画/引き継ぎ文書の運用(記法の一本化・証跡ポインタ・closed 化)。 |
-| **rebase-flow** / **reset-flow** | 履歴破壊操作の安全運用(同梱の git-guard hook が arm なしの実行を機械的にブロックする)。 |
-| **pr-create** | PR を作成する。 |
-| **escape-flow** | 後段(結合・e2e・実ログ・CI・本番)で見つかった欠陥と報告されたバグを、拾えたはずの前の段へ戻す。前の段に足したテストが修正前に失敗し修正後に通ることを道具が確かめるまで、変更は統合できない。 |
-| **real-surface** | 実システムの動かし方(起動・健全性の確認・操作・証跡・後片付け)をリポジトリごとに定義し、完了前に実物で確かめる。 |
-
-agents として次を同梱する。呼び出しは subagent_type `hymme:<name>`。
-
-| agent | 説明 |
-| --- | --- |
-| **modeler** | loop-engineering(TLA+)でモデル検査を行う担当。1 spec に集中して結果を返す。verification-reviewer への hand-off は呼び出し元が行う。 |
-| **prover** | formal-verification(Lean 4)で証明を行う担当。1 性質に集中して結果を返す。verification-reviewer への hand-off は呼び出し元が行う。 |
-| **diff-reviewer** | diff-review のワーカー(多観点レビュー)。 |
-| **verification-reviewer** | 検証 3 系統(loop-engineering / test-design / formal-verification)と verifiability の完了前の外部検査。呼び出し元が系統と成果物の場所を渡し、reviewer は `skills/<系統>/reviewer.md` の規範を読んで検査する。 |
-
-実装担当の agent は同梱しない。計画の実行は既定で本体のループ(superpowers:executing-plans)で行い、subagent は「文脈が膨らんで判断が鈍る」「捨ててよい文脈で並列に回したい」「指示や道具が両立しない」のどれかに当たるときだけ使う。判断と並列運用の規範は `skills/_shared/parallel-delegation.md`、verification-reviewer との往復は `skills/_shared/reviewer-loop.md` にある。
-
-ponytail-review(過剰設計のレビュー)は [ponytail](https://github.com/DietrichGebert/ponytail) プラグインのスキル(soft dependency)。ponytail は自身の marketplace から入れる。`/plugin marketplace add DietrichGebert/ponytail` → `/plugin install ponytail@ponytail`。
-
-## 強制のしくみ
-
-検査が読むのは hook が書いた署名つきの記録だけで、作業する本人が台帳に付けたチェックは合格の根拠にならない。記録は git の共通ディレクトリ(`.git/hymme/`)に置かれ、別の worktree からも同じものが見える。署名の鍵は `CLAUDE_PLUGIN_DATA` にあり、hook だけが使う。hook の入口は `hooks/hymme_hook.py` の1つで、本体は `loopeng/lib/hymme/` にある。
-
-規則と、それを強制する手段の対応。
-
-| 規則 | 強制する手段 | 止まる場所 |
-| --- | --- | --- |
-| 検証の前に、何を実証するかを作業者が承認する | 作業者の入力(`承認 <符号>`)を hook が記録する。一覧を変えると失効する | 検証の入口 |
-| 抽出の台帳を閉じてから検証する(閉じる前のチェックを含む) | 台帳の未チェック・欠番・空の行を hook が読む | 検証の入口 |
-| 検証する判定を小さな純粋関数にする | `verifiability.py` の指標 | 検証の入口 |
-| 切り出しを reviewer が確かめる | reviewer が返ったときの判定を hook が記録する。台帳か対象のコードを変えると失効する | 検証の入口 |
-| 同じ規則で2回落ちたら、前提を書いて確かめる | 実行の記録(落ちた規則と spec のハッシュ) | 検証の入口 |
-| 検査の結果と状態の図を作業者が承認する | `hymme chart draw` の結果と作業者の承認の記録 | 実ログの突き合わせ、統合の入口 |
-| 変更をレビューしてから外へ出す | reviewer の `must:` `lenses:` `claim_only:` を hook が記録する。変更の ID(patch-id)に結び付く | 統合の入口 |
-| 後段で見つかった欠陥は前の段で拾えるようにする | 段のコマンドの失敗で欠陥の記録が開く。`hymme escape verify` が、足したテストの修正前の失敗と修正後の成功を実行して確かめる | 統合の入口 |
-| 欠陥の修正には欠陥の記録を付ける | `fix` 型のコミットがあるブランチに、そのブランチの上で開いた記録があるかを hook が読む | 統合の入口 |
-| どのコマンドとパスがどの段かを宣言する | `tasks/stages.md` の段のコマンドの宣言を hook が読む | 統合の入口 |
-| 検証が写したコードを変えたら、検証をやり直す | 検証容易性の台帳の対象と差分の突き合わせ | 統合の入口 |
-| 実装が設計どおりかを実ログで確かめる | 正常系・高負荷・障害注入のログが通り、わざと壊した実装のログが不一致になる記録。ログは `hymme capture` で採る | 統合の入口 |
-| 実物で動かして確かめる | `tasks/surface.md` の確認のコマンドが通った記録 | 統合の入口 |
-| 検査を弱める変更は作業者が認める | 差分の skip の追加とアサーションの削除を読む | 統合の入口 |
-| PR の本文に影響の範囲と検証を書く | 本文の見出しを hook が読む(hook が本文を読めたとき。`.github/` に PR のテンプレートがあれば見ない) | 統合の入口 |
-| 履歴を壊す操作は手順を踏む | arm の印(git-guard) | git のコマンド |
-| テストを書く前に、テストする振る舞いを出し切る | T-ID 台帳の未チェック・欠番 | テストファイルの編集 |
-
-検証の入口は `loop-*`、`smt_oracle.py`、`trace_check.py`、`tasks/fv` での `lake build`、`tlc` と `apalache-mc` の直接の実行。統合の入口は `gh pr create`、`glab mr create`、API や MCP での PR 作成、既定のブランチへの `git merge`、PR 作成後の `git push`。
-
-統合の入口のうち、レビューの記録、欠陥の記録、検査を弱める変更の検査は、どのリポジトリでも掛かる。残りは、hymme の台帳を持つリポジトリ(`tasks/` に loopeng、fv、verifiability、test-design、stages.md、surface.md のどれかがある)だけに掛かる。
-
-検査を外すには `hymme exception request <検査> --until <日付> --reason <理由>` で申請し、作業者が承認する(最長90日)。作業者の確認そのものと、閉じていない欠陥の記録の検査は外せない。
-
-強制する手段を持たない規則は、スキルの文面にだけある。同じ規則が2回破られたら、文面を足す前に上の表へ載せられる手段を作る(review-feedback の手順)。
-
-限界。署名の鍵は作業者のホームにあるので、本人が意図して読み出せば記録を偽造できる。reviewer を起動するのは作業する本人で、依頼文で判定を誘導できる。スクリプトの中から呼ばれた検証と、Web の画面で作った PR は hook から見えない。
-
-## インストール(Claude Code)
+## インストール
 
 superpowers が前提。hymme の marketplace から両方入れる。
 
@@ -118,54 +71,349 @@ superpowers が前提。hymme の marketplace から両方入れる。
 /plugin install hymme@hymme
 ```
 
-superpowers は `/plugin install superpowers@claude-plugins-official` で入れても同じ(同一プラグイン)。**どちらか一方だけ**入れる。両方入れるとスキルと SessionStart hook が二重になる。すでに official 版が入っているなら `superpowers@hymme` は入れない。
+- superpowers は `superpowers@claude-plugins-official` で入れても同じ。
+- superpowers は**どちらか一方だけ**入れる。両方入れると、スキルとセッション開始時の hook が二重になる。
+- 動作を確かめたのは superpowers 7.0.0。sha は固定していない。`/plugin update superpowers@hymme` で上流に追従する。
+- `hymme` コマンドと検証の道具は、下の「ツールチェイン」で入れる。検証を使わなくても `hymme` コマンドは要る。
 
-動作確認版は superpowers 7.0.0。marketplace の entry は sha を固定しない(`/plugin update superpowers@hymme` で上流に追従する)。
+hymme の更新は次の2つ。自動更新は無効。反映には再起動が要る。
 
-更新は `/plugin marketplace update hymme` → `/plugin update hymme@hymme`(hymme marketplace は autoUpdate 無効)。反映には再起動が要る。
+```
+/plugin marketplace update hymme
+/plugin update hymme@hymme
+```
+
+## 収録スキル
+
+検証系は「案内役のスキル + 工程のスキル」でできている。
+
+- 案内役が局面を見て、工程のスキルへ振り分ける。
+- スキルの一覧に出るのは案内役だけ。工程のスキルと個別のテスト技法は、案内役の指示でファイルを読んで使う。
+- こうすると一覧が短くなり、説明文が切り捨てられない。
+
+### 検証
+
+太字が案内役。
+
+| 系統 | スキル | すること | 道具 |
+| --- | --- | --- | --- |
+| loop-engineering | **loop-engineering** | 要求を TLA+ で検査できる設計にする | |
+| | loopeng-extract | 要件を出し切る | |
+| | loopeng-formalize | 要件を EARS(要求を書く定型文)と状態モデルに整理し、TLA+ の spec にする | `loop-outer` |
+| | loopeng-modelcheck | TLC で spec の全状態を検査する | `loop-middle` |
+| | loopeng-gherkin | 反例を Gherkin(受け入れ仕様の書式)にする | `loop-inner` |
+| | loopeng-smt | 状態を持たない判定が、どんな入力でも成り立つかを Z3 で検査する | `smt_oracle.py` |
+| | loopeng-tracecheck | 実装後に、実システムのログを spec に流す | `trace_check.py` |
+| 検証の前 | **verifiability** | 検証する判定を小さな純粋関数に切り出す | `verifiability.py` |
+| test-design | **test-design** | テスト設計と既存テストのレビュー | |
+| | test-extract | テストする振る舞いを出し切り、台帳にする | |
+| | test-catalog | 振る舞いごとに、40のテスト技法から手法を選ぶ | |
+| | test-verify | 実装への橋渡し、実行の確認、回帰の固定 | |
+| formal-verification | **formal-verification** | 仕様を Lean 4 で書いて証明し、証明した性質を test-first の実装へ渡す | `lake` |
+
+補足。
+
+- loopeng-extract は信頼境界ごとに、STRIDE の6観点で異常系を確かめる。入力のパースや長さの計算があれば CWE Top 25 も見る。
+- loopeng-extract は依存先や先行研究の原文を集めるのに [imozuru](https://github.com/MaryCache/imozuru) を使う(入っていれば。任意)。
+- loopeng-modelcheck と loopeng-smt は、わざと壊した版も検査する。検査が効いていることを確かめるため。
+- loopeng-modelcheck と formal-verification は、最後に別の読み手が spec や定理を平文に戻す。それを要件と比べる。
+- loopeng-tracecheck は、spec の許さない遷移を見つける。
+- verifiability は、指標(複雑度・行数・引数・副作用など)を閾値まで直す。
+
+### 開発の運用
+
+| スキル | すること |
+| --- | --- |
+| **diff-review** | 差分を複数の観点でレビューする。`conformance` の観点は、実装が不変条件を全経路で守るかを論証させる |
+| **commit-flow** | コミットの粒度を決め、計画する |
+| **micro-commit** | 変更を30〜50行ほどの単位に分け、Conventional Commits で続けてコミットする |
+| **test-targeted** | 変更に関係するテストだけを実行する |
+| **gh-ci-investigate** | GitHub Actions の失敗を調べる |
+| **review-feedback** | レビュー指摘や自分で見つけた失敗を直す。原因を調べ、同種の穴を探し、再発を防ぐ |
+| **ledger-flow** | 進捗の台帳と引き継ぎ文書の書き方 |
+| **rebase-flow** / **reset-flow** | 履歴を壊す操作の安全な手順。手順を踏まない実行は git-guard hook が止める |
+| **pr-create** | PR を作る |
+| **escape-flow** | 後段で見つかった欠陥と報告されたバグを、拾えたはずの前の段へ戻す |
+| **real-surface** | 実システムの動かし方をリポジトリごとに決め、完了前に実物で確かめる |
+
+段は前から spec、unit、integration、e2e、trace(実ログ)、ci。後段は integration より後ろを指す。
+
+escape-flow では前の段にテストを足す。
+
+- そのテストが修正前に失敗し、修正後に通ることを道具が確かめる。
+- 確かめが済むまで、変更は統合できない。
+
+過剰設計だけを見るレビューは、[ponytail](https://github.com/DietrichGebert/ponytail) の ponytail-review を使う(任意)。
+
+```
+/plugin marketplace add DietrichGebert/ponytail
+/plugin install ponytail@ponytail
+```
+
+### agents
+
+`hymme:<name>` で呼ぶ。
+
+| agent | すること |
+| --- | --- |
+| **modeler** | TLA+ のモデル検査。1つの spec に集中する |
+| **prover** | Lean 4 の証明。1つの性質に集中する |
+| **diff-reviewer** | diff-review の作業役 |
+| **verification-reviewer** | 検証3系統と verifiability の成果物を、完了前に外から検査する |
+
+- modeler と prover の結果は、呼び出し元が verification-reviewer に渡す。
+- verification-reviewer は `skills/<系統>/reviewer.md` を読んで検査する。合格が返るまで往復する(`skills/_shared/reviewer-loop.md`)。
+- 実装担当の agent は無い。計画は本体が実行する(superpowers:executing-plans)。
+
+subagent を使うのは、次のどれかに当たるときだけ(`skills/_shared/parallel-delegation.md`)。
+
+- 文脈が膨らんで、本体の判断が鈍る。
+- 捨ててよい文脈で、並列に回したい。
+- 指示や道具が、本体と両立しない。
+
+## 強制のしくみ
+
+合格の根拠になるのは、hook が書いた署名つきの記録だけ。作業する本人が台帳に付けたチェックは、根拠にならない。
+
+ここでは2つの語を使い分ける。
+
+- 作業者: Claude Code を使う人。
+- 作業する本人: 作業している AI。
+
+```mermaid
+flowchart LR
+    W["作業者の承認"] --> H["hook"]
+    R["reviewer の判定"] --> H
+    X["コマンドの実行結果"] --> H
+    H -->|"署名して書く"| L[("記録")]
+    L -->|"署名の合う記録だけ読む"| G{"入口の検査"}
+    G -->|"そろっている"| P["実行する"]
+    G -->|"足りない"| S["止めて手順を示す"]
+```
+
+| 部品 | 場所 |
+| --- | --- |
+| 記録 | git の共通ディレクトリ(`.git/hymme/`)。別の worktree からも同じものが見える |
+| 署名の鍵 | `CLAUDE_PLUGIN_DATA`。hook だけが使う |
+| hook の起動ファイル | `hooks/hymme_hook.py` |
+| hook の本体 | `loopeng/lib/hymme/` |
+| 個別の検査の hook | `hooks/` の `verifiability-gate.sh`、`loopeng-lint-gate.sh`、`git-guard.sh`、`test-design-extract-gate.sh` |
+
+### 入口
+
+検査が掛かる場所は2つある。
+
+検証の入口。
+
+- `loop-*`、`smt_oracle.py`、`trace_check.py`
+- `tasks/fv` での `lake build`
+- `tlc` と `apalache-mc` の直接の実行
+
+統合の入口。
+
+- `gh pr create`、`glab mr create`
+- API や MCP での PR 作成
+- 既定のブランチへの `git merge`
+- 既定のブランチからの `git push`
+- PR 作成後の `git push`
+
+### 規則と手段
+
+| 規則 | 強制する手段 | 止まる場所 |
+| --- | --- | --- |
+| 検証の前に、何を実証するかを作業者が承認する | 作業者の入力(`承認 <符号>`。符号は申請ごとの8桁)を hook が記録する。一覧を変えると失効する | 検証の入口 |
+| 抽出の台帳を閉じてから検証する | 台帳の未チェック・欠番・空の行を hook が読む | 検証の入口 |
+| 検証する判定を小さな純粋関数にする | `verifiability.py` の指標 | 検証の入口 |
+| 切り出しを reviewer が確かめる | reviewer の判定を hook が記録する。台帳か対象のコードを変えると失効する | 検証の入口 |
+| 同じ規則で2回落ちたら、前提を書いて確かめる | 実行の記録(落ちた規則と spec のハッシュ) | 検証の入口 |
+| 検査の結果と状態の図を作業者が承認する | `hymme chart draw` の結果と、作業者の承認の記録 | 実ログの突き合わせ、統合の入口 |
+| 変更をレビューしてから外へ出す | reviewer の `must:` `lenses:` `claim_only:` を hook が記録する。記録は変更の ID(patch-id)に結び付く | 統合の入口 |
+| 後段で見つかった欠陥は、前の段で拾えるようにする | 後段のコマンドが失敗すると、欠陥の記録が開く。`hymme escape verify` が通ると閉じる | 統合の入口 |
+| 欠陥の修正には、欠陥の記録を付ける | `fix` 型のコミットがあるブランチに、そのブランチの上で開いた記録があるかを hook が読む | 統合の入口 |
+| どのコマンドとパスがどの段かを宣言する | `tasks/stages.md` を hook が読む | 統合の入口 |
+| 検証の対象にしたコードを変えたら、検証をやり直す | verifiability の台帳の対象と、差分の突き合わせ | 統合の入口 |
+| 実装が設計どおりかを実ログで確かめる | 4種のログ(正常系・高負荷・障害注入・わざと壊した実装)を突き合わせた記録 | 統合の入口 |
+| 実物で動かして確かめる | `tasks/surface.md` の確認のコマンドが通った記録 | 統合の入口 |
+| 検査を弱める変更は、作業者が例外として認める | 差分の skip の追加と、アサーションの削除を読む | 統合の入口 |
+| PR の本文に、影響の範囲と検証を書く | 本文の見出しを hook が読む | 統合の入口 |
+| 履歴を壊す操作は、手順を踏む | 手順を踏んだ印(arm)を git-guard が読む | git のコマンド |
+| テストを書く前に、テストする振る舞いを出し切る | T-ID 台帳の未チェック・欠番 | テストファイルの編集 |
+
+補足。
+
+- 実ログは `hymme capture` で採る。わざと壊した実装のログは、不一致になれば合格。
+- PR の本文の検査は、hook が本文を読めたときだけ掛かる。`.github/` に PR のテンプレートがあれば見ない。
+
+### どのリポジトリに掛かるか
+
+統合の入口の検査は、リポジトリによって掛かる範囲が違う。
+
+| 検査 | 掛かるリポジトリ |
+| --- | --- |
+| レビューの記録、欠陥の記録、検査を弱める変更 | すべて |
+| 検証のやり直し、実ログ、状態の図、段の宣言、実物での確かめ、PR の本文 | hymme の台帳を持つリポジトリだけ |
+
+「台帳を持つ」とは `tasks/` に loopeng、fv、verifiability、test-design、stages.md、surface.md のどれかがあること。
+
+### 例外
+
+統合の入口の検査は、申請して作業者が承認すれば外せる。期限は最長90日。
+
+```sh
+hymme exception request <検査> --until <日付> --reason <理由>
+```
+
+`<検査>` に書ける名前。
+
+| 名前 | 外す検査 |
+| --- | --- |
+| `review` | レビューの記録 |
+| `fix_without_escape` | `fix` 型のコミットの、欠陥の記録 |
+| `weaken` | 検査を弱める変更 |
+| `stale` | 検証のやり直し |
+| `trace` | 実ログの突き合わせ |
+| `stages` | 段の宣言 |
+| `surface` | 実物での確かめ |
+| `pr_body` | PR の本文の見出し |
+
+これ以外は外せない。たとえば次の検査。
+
+- 検証の入口の検査(作業者の承認を含む)
+- 閉じていない欠陥の記録の検査
+- git-guard と、テストファイルの編集の検査
+
+### 手段の無い規則
+
+強制する手段を持たない規則は、スキルの文面にだけある。同じ規則が2回破られたら、文面を足す前に、上の表へ載せられる手段を作る(review-feedback の手順)。
+
+### 限界
+
+- 署名の鍵は作業者のホームにある。作業する本人が意図して読み出せば、記録を偽造できる。
+- reviewer を起動するのは作業する本人なので、依頼文で判定を誘導できる。
+- スクリプトの中から呼ばれた検証は hook から見えない。
+- Web の画面で作った PR は hook から見えない。
 
 ## ツールチェイン(Nix)
 
-スキルは TLA+(TLC/SANY)、Apalache、make、python3(Z3 と lizard の Python バインディング入り)、Lean(elan 経由)を外部コマンドとして呼ぶ。
-flake がこれらをまとめて提供する。
+スキルは次の道具を外部コマンドとして呼ぶ。flake がまとめて配る。
 
-一括セットアップ。
-`nix` が無ければ先に Determinate Nix を入れる。
-システム全体への変更なので実行前に確認を求める(非対話で進めるなら `HYMME_ASSUME_YES=1`)。
+- TLA+(TLC、SANY)と Apalache
+- python3(Z3 と lizard 入り)と make
+- Lean(elan 経由)
+
+### 入れ方
+
+Nix が無いときは、スクリプトが先に Determinate Nix を入れる。
+
+- システム全体への変更なので、実行前に確認を求める。
+- 確認を省くには `HYMME_ASSUME_YES=1` を付ける。
 
 ```sh
-./scripts/bootstrap.sh          # nix develop — ツールチェインを PATH に載せた dev シェル
-./scripts/bootstrap.sh install  # nix profile install .#skill-tools — profile に永続化
+./scripts/bootstrap.sh          # 道具を PATH に載せた開発用シェルに入る
+./scripts/bootstrap.sh install  # profile に入れて、常に使えるようにする
 ```
 
-すでに Nix があるなら直接実行してもよい。
+Nix があるなら、直接実行してもよい。
 
 ```sh
-nix develop                       # ツールチェインを PATH に載せた dev シェル
-nix profile install .#skill-tools # または profile にインストール
+nix develop
+nix profile install .#skill-tools
 ```
 
-これで `tlc` / `sany` / `apalache-mc` / `lake` / `lean` と、`loopeng/bin` のスクリプト(`smt_oracle.py` / `trace_check.py` / `verifiability.py` など)と `hymme` コマンド(承認の申請、欠陥の記録、状態の図、ログの採取)が使えるようになる。プラグインと `skill-tools` は同じバージョンに揃える(食い違うと承認が記録されない)。検証容易性ゲートは `verifiability.py` を PATH から呼ぶので、`skill-tools` が無いと対象コードのある検証は止まる。
-nixpkgs には TLA+ と Apalache の公式パッケージが無いため、flake は固定したリリース成果物を取得して JRE でラップする。
-バージョンを上げるときは `flake.nix` の URL とハッシュを揃えて更新する。
-v1.8.0 の `tla2tools.jar` は差し替えが続く先行版で、ハッシュ不一致でビルドが止まることがある。そのときは新しいハッシュを GitHub のリリース資産のダイジェストと照合してから付け直す(取得経路の改ざんと区別するため)。
+### 使えるようになるもの
 
-TLC を回す前に、`loopeng/bin/tla_lint.sh` で SANY の構文・意味解析と、`@type:` 注釈がある spec の Apalache 型検査を通す。`loop-middle` / `loop-inner` は `lint` ターゲットで自動的に通す。`tlc` を直接叩いた Bash が止められたら、PreToolUse の hook(`hooks/loopeng-lint-gate.sh`)が spec のエラーを見つけている。表示されたエラーを直してから回し直す。
+| 種類 | コマンド |
+| --- | --- |
+| 検証の道具 | `tlc`、`sany`、`apalache-mc`、`lake`、`lean` |
+| `loopeng/bin` のスクリプト | `loop-outer`、`loop-middle`、`loop-inner`、`smt_oracle.py`、`trace_check.py`、`verifiability.py` など |
+| `hymme` コマンド | 承認の申請、欠陥の記録、状態の図、ログの採取 |
 
-次のものは含めていない(必要になったプロジェクトで個別に入れる)。
+注意が2つある。
 
-- Gherkin ランナー：`cucumber-js`(npm)や `godog`(`go install`)。nixpkgs に無い。
-- 要求のトレーサビリティ用の `doorstop`：`uv pip install doorstop`。
+- プラグインと `skill-tools` は同じバージョンにそろえる。食い違うと承認が記録されない。
+- `skill-tools` が無いと、対象コードのある検証は止まる。検査が `verifiability.py` を PATH から呼ぶため。
 
-hymme 自体の開発では、スクリプト(`hooks/`・`loopeng/`・`scripts/`・`skills/*/scripts/` の `*.py` と `*.sh`)を `scripts/lint.sh` の品質ゲート(ruff の静的解析とフォーマット、shellcheck、shfmt。`nix develop` に入っている)に通す。`scripts/lint.sh --fix` で整形と自動修正を書き戻す。設定は `ruff.toml` と `.editorconfig`。
-スクリプトが端末に出す文言は日本語で書き、各スクリプトの先頭近くの対応表(Python は `MESSAGES` と `msg()`、シェルは `msg()` の case)から引く。`loopeng/Makefile.loopeng` だけは make のレシピなので対応表を置かず、日本語の echo を直接書く(品質ゲートの対象外)。判定の値(HOLDS/VIOLATED)や、他のプログラムやスキルが目印として読むトークンは文言ではないので訳さない。
-hook の中の Python は `python3 -I` で動かす(作業中のリポジトリにある `json.py` などを読み込まないため)。
-`skills/*/reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)、SMT の判定器(`scripts/loopeng-smt-oracle.test.sh`)、実ログの突き合わせ(`scripts/loopeng-trace-check.test.sh`)、loop ツール群(`scripts/loopeng-tools.test.sh`)、test-design の抽出ゲート(`scripts/test-design-extract-gate.test.sh`)、検証容易性の指標とゲート(`scripts/verifiability.test.sh`)、hook の入口と検査と `hymme` コマンド(`scripts/hymme-core.test.sh`)、git-guard(`scripts/git-guard.test.sh`)、文書の参照(`hymme:<name>`・相対リンク・`${CLAUDE_PLUGIN_ROOT}/...` のパス)の実在(`scripts/check-doc-refs.test.sh`)、セッション開始時に注入する地図の展開(`scripts/session-start.test.sh`)、diff-review の差分収集(`scripts/collect-diff.test.sh`)の回帰テストと、品質ゲート(`scripts/lint.sh`)も走らせる。
+### TLC の前の静的検査
 
-実際の Claude Code のセッションで hook が止めることは、`scripts/real-session.sh` で確かめる(Claude Code が要り、トークンを少し使うので、`nix flake check` には入れていない)。hymme 自身の段の宣言は `tasks/stages.md`、実物の定義は `tasks/surface.md` にある。
+`loopeng/bin/tla_lint.sh` が次の2つを通す。
 
-同じ検査を GitHub Actions(`.github/workflows/check.yml`)でも回す。検査を足すときは、通す例と止める例のテストを書き、`flake.nix` の checks とこの一覧に載せる。
+- SANY の構文・意味解析
+- `@type:` 注釈がある spec の、Apalache の型検査
+
+`loop-middle` と `loop-inner` はこれを自動で通す。
+
+`tlc` を直接実行して spec のエラーが表示されたら、hook(`hooks/loopeng-lint-gate.sh`)が止めている。エラーを直して、やり直す。
+
+### TLA+ と Apalache のバージョン
+
+nixpkgs に公式のパッケージが無いので、flake は固定したリリースの成果物を取得し、JDK で包む。バージョンを上げるときは、`flake.nix` の URL とハッシュを一緒に更新する。
+
+v1.8.0 の `tla2tools.jar` には注意が要る。
+
+- 症状: 差し替えが続く先行版なので、ハッシュの不一致でビルドが止まることがある。
+- 対処: 新しいハッシュを GitHub のリリース資産のダイジェストと照合してから付け直す。
+- 理由: 取得経路の改ざんと区別するため。
+
+### 含めていないもの
+
+必要になったプロジェクトで、個別に入れる。
+
+| 道具 | 入れ方 |
+| --- | --- |
+| Gherkin のランナー | `cucumber-js`(npm)や `godog`(`go install`)。nixpkgs に無い |
+| 要求の追跡用の `doorstop` | `uv pip install doorstop` |
+
+## hymme 自体の開発
+
+### 検査
+
+| 検査 | コマンド | 見るもの |
+| --- | --- | --- |
+| 静的検査 | `scripts/lint.sh` | ruff(解析と整形)、shellcheck、shfmt、文言のコードが対応表にあること。`--fix` で自動修正を書き戻す |
+| 回帰テスト | `nix flake check` | 下の一覧と、静的検査 |
+| 実物での確かめ | `bash scripts/real-session.sh` | 実際の Claude Code のセッションで、hook が止めること |
+
+- 静的検査の対象は `hooks/`・`loopeng/`・`scripts/`・`skills/` 以下の `*.py` と `*.sh`。設定は `ruff.toml` と `.editorconfig`。
+- 静的検査の道具は `nix develop` に入っている(`skill-tools` には無い)。
+- 実物での確かめは Claude Code が要り、トークンを少し使う。そのため `nix flake check` には入れていない。
+- `nix flake check` は GitHub Actions(`.github/workflows/check.yml`)でも回す。
+
+`nix flake check` が走らせる回帰テスト。
+
+| テスト | 見るもの |
+| --- | --- |
+| `scripts/loopeng-lint.test.sh` | TLC の前の静的検査と、spec を壊す検査の分類 |
+| `scripts/loopeng-smt-oracle.test.sh` | SMT の判定 |
+| `scripts/loopeng-trace-check.test.sh` | 実ログの突き合わせ |
+| `scripts/loopeng-tools.test.sh` | loop の道具 |
+| `scripts/test-design-extract-gate.test.sh` | test-design の抽出の検査 |
+| `scripts/verifiability.test.sh` | 検証容易性の指標と検査 |
+| `scripts/hymme-core.test.sh` | hook と検査、`hymme` コマンド。`loopeng/lib/tests` の単体テストも回す |
+| `scripts/git-guard.test.sh` | git-guard |
+| `scripts/check-doc-refs.test.sh` | 文書の参照(`hymme:<name>`、相対リンク、`${CLAUDE_PLUGIN_ROOT}/...`)が実在すること |
+| `scripts/check-reviewer-checklist.test.sh` | `skills/*/reviewer.md` の見出しとチェックリストの対応 |
+| `scripts/session-start.test.sh` | セッション開始時に読み込む地図の展開 |
+| `scripts/collect-diff.test.sh` | diff-review の差分の収集 |
+
+検査を足すときは、通す例と止める例のテストを書く。`flake.nix` の checks と、この一覧にも載せる。
+
+### 決まり
+
+| 対象 | 決まり |
+| --- | --- |
+| 端末に出す文言 | 日本語で書く。各スクリプトの先頭近くの対応表から引く(Python は `MESSAGES` と `msg()`、シェルは `msg()` の case) |
+| `loopeng/Makefile.loopeng` | 対応表を置かず、日本語の echo を直接書く。make のレシピなので、静的検査の対象外 |
+| 訳さないもの | 判定の値(HOLDS、VIOLATED)と、他のプログラムやスキルが目印として読むトークン |
+| hook の中の Python | `python3 -I` で動かす。作業中のリポジトリにある `json.py` などを読み込まないため |
+| `skills/*/reviewer.md` | 編集したら `nix flake check` を通す |
+
+hymme 自身の段の宣言は `tasks/stages.md`、実物の定義は `tasks/surface.md` にある。
 
 ## 謝辞
 
-作業者の確認、実物での確かめ、検証の鮮度、確かさの段階などの考え方は、[pstack](https://github.com/cursor/plugins/tree/main/pstack)(MIT License)の原則と playbook を参考にした。文面とスクリプトは取り込んでいない。
+次の考え方は [pstack](https://github.com/cursor/plugins/tree/main/pstack)(MIT License)の原則と playbook を参考にした。文面とスクリプトは取り込んでいない。
+
+- 作業者の確認
+- 実物での確かめ
+- 検証の鮮度
+- 確かさの段階
