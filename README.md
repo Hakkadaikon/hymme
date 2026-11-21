@@ -142,6 +142,7 @@ escape-flow では前の段にテストを足す。
 
 - そのテストが修正前に失敗し、修正後に通ることを道具が確かめる。
 - 確かめが済むまで、変更は統合できない。
+- 前の段では拾えない欠陥(要件の抜けなど)は、テストの代わりに作業者の承認で閉じる(`hymme escape unreachable`)。
 
 過剰設計だけを見るレビューは、[ponytail](https://github.com/DietrichGebert/ponytail) の ponytail-review を使う(任意)。
 
@@ -162,7 +163,7 @@ escape-flow では前の段にテストを足す。
 | **verification-reviewer** | 検証3系統と verifiability の成果物を、完了前に外から検査する |
 
 - modeler と prover の結果は、呼び出し元が verification-reviewer に渡す。
-- verification-reviewer は `skills/<系統>/reviewer.md` を読んで検査する。合格が返るまで往復する(`skills/_shared/reviewer-loop.md`)。
+- verification-reviewer は `skills/<スキル>/reviewer.md` を読んで検査する。合格が返るまで往復する(`skills/_shared/reviewer-loop.md`)。
 - 実装担当の agent は無い。計画は本体が実行する(superpowers:executing-plans)。
 
 subagent を使うのは、次のどれかに当たるときだけ(`skills/_shared/parallel-delegation.md`)。
@@ -241,6 +242,7 @@ flowchart LR
 
 補足。
 
+- 欠陥の記録が自動で開くのは、`tasks/stages.md` で宣言した後段のコマンドが失敗したとき。その段のテストを変えているブランチでは開かない。
 - 実ログは `hymme capture` で採る。わざと壊した実装のログは、不一致になれば合格。
 - PR の本文の検査は、hook が本文を読めたときだけ掛かる。`.github/` に PR のテンプレートがあれば見ない。
 
