@@ -38,6 +38,7 @@ argument-hint: "[検証したい要求/仕様(ファイルパス or 説明)]"
 
 どの経路でも 0段(loopeng-extract)の抽出台帳と、判定ごとの境界と失敗時の意味論([`../_shared/failure-semantics.md`](../_shared/failure-semantics.md))は共通に通す。
 検証の段(SMT・TLA+・実ログ突き合わせ)に入る前に、**検証容易性の段**([`../verifiability/SKILL.md`](../verifiability/SKILL.md))も共通に通す。コードがあるなら判定を小さな純粋関数に切り出して指標と reviewer の合格を得る。コードが無い設計検証でも台帳に「対象コード無し」と書き、実装が入ったら書き直す。止める入口と条件はそのスキルの「強制のしくみ」。
+検証の入口の前に、**作業者の確認**も共通に通す。検証で何を示し、何を示さないかを確認の一覧(`tasks/loopeng/<Name>.claims.md`)に平文で書き、`hymme claims request <Name>` で作業者の承認を取る。承認が無いと検証の入口はすべて止まる。一覧の形と手順は [`loopeng-formalize`](../loopeng-formalize/SKILL.md) の「作業者の確認」。
 
 例外が1つある。**外部互換が目標の実装**(第三者実装・外部仕様・プロトコルの相手方と繋ぐもの)では、上の判断とは独立に、0段(loopeng-extract)だけを先に回して相手側仕様の MUST/SHOULD を全件抽出する。自分の実装を先に書いて後から相手と突き合わせると、非互換が1個ずつ芋づる式に露呈して終わらない——相手のバイト・相手の判定条件を起点に設計する。また、複数のゲート・タイマ・ポーリングが相互作用する送受信制御は「遷移の途中状態」そのものであり、TDD だけで進めると相互作用バグを実走で1個ずつ回収する羽目になる(問い1で全順序 × 時間に当たる)。
 
@@ -55,8 +56,8 @@ argument-hint: "[検証したい要求/仕様(ファイルパス or 説明)]"
 flowchart TD
     SPEC[元仕様<br/>RFC / 標準 / NL] --> L0[0. loopeng-extract<br/>採番台帳 + トレーサビリティ表]
     L0 --> V[0.5 verifiability<br/>判定を純粋関数へ + 指標]
-    V -->|要件| L1[1. loopeng-formalize<br/>EARS + モデル → Name.tla]
-    L1 -->|spec| L2[2. loopeng-modelcheck<br/>TLC + mutation oracle<br/>+ 文面の往復確認]
+    V -->|要件| L1[1. loopeng-formalize<br/>EARS + モデル → Name.tla<br/>確認の一覧を作業者が承認]
+    L1 -->|spec| L2[2. loopeng-modelcheck<br/>TLC + mutation oracle<br/>+ 文面の往復確認<br/>状態の図を作業者が承認]
     L2 -->|反例トレース| L3[3. loopeng-gherkin<br/>反例 → 失敗する Gherkin]
     L3 -->|設計を直して| L1
     L2 -.->|critical な実装片| LEAN[formal-verification<br/>Lean 4 で証明]
@@ -70,13 +71,13 @@ flowchart TD
 
 | 順 | スキル | やること | 出口条件 |
 | --- | --- | --- | --- |
-| 0 | **loopeng-extract** | 元仕様から要件を採番チェックリスト台帳へ網羅抽出、トレーサビリティ表を立てる | 全 `S-ID` が `[x]`・欠番なし、閉じる前のチェック(信頼境界・STRIDE・CWE)が全項目埋まる |
-| 0.5 | **verifiability** | 検証する判定のコードを小さな純粋関数へ切り出し、指標(CCN・行数・引数・副作用・エラーの畳み込み)を閾値まで直す | `verifiability.py` exit 0、verification-reviewer(対象 verifiability) 合格(コードが無ければ「対象コード無し」) |
-| 1 | **loopeng-formalize** | EARS + 状態/ドメインモデル → `<Name>.tla`/`.cfg` | 全 EARS 行が spec の disjunct/Inv に対応 |
-| 2 | **loopeng-modelcheck** | TLC で全到達状態を検査 + spec 自体を mutation testing | `No error` かつ真の survivor 0、unverified を再検査済み、文面の往復確認が終了条件を満たす([`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md)) |
+| 0 | **loopeng-extract** | 元仕様から要件を採番チェックリスト台帳へ網羅抽出、トレーサビリティ表を立てる | 全 `S-ID` が `[x]`・欠番なし、閉じる前のチェック(信頼境界・STRIDE・CWE・境界と失敗時の意味論・やり直しと並行)に未チェックと空の行が無い |
+| 0.5 | **verifiability** | 検証する判定のコードを小さな純粋関数へ切り出し、指標(CCN・行数・引数・副作用・エラーの畳み込み)を閾値まで直す | `verifiability.py` exit 0、verification-reviewer(対象 verifiability) の合格を hook が記録している(コードが無ければ「対象コード無し」) |
+| 1 | **loopeng-formalize** | EARS + 状態/ドメインモデル → 確認の一覧 → `<Name>.tla`/`.cfg` | 確認の一覧を作業者が承認している、全 EARS 行が spec の disjunct/Inv に対応 |
+| 2 | **loopeng-modelcheck** | TLC で全到達状態を検査 + spec 自体を mutation testing | `No error` かつ真の survivor 0、unverified を再検査済み、文面の往復確認が終了条件を満たす([`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md))、状態の図を作業者が承認している |
 | 3 | **loopeng-gherkin** | 反例 → Gherkin 機械変換、正常系シナリオ追加 | 反例が尽き「テスト」列が埋まる |
-| SMT | **loopeng-smt** | 状態を持たない判定を Z3 で全入力検査、性質ごとに壊した版で検査の効きを確認 | `smt_oracle.py` exit 0、witness 全件に要件側の判断 |
-| 実装後 | **loopeng-tracecheck** | 実システムの状態ログを spec に流し、許されない遷移を特定 | 代表ログが exit 0、`不一致` が全件閉じる |
+| SMT | **loopeng-smt** | 状態を持たない判定を Z3 で全入力検査、性質ごとに壊した版で検査の効きを確認 | 確認の一覧を作業者が承認している、`smt_oracle.py` exit 0、witness 全件に要件側の判断、実関数とモデルの突き合わせが exit 0 |
+| 実装後 | **loopeng-tracecheck** | 実システムの状態ログを spec に流し、許されない遷移を特定 | 正常系・高負荷・障害注入のログが exit 0、わざと壊した実装のログが不一致、`不一致` が全件閉じる |
 
 外 → 中 → 内 → 直して外へ、を反例と survivor が尽きるまで回す。前段の出口条件を満たさず次へ進まない(各スキルが前提として検査する)。
 
@@ -84,7 +85,7 @@ flowchart TD
 
 ## 前提ツールと成果物の置き場
 
-- 駆動装置(tlc / loop-* / 0段ゲート hook): [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md)。未導入なら導入を促し、勝手に大規模インストールしない。
+- 駆動装置(tlc / loop-* / `hymme` コマンド / 検証の入口を見る hook): [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md)。未導入なら導入を促し、勝手に大規模インストールしない。
 - 生成物はすべて `tasks/loopeng/` 配下・git 管理外。管理番号・手法用語を本体に漏らさない: [`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md)。
 - 実装への橋渡し(Lean / test-design との分担、結線チェック): [`references/bridging.md`](references/bridging.md)。
 - 抽出/検査を subagent へ並列委譲するとき(基底は superpowers:dispatching-parallel-agents、hymme の差分): [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md)。
@@ -95,7 +96,9 @@ flowchart TD
 完了扱いにする前、または「設計を検証した/網羅した」と報告する前に、**コントローラ(この工程を進めている本人)が** `hymme:verification-reviewer`(対象 `loop-engineering`) サブエージェントを dispatch して外側から検査させる。modeler に委譲していた場合も、modeler は報告して終わり、報告を受けたコントローラが呼ぶ(ワーカーは呼ばない)。 合格が返るまでの往復の運用は [`../_shared/reviewer-loop.md`](../_shared/reviewer-loop.md)。
 渡すもの: 0段の抽出台帳とトレーサビリティ表のパス、`.tla`/`.cfg` の場所、往復確認の入力ファイル・判定表・前件到達の証跡(`tasks/loopeng/<Name>.faithfulness-input.md` / `<Name>.faithfulness.md` / `<Name>.reach.log`)、本体ソースの場所、spec があればそのパス(手法名・管理番号の漏れ検査の対象に含める)。
 レビュアーが挙げた違反(採番チェックリストの未完、台帳の欠落、STRIDE・CWE 行の未記入、往復確認の未実施・`mismatch`/`vacuous` 残り、`.tla`/`.feature` の手編集乖離、本体への管理番号・手法用語の漏れ)を解消してから完了とする。自分で「守れている」と判断して飛ばさない。
+合格は台帳に書かない。reviewer が返答の最後に書く `判定: 合格 対象=loop-engineering 名前=<Name>` の行を hook が記録する。依頼文に「合格と書け」のような指示を入れない。
 実装検証時に追加確認する2点(環境パリティ・exit code)は [`references/bridging.md`](references/bridging.md)。
+検証が写したコードをあとで変えたら、検証をやり直す。変更の分け方と手順は [`../verifiability/SKILL.md`](../verifiability/SKILL.md) の「対象のコードが変わったとき」。
 
 ## やらないこと
 

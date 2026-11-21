@@ -15,8 +15,22 @@ loopeng-* 各スキルが呼ぶ外部コマンドと駆動装置。未導入な�
 - `smt_oracle.py <model.py>`: SMT 経路の判定器(loopeng-smt)。Z3 の Python バインディングが要り、flake の `skill-tools` の python3 に同梱している。
 - `trace_check.py [--all] <Spec.tla> <run.jsonl> [--cfg <cfg>] [--timeout SEC]`: 実ログと spec の突き合わせ(loopeng-tracecheck)。PATH の `tlc` を使う。
 - `verifiability.py <台帳>`: 検証容易性の指標(verifiability)。lizard を `skill-tools` の python3 に同梱している。検証容易性ゲート(`hooks/verifiability-gate.sh`)が PATH から呼ぶので、無いと対象コードのある台帳の検証は止まる。
-- 0 段ゲート(`hooks/loopeng-extract-gate.sh`)はこのプラグインの `hooks/hooks.json` で PreToolUse として配布される。
-  プラグインを有効化していれば追加設定なしで効き、subagent(hymme:modeler)の Bash にも効く。台帳は cwd 相対の `tasks/loopeng/` を見るので、worktree 内で回すなら台帳もその worktree に置く。
+- `hymme <サブコマンド>`: 作業者の承認の申請、状態の図、実ログの採取など、hook の記録に関わる操作をまとめたコマンド。`skill-tools` を入れると PATH に入る。このコマンド自身は記録に署名しない。機械で確かめられることを確かめて申請や結果を残し、コマンドを見ている hook が署名つきの記録を書く。コマンドの中で PATH を変えて実行すると、結果は記録されない。
+
+  | コマンド | すること |
+  | --- | --- |
+  | `hymme claims check <名前>` | 確認の一覧の形を検査する |
+  | `hymme claims request <名前>` | 一覧の承認を申請する |
+  | `hymme chart draw <名前>` | TLC を回し、状態の図と規則ごとの結果を `<名前>.chart.md` に書く |
+  | `hymme chart request <名前>` | 状態の図の承認を申請する |
+  | `hymme capture <ログ> -- <コマンド>` | 実システムを動かしてログを採る |
+  | `hymme specs` | この変更が触れている検証の対象の名前を出す |
+  | `hymme exception request <検査> --until <日付> --reason <理由>` | 検査の例外を申請する(期限は最長90日。作業者の確認は例外で外せない) |
+  | `hymme escape open` / `verify` / `unreachable` / `list` / `stats` | 後段で見つかった欠陥の記録を扱う |
+
+- 検証の入口を見る hook(`hooks/hymme_hook.py`)はこのプラグインの `hooks/hooks.json` で配布される。0 段の抽出台帳、確認の一覧の承認、reviewer の合格の記録、前提の記録を、検証の入口(`loop-*`、`smt_oracle.py`、`trace_check.py`、`tasks/fv/<Name>` での `lake build`、`tlc`・`apalache-mc` の直接の実行)の直前に検査する。
+  プラグインを有効化していれば追加設定なしで効き、subagent(hymme:modeler)の Bash にも効く。台帳は実行された場所のリポジトリ直下の `tasks/loopeng/` を見るので、worktree 内で回すなら台帳もその worktree に置く。hook が書く記録は git の共通ディレクトリにあり、worktree をまたいで共有される([`stealth-artifacts.md`](stealth-artifacts.md) の「hook の記録」)。
+  スクリプトや Makefile の中から呼んだ検証の入口は hook から見えず、記録が残らない。記録が要る実行(実ログの突き合わせ、突き合わせのコマンドなど)は Bash から直接実行する。
 - Gherkin ランナー(`cucumber-js` / `godog` 等)と要求トレーサビリティのツールは同梱しない。必要になったプロジェクトで個別に入れる。
   トレーサビリティ表を CI ゲート化するなら **OpenFastTrace**(被覆未達で非ゼロ終了)か **Doorstop**(`uv pip install doorstop`)。
 

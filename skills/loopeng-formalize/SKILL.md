@@ -14,6 +14,7 @@ description: >
 
 抽出した要件(または最初から自然言語の要求)を2つに構造化する。曖昧な点はモデル化前にユーザーへ確認。
 **前提**: `tasks/loopeng/<Name>.extract.md` の台帳が閉じていること。無い/未完なら **loopeng-extract** へ戻る。`tasks/verifiability/<Name>.md` の検証容易性の台帳が通っていること([`../verifiability/SKILL.md`](../verifiability/SKILL.md) の「強制のしくみ」)。
+EARS とモデルを書いたら、spec に落とす前に確認の一覧を作業者に承認してもらう(下の「作業者の確認」)。
 
 ## EARS 記法
 
@@ -54,6 +55,22 @@ EARS 本体の行数制約(1 文あたりソース行で1〜2行)と、補足を
 2点を明記する(「一言」で済む通常の捨てた領域より詳しく書く必要がある、という違いだけで記録先は同じ)。
 TLC が "No error" を返しても、それは「抽象化した集合の中でガードが効く」ことしか保証しない。
 
+## 作業者の確認(EARS を書いた直後、spec を書く前)
+
+EARS を書き、モデルの値域と捨てる領域を決めたら、spec に落とす前に**確認の一覧**を作って作業者の承認を取る。検証で何を示し、何を示さないかを、検証の前に作業者が判断するための一覧。承認が無いと `loop-outer` を含む検証の入口はすべて hook に止められる。
+
+1. [`assets/claims-template.md`](assets/claims-template.md) を `tasks/loopeng/<Name>.claims.md` にコピーする。
+2. 「## 実証する項目」に、EARS の1行ごとに表の1行を書く。「要件」は EARS を平文に直した1文、「示すこと」は検証が示すこと、「示さないこと」は検証が示さないこと、「破れたときの害」は破れると誰がどう困るかを、それぞれ1文で書く。
+3. 「## 有限にした範囲」に、検証のために有限にした上限や値の範囲(`CONSTANT` に入れる値。最大3接続、キュー長2など)を書く。無ければ「無し: 理由」。
+4. 「## 扱わない領域」に、上の「モデル化で捨てた領域」を0段の台帳の備考から写し、それを別にどう確かめるかを添える。無ければ「無し: 理由」。
+5. **手法の用語と管理番号を書かない**。TLA+、TLC、EARS、SMT、Z3、Lean、`Inv`、`S-001`、不変条件、モデル検査、mutation などが入っていると形の検査で落ちる。作業者が検証の言語を知らなくても判断できる日本語の平文にする。
+6. `hymme claims request <Name>` を実行する。形を検査し、申請を作る(形だけ見るなら `hymme claims check <Name>`)。hook が一覧のファイルの中身と符号を作業者に表示する。本人の要約ではなく、ファイルの中身そのものが出る。
+7. 作業者が `承認 <符号>` とだけ入力すると、hook が承認を記録する。承認の入力は作業者だけができる。この文字列を道具の入力に入れても記録されず、止められる。
+
+承認のあとに一覧を1文字でも変えると、承認は失効する。作業者が項目を直したいと言ったとき、またはあとの工程で要件・値域・捨てる領域が変わったときは EARS、モデル、一覧の順に作り直し、`hymme claims request <Name>` で承認を取り直す。一覧だけを直して源泉(EARS + モデル)と食い違わせない。
+
+一覧を作って承認を取るのはコントローラ。サブエージェント(modeler)や無人の実行では作業者が入力できないので、承認が無ければ着手せず BLOCKED で返す。modeler へ委譲するなら、承認を取ってから dispatch する。
+
 ## TLA+ spec への落とし込み
 
 `loop-outer SPEC=<Name>` でテンプレから `<Name>.tla`/`<Name>.feature` を scaffold(既存は壊さない。駆動装置は [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md))。EARS とモデルから埋める。
@@ -62,7 +79,7 @@ TLC が "No error" を返しても、それは「抽象化した集合の中で�
 - `Next` = **EARS の各 event/state/unwanted 節を 1 disjunct** に。`\/ Action1 \/ Action2 ...`。1節1アクション。
 - `Inv` = ubiquitous /「SHALL never」を安全性に。応答義務・到達性が要るなら `<>`/`[]` で別途。
 
-`<Name>.cfg` に `INIT`/`NEXT`/`INVARIANT`(必要なら `CONSTANT` で状態空間を絞る)。
+`<Name>.cfg` に `INIT`/`NEXT`/`INVARIANT`(必要なら `CONSTANT` で状態空間を絞る)。`CONSTANT` の値は確認の一覧の「有限にした範囲」と同じにする。
 
 最小の書き方の完全例(Counter)は [`../loop-engineering/references/example-counter.md`](../loop-engineering/references/example-counter.md)。
 

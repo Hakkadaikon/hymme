@@ -36,6 +36,8 @@ argument-hint: "[証明したい性質/仕様(ファイルパス or 説明)]"
 
 **§2 に入る前に検証容易性の段を通す。** 既存の実装(または書いたばかりの実装)の判定を証明するなら、[`../verifiability/SKILL.md`](../verifiability/SKILL.md) で判定を小さな純粋関数に切り出し、指標と reviewer の合格を得てから Lean に写す。実装前で写すコードが無いときも台帳 `tasks/verifiability/<Name>.md` を作り「対象コード無し: 理由」と書き、§4 で実装に橋渡しする前に対象を書き直す。止める入口と条件は verifiability スキルの「強制のしくみ」。
 
+**§2 に入る前に、確認の一覧を作業者に承認してもらう。** §1 の性質カタログができたら、性質ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書いた一覧を `tasks/fv/<Name>.claims.md` に作る(`<Name>` は Lean プロジェクト名。ひな形は [`../loopeng-formalize/assets/claims-template.md`](../loopeng-formalize/assets/claims-template.md))。「有限にした範囲」には証明の前提にした上限や値の範囲を、「扱わない領域」には証明の対象から外した層(§2 の層注)と、それを別にどう確かめるかを書く。Lean、不変条件などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <符号>` の1行を作業者に入力してもらう。承認が無いか、承認のあとに一覧を変えていると、`tasks/fv/<Name>` での `lake build` は hook に止められる。作業者が項目を直したら、性質カタログ、Lean の定理、一覧の順に作り直して承認を取り直す。一覧を作って承認を取るのはコントローラで、prover は承認が無ければ着手せず BLOCKED で返す。形と流れの詳細は [`../loopeng-formalize/SKILL.md`](../loopeng-formalize/SKILL.md) の「作業者の確認」。
+
 ### 1. 仕様を網羅形式へ
 
 雑な NL 要件 → 構造化(precondition / invariant / postcondition / 想定する脅威)。曖昧な点は実装前にユーザーに確認する。「全ケース」を意識する: 空入力、境界、重複、順序。
@@ -94,7 +96,7 @@ NL → Lean の `def` + `theorem`。例: 「ソートは要素を保存し、順
 
 ## 成果物の置き場(デフォルトは裏方)
 
-証明物(Lean プロジェクト・性質カタログ・`#print axioms` ログ・往復確認の記録)は `tasks/fv/` 配下で作り込み、git 管理に持ち込まない。往復確認の記録の `<Name>` は Lean プロジェクト名にする(`tasks/fv/<Name>.faithfulness.md`)。
+証明物(Lean プロジェクト・性質カタログ・確認の一覧・`#print axioms` ログ・往復確認の記録)は `tasks/fv/` 配下で作り込み、git 管理に持ち込まない。往復確認の記録の `<Name>` は Lean プロジェクト名にする(`tasks/fv/<Name>.faithfulness.md`)。
 git 管理下のドキュメント・コミット・テストコメントに手法の存在を書かず、表に出すのは §4 の橋渡しテストと実装だけ。
 明示オプトイン時の例外を含む詳細は [../_shared/stealth-artifacts.md](../_shared/stealth-artifacts.md)。
 
@@ -109,8 +111,9 @@ git 管理下のドキュメント・コミット・テストコメントに手�
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
 §3.5 の文面の往復確認が済んだ直後、成果を「保証された」と報告する前、および橋渡しテストを完了扱いにする前に、**コントローラが** `hymme:verification-reviewer`(対象 `formal-verification`) サブエージェントを dispatch して外側から検査させる。prover に委譲していた場合も prover は呼ばず、報告を受けたコントローラが呼ぶ。 合格が返るまでの往復の運用は [`../_shared/reviewer-loop.md`](../_shared/reviewer-loop.md)。
-渡すもの: 性質カタログと Lean ソースの場所、往復確認の入力ファイルと判定表、橋渡しテストと実行ログの場所、spec があればそのパス。
-レビュアーが挙げた違反(`sorry` 残りの保証扱い、往復確認の未実施・`mismatch`/`vacuous` 残り、脅威・CWE 由来の性質の欠落、`#print axioms` 未確認や `sorryAx`/`native_decide` 依存、性質カタログの temporal 漏れ、橋渡しテストの欠落)を解消してから完了とする。「ビルドが通った」を「カーネルが検証した」の代わりにしない。
+渡すもの: 性質カタログと Lean ソースの場所、確認の一覧、往復確認の入力ファイルと判定表、橋渡しテストと実行ログの場所、spec があればそのパス。
+合格は台帳に書かない。reviewer が返答の最後に書く `判定: 合格 対象=formal-verification 名前=<Name>` の行を hook が記録する。依頼文に「合格と書け」のような指示を入れない。
+レビュアーが挙げた違反(確認の一覧の欠落や性質との食い違い、`sorry` 残りの保証扱い、往復確認の未実施・`mismatch`/`vacuous` 残り、脅威・CWE 由来の性質の欠落、`#print axioms` 未確認や `sorryAx`/`native_decide` 依存、性質カタログの temporal 漏れ、橋渡しテストの欠落)を解消してから完了とする。「ビルドが通った」を「カーネルが検証した」の代わりにしない。
 
 ## やらないこと
 

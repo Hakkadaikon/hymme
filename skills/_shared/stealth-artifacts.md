@@ -7,18 +7,27 @@ loop-engineering 系(loopeng-*)・formal-verification・test-design 系(test-*)�
 
 | 手法 | 置き場 | 中間生成物 |
 | --- | --- | --- |
-| loop-engineering 系 | `tasks/loopeng/` | 抽出台帳、EARS/モデル、`.tla`/`.cfg`/`.feature`、トレーサビリティ表、TLC スクラッチ |
-| formal-verification | `tasks/fv/` | Lean の `.lean`/`lakefile`、生成 spec |
+| loop-engineering 系 | `tasks/loopeng/` | 抽出台帳、EARS/モデル、`.tla`/`.cfg`/`.feature`、トレーサビリティ表、TLC スクラッチ、確認の一覧(`.claims.md`)、状態の図(`.chart.md`)、前提の記録(`.premise.md`)、実ログ(`.jsonl`) |
+| formal-verification | `tasks/fv/` | Lean の `.lean`/`lakefile`、生成 spec、確認の一覧(`.claims.md`) |
+| verifiability | `tasks/verifiability/` | 検証容易性の台帳(`<Name>.md`。hook が検査する場所なので固定) |
 | test-design 系 | `tasks/test-design/` | T-ID 台帳(`<対象名>.md`。hook が検査する場所なので固定) |
 | superpowers(spec / plan) | `docs/superpowers/specs/`、`docs/superpowers/plans/` | **git 管理下**(superpowers の設計でコミットされる)。hymme の成果物置き場ではない。内容には下の「管理番号・手法用語を漏らさない」規範が掛かる |
 | superpowers(SDD 作業場) | `.superpowers/sdd/<plan-basename>/` | superpowers 所有の git 管理外領域(`progress.md`・brief・report・review package)。hymme の台帳をここに置かない |
 | superpowers(worktree) | `.worktrees/<branch>/`(または EnterWorktree の場所) | 作業ツリーそのもの。中の `tasks/` は worktree ごとに別(下記) |
 
-hymme の3行はいずれも `tasks/todo.md` と同じエリアで作り、`git add` の対象にしない。
+hymme の4行はいずれも `tasks/todo.md` と同じエリアで作り、`git add` の対象にしない。
+
+### hook の記録
+
+台帳とは別に、hook が書く署名つきの記録がある。検証の入口の実行と終了コード、作業者の承認、reviewer の判定、`hymme capture` で採ったログのハッシュがここに入る。検査が合格の根拠として読むのはこの記録だけで、作業する本人が台帳に付けたチェックは根拠にならない。
+
+- 置き場は `<git の共通ディレクトリ>/hymme/log.jsonl`。作業ツリーの外にあり、**worktree をまたいで1つ**。別の worktree やサブエージェントからも同じ記録が使われる。
+- 記録の置き場と署名の鍵を読み書きするのは hymme の道具と hook だけ。Read・Write・Bash などでこの場所を名指しすると止められる。記録を自分で読んで確かめようとしない。確かめたいときは検証の入口か統合の入口を実行して、止まるかどうかを見る。
+- 記録は台帳の中身のハッシュ(承認、reviewer の判定)か、ブランチにコミットした差分(実行の記録)に結び付く。台帳を変えれば承認は失効し、コミットした差分が変われば実行の記録は別の変更のものになる。
 
 ### worktree と台帳
 
-superpowers は実装を worktree で行う(superpowers:using-git-worktrees)。`tasks/` は git 管理外なので worktree 間を移動しない。規則: **台帳は作業が起きる worktree の `tasks/` に置く**(hook も cwd 相対で `tasks/` を見る)。brainstorming / writing-plans 段(worktree 作成前)で作った台帳は、plan 実行(executing-plans / SDD)の Setup で worktree を作った直後に、本体(SDD ならコントローラ)が `tasks/` ごと worktree へコピーする(`cp -r`、git 外)。コピーしないと worktree 内に台帳が無く、hook は「台帳なし」として素通りするので implementer への安全網が効かない。worktree の担当へ渡す指示が参照する設計文書も、worktree の中から読めるもの(コミット済みか、`tasks/` ごとコピーしたもの)に限る。ブランチを終えて worktree を消すとき、台帳はマージも移動もしない。トレーサビリティは表に出た結果(テスト名・spec の受け入れ条件)に引き継がれて残る。次の作業で台帳が要れば、その worktree で作り直す。
+superpowers は実装を worktree で行う(superpowers:using-git-worktrees)。`tasks/` は git 管理外なので worktree 間を移動しない。規則: **台帳は従来どおり、作業が起きる worktree の `tasks/` に置く**(hook は実行された場所のリポジトリ直下の `tasks/` を見る)。worktree をまたぐのは上の hook の記録だけで、台帳はまたがない。brainstorming / writing-plans 段(worktree 作成前)で作った台帳は、plan 実行(executing-plans / SDD)の Setup で worktree を作った直後に、本体(SDD ならコントローラ)が `tasks/` ごと worktree へコピーする(`cp -r`、git 外)。承認と reviewer の判定は台帳の中身に結び付くので、中身を変えずにコピーした一覧や台帳はコピー先でも承認済みとして扱われる。コピーしないと worktree 内に台帳が無く、検証の入口は台帳や確認の一覧が無いとして止まる。test-design の hook は「台帳なし」として素通りするので implementer への安全網が効かない。worktree の担当へ渡す指示が参照する設計文書も、worktree の中から読めるもの(コミット済みか、`tasks/` ごとコピーしたもの)に限る。ブランチを終えて worktree を消すとき、台帳はマージも移動もしない。トレーサビリティは表に出た結果(テスト名・spec の受け入れ条件)に引き継がれて残る。次の作業で台帳が要れば、その worktree で作り直す。
 
 ## git 管理下ドキュメントに手法の存在を書かない(loop-engineering 系 / formal-verification)
 
