@@ -159,7 +159,7 @@ def pre_tool(payload, key):
             )
         leave = leaves(gate, ctx)
         if leave:
-            ctx.ref, ctx._change = leave[2], None
+            ctx.leaving(leave[2])
         # nothing leaves when the default branch pushes with nothing ahead of the remote, or merges a ref
         # that adds nothing to it (catching up with origin)
         if leave and not (leave[0] != "pr" and on_default_branch(cwd) and ctx.change() == "empty"):
@@ -250,7 +250,7 @@ def post_tool(payload, key):
 
     leave = leaves(gate, ctx)
     if leave and code == 0:
-        left = store.change_id(cwd, leave[2]) or "none"
+        left = checks.Ctx(cwd, key).leaving(leave[2]).change()
         store.append("integrated", {"branch": current_branch(cwd), "change": left}, cwd, key)
 
     if any(v == "hymme" for v, _a, _c, _e in gate.commands):

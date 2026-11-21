@@ -162,6 +162,8 @@ hymme 自体の開発では、スクリプト(`hooks/`・`loopeng/`・`scripts/`
 hook の中の Python は `python3 -I` で動かす(作業中のリポジトリにある `json.py` などを読み込まないため)。
 `skills/*/reviewer.md` を編集したら `nix flake check` で本文の見出しとチェックリストの対応を検査する。`nix flake check` は、静的検査ゲートと mutation oracle の分類の回帰テスト(`scripts/loopeng-lint.test.sh`)、SMT の判定器(`scripts/loopeng-smt-oracle.test.sh`)、実ログの突き合わせ(`scripts/loopeng-trace-check.test.sh`)、loop ツール群(`scripts/loopeng-tools.test.sh`)、test-design の抽出ゲート(`scripts/test-design-extract-gate.test.sh`)、検証容易性の指標とゲート(`scripts/verifiability.test.sh`)、hook の入口と検査と `hymme` コマンド(`scripts/hymme-core.test.sh`)、git-guard(`scripts/git-guard.test.sh`)、文書の参照(`hymme:<name>`・相対リンク・`${CLAUDE_PLUGIN_ROOT}/...` のパス)の実在(`scripts/check-doc-refs.test.sh`)、セッション開始時に注入する地図の展開(`scripts/session-start.test.sh`)、diff-review の差分収集(`scripts/collect-diff.test.sh`)の回帰テストと、品質ゲート(`scripts/lint.sh`)も走らせる。
 
+実際の Claude Code のセッションで hook が止めることは、`scripts/real-session.sh` で確かめる(Claude Code が要り、トークンを少し使うので、`nix flake check` には入れていない)。hymme 自身の段の宣言は `tasks/stages.md`、実物の定義は `tasks/surface.md` にある。
+
 同じ検査を GitHub Actions(`.github/workflows/check.yml`)でも回す。検査を足すときは、通す例と止める例のテストを書き、`flake.nix` の checks とこの一覧に載せる。
 
 ## 謝辞
