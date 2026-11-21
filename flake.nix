@@ -55,7 +55,10 @@
       # repository can call them without pointing at a versioned plugin cache.
       loopengTools = pkgs.runCommand "hymme-loopeng-tools" { buildInputs = [ python pkgs.bashNonInteractive ]; } ''
         mkdir -p $out/bin
-        install -m 755 ${./loopeng/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability}.py ${./loopeng/bin}/tla_lint.sh $out/bin/
+        install -m 755 ${./loopeng/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability}.py ${./loopeng/bin}/tla_lint.sh ${./loopeng/bin}/hymme $out/bin/
+        # bin/hymme は隣の lib/hymme を読む(hook と同じライブラリ。バージョンは lib/hymme/store.py の VERSION)
+        mkdir -p $out/lib
+        cp -r ${./loopeng/lib}/hymme $out/lib/hymme
         patchShebangs $out/bin
       '';
 
@@ -107,6 +110,18 @@
       checks.doc-refs = pkgs.runCommand "doc-refs" { nativeBuildInputs = [ pkgs.python3 ]; } ''
         cd ${self}
         bash scripts/check-doc-refs.test.sh
+        touch $out
+      '';
+
+      checks.hymme-core = pkgs.runCommand "hymme-core" { nativeBuildInputs = [ pkgs.python3 pkgs.git ]; } ''
+        cp -r ${self} src && chmod -R u+w src
+        HOME=$TMPDIR bash src/scripts/hymme-core.test.sh
+        touch $out
+      '';
+
+      checks.git-guard = pkgs.runCommand "git-guard" { nativeBuildInputs = [ pkgs.python3 pkgs.git ]; } ''
+        cp -r ${self} src && chmod -R u+w src
+        HOME=$TMPDIR bash src/scripts/git-guard.test.sh
         touch $out
       '';
 
