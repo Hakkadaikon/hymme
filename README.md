@@ -136,7 +136,7 @@ hymme の更新は次の2つ。自動更新は無効。反映には再起動が�
 | **escape-flow** | 後段で見つかった欠陥と報告されたバグを、拾えたはずの前の段へ戻す |
 | **real-surface** | 実システムの動かし方をリポジトリごとに決め、完了前に実物で確かめる |
 
-段は前から spec、unit、integration、e2e、trace(実ログ)、ci。後段は integration より後ろを指す。
+段は前から spec、unit、integration、e2e、trace(実ログ)、ci。後段は integration 以降(integration を含む)。
 
 escape-flow では前の段にテストを足す。
 
