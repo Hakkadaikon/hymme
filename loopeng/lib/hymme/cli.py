@@ -126,7 +126,12 @@ def escape(args):
     root = store.toplevel()
     if args.action == "list":
         paths = sorted((Path(root) / "tasks" / "escapes").glob("E*.md"))
-        print("\n".join(str(p) for p in paths) if paths else msg("no_escapes"))
+        # no key here, so this is what the log says, not what a hook would accept
+        closed = {r.get("id") for r in store.records(root, kind="escape-closed")}
+        for p in paths:
+            print(f"{'閉じた' if p.stem in closed else '開いている'}\t{p}")
+        if not paths:
+            print(msg("no_escapes"))
         return 0
     if args.action == "stats":
         counts = {}
@@ -254,5 +259,5 @@ def main(argv=None):
         return fail("no_repo")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())

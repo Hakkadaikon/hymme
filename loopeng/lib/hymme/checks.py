@@ -37,8 +37,8 @@ MESSAGES = {
     "chart_open": "作業者の確認ゲート: {name} の状態の図に、破れた規則か検査されなかった規則が残っている。設計を直して `hymme chart draw {name}` をやり直す。",
     "chart_unapproved": "作業者の確認ゲート: {name} の状態の図は作業者の承認が無い。`hymme chart request {name}` を実行し、表示された1行を作業者に入力してもらう。",
     "log_not_captured": "統合ゲート: {name} の実ログ({labels})は `hymme capture` で採ったものではない。`hymme capture <ログ> -- <実システムを動かすコマンド>` で採り直す。",
-    "no_stages": "統合ゲート: tasks/stages.md が無い。どのコマンドとパスがどの段(unit / integration / e2e)かを宣言する。"
-    "後段のテストが無いリポジトリは「段なし: 理由」と書き、`hymme exception request stages` で作業者の承認を取る。",
+    "no_stages": "統合ゲート: tasks/stages.md に段のコマンドの宣言が無い。どのコマンドとパスがどの段(unit / integration / e2e)かを宣言する。"
+    "後段のテストが無いリポジトリは、`hymme exception request stages` で作業者の承認を取る。",
     "no_surface": "統合ゲート: tasks/surface.md が無い。実システムの動かし方(起動、健全性の確認、操作、証跡、後片付け)と「- 確認のコマンド:」を書く。",
     "surface_invalid": "統合ゲート: tasks/surface.md が足りない: {why}",
     "surface_not_run": "統合ゲート: この変更に対して、tasks/surface.md の確認のコマンド({command})が通った記録が無い。実物を動かして確かめる。",
@@ -47,7 +47,6 @@ MESSAGES = {
     "protected": "記録の保護: 署名の鍵と記録の置き場({path})は、hymme の道具以外から読み書きできない。",
     "approval_text": "記録の保護: 承認の入力と同じ形の文字列を、道具の入力に入れることはできない。",
     "no_repo": "統合ゲート: git リポジトリの状態を確認できない。リポジトリの中で実行する。",
-    "tool_version": "統合ゲート: hymme の道具(バージョン {tool})と hook(バージョン {hook})が食い違っている。プラグインと skill-tools を同じバージョンに更新する。",
 }
 
 # checks an approved, dated exception may switch off; a check a worker must answer in person is not here
@@ -128,8 +127,8 @@ def chart_problem(ctx, root, name):
 def extract(ctx):
     """0段: the extraction ledger is closed, closing checks included, before the loop tools run."""
     out = []
-    for root, name, _kind in ctx.gate.entries():
-        if not (Path(root) / "tasks" / "loopeng").is_dir():
+    for root, name, kind in ctx.gate.entries():
+        if kind == "lake":
             continue  # tasks/fv keeps a property catalogue instead; formal-verification's reviewer covers it
         path = Path(root) / "tasks" / "loopeng" / f"{name}.extract.md"
         text = ledgers.read(path)
@@ -189,10 +188,7 @@ def branch_log(cwd):
     base = store.merge_base(cwd)
     if base is None:
         return []
-    try:
-        return store.git("log", "--format=%s", f"{base}..HEAD", cwd=cwd).splitlines()
-    except store.NoRepo:
-        return []
+    return store.git("log", "--format=%s", f"{base}..HEAD", cwd=cwd).splitlines()
 
 
 def branch_diff(cwd):
@@ -242,10 +238,8 @@ def integration(ctx, body=None):
     ids = open_escapes(ctx)
     if ids:
         out.append(msg("escape_open", ids=", ".join(ids)))
-    if not ctx.exempt("fix_without_escape") and not ctx.recs("escape-open", change_opened=change):
-        if any(re.match(r"fix(\(.+\))?!?:", s) for s in branch_log(ctx.cwd)) and not ctx.recs(
-            "escape-closed", change=change
-        ):
+    if not ctx.exempt("fix_without_escape") and not ctx.recs("escape-open", branch=store.branch(ctx.cwd)):
+        if any(re.match(r"fix(\(.+\))?!?:", s) for s in branch_log(ctx.cwd)):
             out.append(msg("fix_without_escape"))
 
     what = weakened(branch_diff(ctx.cwd))
@@ -272,12 +266,16 @@ def integration(ctx, body=None):
             out.append(msg("stale", name=name, paths=", ".join(paths), need=", ".join(need)))
 
     # real logs: every spec this change touches was checked against logs of the running system
-    if not ctx.exempt("trace"):
-        for name in sorted(stale_names(ctx, root)):
-            if not (root / "tasks" / "loopeng" / f"{name}.tla").exists():
-                continue
+    for name in sorted(stale_names(ctx, root)):
+        if not (root / "tasks" / "loopeng" / f"{name}.tla").exists():
+            continue
+        problem = chart_problem(ctx, root, name)  # the worker's approval: no exception switches it off
+        if problem:
+            out.append(problem)
+        if not ctx.exempt("trace"):
             runs = ctx.recs("run", name=name, entry="trace_check", change=change)
-            good = [r for r in runs if (r.get("exit") == 0) != (r.get("label") == "broken")]
+            # the log of the broken build must be a mismatch (exit 1), not a run that could not decide (exit 2)
+            good = [r for r in runs if r.get("exit") == (1 if r.get("label") == "broken" else 0)]
             need = [k for k in TRACE_KINDS if k not in {r.get("label") for r in good}]
             if need:
                 out.append(msg("trace_missing", name=name, need=", ".join(need)))
@@ -285,12 +283,9 @@ def integration(ctx, body=None):
             loose = sorted({str(r.get("label")) for r in good if r.get("log") not in captured})
             if loose:
                 out.append(msg("log_not_captured", name=name, labels=", ".join(loose)))
-            problem = chart_problem(ctx, root, name)
-            if problem:
-                out.append(problem)
 
     decl = ledgers.stages(root)
-    if not ctx.exempt("stages") and (decl is None or (not decl["commands"] and not decl["none"])):
+    if not ctx.exempt("stages") and (decl is None or not decl["commands"]):
         out.append(msg("no_stages"))
 
     surf = ledgers.surface(root)
@@ -302,10 +297,15 @@ def integration(ctx, body=None):
         elif not [r for r in ctx.recs("run", entry="surface", change=change) if r.get("exit") == 0]:
             out.append(msg("surface_not_run", command=surf["command"]))
 
-    if body is not None and not ctx.exempt("pr_body"):
-        for heading in ("影響の範囲", "検証"):
+    templates = [p for p in (root / ".github").glob("*") if p.name.lower().startswith("pull_request_template")]
+    # a body the parser could not read ($(cat file) arrives as SUBST) and a repository with its own template are left alone
+    if body is not None and "SUBST" not in body and not templates and not ctx.exempt("pr_body"):
+        for heading, words in (
+            ("影響の範囲", "影響の範囲|Blast Radius|Impact"),
+            ("検証", "検証|Verification|Test Plan"),
+        ):
             # the command parser turns a newline inside the quoted body into " ; "
-            if not re.search(rf"(^|;\s*)#+\s*{heading}", body, re.M):
+            if not re.search(rf"(^|;\s*)#+\s*({words})", body, re.M | re.I):
                 out.append(msg("pr_body", heading=heading))
     return out
 

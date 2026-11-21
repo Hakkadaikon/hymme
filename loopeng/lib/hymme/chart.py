@@ -2,8 +2,8 @@
 
 TLC stops at the first rule that breaks, so the run is repeated with that rule removed until none
 breaks. The report names every rule as held, broken (with its path) or not checked.
-shortcut: invariants only; a temporal property that breaks is reported without a path. Charts above
-MAX_STATES draw only the paths to broken rules.
+shortcut: only the first temporal property that breaks is reported (TLC stops there). A chart above
+MAX_STATES is not drawn.
 """
 
 import hashlib
@@ -77,7 +77,11 @@ def trace(out):
             if not ln.strip():
                 break
             body.append(ln)
-        name = action.group(1) if action and action.group(1) != "Initial" else None
+        name = (
+            action.group(1)
+            if action and action.group(1) != "Initial"
+            else ("同じ状態にとどまる" if head.startswith("Stuttering") else None)
+        )
         steps.append((name, state_label(body)))
     return steps
 
@@ -138,8 +142,10 @@ def check(spec_dir, name):
                 broken[m.group(1)] = trace(out)
                 cfg = without(cfg, m.group(1))
                 continue
-            if "Temporal properties were violated" in out:
-                broken["(時相の性質)"] = []
+            temporal = re.search(r"Temporal propert(?:y (\S+) was|ies were) violated", out)
+            if temporal:
+                # invariants are checked while the states are explored, before the temporal check, so they held
+                broken[f"{temporal.group(1) or '時相の性質'}(時相の性質)"] = trace(out)
             elif "Model checking completed" not in out:
                 return (
                     [],

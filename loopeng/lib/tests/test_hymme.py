@@ -4,11 +4,13 @@ import contextlib
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
+import unittest.mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -182,6 +184,9 @@ class LedgerTest(unittest.TestCase):
         self.assertIn("破れたときの害", problems)
         self.assertIn("有限にした範囲", problems)
         self.assertIn("手法の用語", problems)
+        self.assertEqual(
+            ledgers.claims_problems(CLAIMS.replace("数は上限以下", "clean な inventory の数は上限以下")), []
+        )
 
     def test_claims_list_without_a_table_or_a_column(self):
         self.assertEqual(len(ledgers.claims_problems("# x\n")), 1)
@@ -564,6 +569,8 @@ class ManagedRepoTest(Repo):
             self.ran(f"trace_check.py tasks/loopeng/Cart.tla logs/Cart.{label}.jsonl")
         self.ran("trace_check.py tasks/loopeng/Cart.tla logs/Cart.broken.jsonl")
         self.assertIn("足りないもの: broken", self.bash(self.pr)[1])
+        self.ran("trace_check.py tasks/loopeng/Cart.tla logs/Cart.broken.jsonl", 2, "判定できなかった")
+        self.assertIn("足りないもの: broken", self.bash(self.pr)[1])
         self.ran("trace_check.py tasks/loopeng/Cart.tla logs/Cart.broken.jsonl", 1, "不一致: 3 行目は")
         self.assertIn("`hymme capture` で採ったものではない", self.bash(self.pr)[1])
         for label in ("normal", "load", "fault", "broken"):
@@ -614,8 +621,10 @@ class ManagedRepoTest(Repo):
         self.ran("verifiability.py tasks/verifiability/Cart.md")
         self.ran("./run-check.sh")
         (self.root / "tasks/stages.md").unlink()
-        self.assertIn("tasks/stages.md が無い", self.bash(self.pr)[1])
+        self.assertIn("段のコマンドの宣言が無い", self.bash(self.pr)[1])
         self.write("tasks/stages.md", "段なし: ライブラリで後段のテストが無い\n")
+        self.assertIn("段のコマンドの宣言が無い", self.bash(self.pr)[1])
+        self.request_and_approve("exception", "request", "stages", "--until", "2099-01-01", "--reason", "library")
         self.assertEqual(self.bash(self.pr)[0], 0)
         (self.root / "tasks/surface.md").write_text("## 起動\n\nx\n")
         self.assertIn("surface.md が足りない", self.bash(self.pr)[1])
@@ -624,6 +633,10 @@ class ManagedRepoTest(Repo):
         self.request_and_approve("exception", "request", "surface", "--until", "2099-01-01", "--reason", "library")
         self.assertIn("影響の範囲", self.bash("gh pr create --title t --body 'やった'")[1])
         self.assertEqual(self.bash("gh pr create --title t --body '## 影響の範囲\nなし\n## 検証\n通した'")[0], 0)
+        self.assertEqual(self.bash("gh pr create --title t --body '## Blast Radius\nnone\n## Verification\nran'")[0], 0)
+        self.assertEqual(self.bash('glab mr create --description "$(cat body.md)"')[0], 0)
+        self.write(".github/pull_request_template.md", "## Summary\n")
+        self.assertEqual(self.bash("gh pr create --title t --body 'やった'")[0], 0)
 
     def test_specs_command_lists_what_the_change_touches(self):
         self.assertIn("Cart\tsrc/rules.py", self.cli("specs")[1])
@@ -708,11 +721,245 @@ class EscapeTest(Repo):
         self.assertEqual(code, 0)
         self.ran("hymme escape open --stage ci --symptom x")
         eid = checks.open_escapes(checks.Ctx(self.root, self.key))[0]
-        self.assertIn(eid, self.cli("escape", "list")[1])
+        self.assertIn(f"開いている\t{self.root}/tasks/escapes/{eid}.md", self.cli("escape", "list")[1])
         self.fill(eid)
         self.cli("escape", "open", "--symptom", "y")
         self.assertIn("テストの書き漏れ", self.cli("escape", "stats")[1])
         self.assertEqual(self.cli("escape", "verify", "E0")[0], 1)
+
+
+COUNTER = """---- MODULE Counter ----
+EXTENDS Naturals
+CONSTANT N
+VARIABLE c
+Init == c = 0
+Inc  == c < LIMIT /\\ c' = c + 1
+Done == c >= LIMIT /\\ UNCHANGED c
+Next == Inc \\/ Done
+Spec == Init /\\ [][Next]_c /\\ WF_c(Inc)
+Inv  == c <= N
+Low  == c >= 0
+Never == <>(c = N + 5)
+====
+"""
+
+
+@unittest.skipUnless(shutil.which("tlc"), "tlc is not installed")
+class ChartRunTest(Repo):
+    def spec(self, limit, cfg="CONSTANT N = 3\nINIT Init\nNEXT Next\nINVARIANT Inv\nINVARIANT Low\n"):
+        self.write("tasks/loopeng/Counter.tla", COUNTER.replace("LIMIT", limit))
+        self.write("tasks/loopeng/Counter.cfg", cfg)
+
+    def test_a_design_that_holds_draws_every_state_and_leaves_no_rule_open(self):
+        self.spec("N")
+        code, text = self.cli("chart", "draw", "Counter")
+        self.assertEqual(code, 0, text)
+        report = (self.root / "tasks/loopeng/Counter.chart.md").read_text()
+        self.assertIn("検査されなかった規則: 0", report)
+        self.assertRegex(report, r"## 破れた規則\n\nなし")
+        self.assertIn("- Inv", report)
+        self.assertIn("s0 --> s1: Inc", report)
+
+    def test_a_broken_rule_gets_its_shortest_path_and_the_other_rules_are_still_checked(self):
+        self.spec("N + 1")
+        code, text = self.cli("chart", "draw", "Counter")
+        self.assertEqual(code, 1, text)
+        report = (self.root / "tasks/loopeng/Counter.chart.md").read_text()
+        self.assertIn("### Inv", report)
+        self.assertIn("最短の経路は 4 手です。", report)
+        self.assertIn("- Low", report)
+        self.assertIn("breaks", (self.root / "tasks/loopeng/Counter.chart.mmd").read_text())
+
+    def test_a_broken_temporal_property_is_reported_without_a_path(self):
+        self.spec("N", "CONSTANT N = 3\nSPECIFICATION Spec\nINVARIANT Inv\nPROPERTY Never\n")
+        self.assertEqual(self.cli("chart", "draw", "Counter")[0], 1)
+        report = (self.root / "tasks/loopeng/Counter.chart.md").read_text()
+        self.assertIn("### Never(時相の性質)", report)
+        self.assertIn("同じ状態にとどまる", report)
+        self.assertIn("- Inv", report)
+
+    def test_a_spec_the_checker_cannot_read_is_an_error_not_a_pass(self):
+        self.write("tasks/loopeng/Counter.tla", "---- MODULE Counter ----\nInit == nonsense\n====\n")
+        self.write("tasks/loopeng/Counter.cfg", "INIT Init\nNEXT Next\nINVARIANT Inv\n")
+        self.assertEqual(self.cli("chart", "draw", "Counter")[0], 2)
+
+    def test_without_the_checker_on_path(self):
+        self.spec("N")
+        with unittest.mock.patch.object(chart.shutil, "which", return_value=None):
+            self.assertEqual(self.cli("chart", "draw", "Counter")[0], 2)
+
+
+class EdgeTest(Repo):
+    def ctx(self):
+        return checks.Ctx(self.root, self.key)
+
+    def test_a_large_chart_is_not_drawn(self):
+        nodes = {str(i): str(i) for i in range(chart.MAX_STATES + 1)}
+        self.assertIn("図は描いていません", chart.report("X", "h", ["A"], {}, [], nodes, []))
+
+    def test_every_rule_broken_leaves_nothing_to_draw(self):
+        self.assertEqual(chart.invariants(chart.without("INVARIANTS\n  A\nINIT Init\n", "A")), [])
+        self.assertEqual(chart.trace("no trace here"), [])
+
+    def test_a_throwaway_module_that_extends_a_spec_is_checked_under_the_spec_name(self):
+        gate = Gate()
+        self.write("tasks/loopeng/Cart.tla", "x")
+        gate.parse("cd tasks/loopeng && tlc -config MCCart.cfg MCCart.tla", str(self.root), {})
+        self.assertEqual(gate.entries(), [(str(self.root), "Cart", "direct")])
+        gate = Gate()
+        gate.parse("cd tasks/loopeng && tlc MCOther.tla", str(self.root), {})
+        self.assertEqual(gate.entries(), [(str(self.root), "MCOther", "direct")])
+
+    def test_proof_work_under_tasks_fv_needs_the_list_but_no_extraction_ledger(self):
+        self.write("tasks/loopeng/Other.tla", "x")
+        self.write("tasks/fv/Sort/x.lean", "")
+        entry = "cd tasks/fv/Sort && lake build"
+        self.assertIn("Sort.claims.md が無い", self.bash(entry)[1])
+        self.write("tasks/fv/Sort.claims.md", CLAIMS)
+        self.request_and_approve("claims", "request", "Sort")
+        self.assertEqual(self.bash(entry)[0], 0)
+
+    def test_helpers_outside_a_repository_or_without_a_base(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(checks.branch_log(d), [])
+            self.assertEqual(checks.branch_diff(d), "")
+            self.assertIsNone(hook.current_branch(d))
+            self.assertFalse(hook.on_default_branch(d))
+            self.assertEqual(store.changed_files(d), set())
+            self.assertIsNone(store.change_id(d))
+            self.assertIsNone(store.sha256_file(Path(d) / "nope"))
+            self.assertEqual(self.fire("PostToolUse", tool_name="Bash", tool_input={"command": "ls"}, cwd=d)[0], 0)
+            self.assertEqual(
+                self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="x", cwd=d)[0], 0
+            )
+            self.assertIn("申請がありません", self.fire("UserPromptSubmit", prompt="承認 0123abcd", cwd=d)[2])
+        self.assertEqual(self.fire("PostToolUse", tool_name="Write", tool_input={})[0], 0)
+
+    def test_a_branch_with_no_common_history_has_no_change_id(self):
+        sh(self.root, "git", "checkout", "-q", "--orphan", "lonely")
+        sh(self.root, "git", "commit", "-q", "-m", "chore: alone")
+        self.assertIsNone(store.merge_base(self.root))
+        self.assertIsNone(store.change_id(self.root))
+        sh(self.root, "git", "checkout", "-q", "main")
+        self.assertEqual(store.change_id(self.root), "empty")
+
+    def test_a_repository_whose_default_branch_has_another_name(self):
+        sh(self.root, "git", "branch", "-m", "main", "trunk")
+        self.assertIsNone(store.default_base(self.root))
+
+    def test_without_plugin_data_nothing_is_recorded(self):
+        os.environ.pop("CLAUDE_PLUGIN_DATA")
+        self.assertIsNone(store.load_key())
+        self.assertEqual(
+            self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: a")[0],
+            0,
+        )
+        self.assertEqual(self.fire("UserPromptSubmit", prompt="承認 0123abcd")[2], "")
+        self.assertEqual(store.records(self.root), [])
+
+    def test_a_key_is_not_made_unless_asked(self):
+        os.environ["CLAUDE_PLUGIN_DATA"] = str(self.data / "fresh")
+        self.assertIsNone(store.load_key())
+
+    def test_pr_body_from_a_file_or_an_equals_form(self):
+        body = self.write("body.md", "## 影響の範囲\n")
+        self.assertEqual(hook.pr_body(["--title", "t", "--body-file", str(body)]), "## 影響の範囲\n")
+        self.assertEqual(hook.pr_body(["--body=x"]), "x")
+        self.assertIsNone(hook.pr_body(["--fill"]))
+
+    def test_git_options_before_the_subcommand_are_skipped(self):
+        sh(self.root, "git", "checkout", "-q", "main")
+        self.assertEqual(self.bash("git -C . merge work")[0], 2)
+        self.assertEqual(self.bash("git -c a=b status")[0], 0)
+
+    def test_a_failure_with_no_known_rule_is_recorded_by_its_exit_code(self):
+        self.ran("cd tasks/loopeng && loop-middle SPEC=Cart", 7, "boom")
+        self.assertEqual(store.records(self.root, self.key, kind="run")[-1]["rule"], "exit-7")
+        self.assertEqual(hook.exit_code({"hook_event_name": "PostToolUseFailure", "error": "interrupted"}), 1)
+
+    def test_the_exception_request_is_found_from_equals_form_options(self):
+        self.cli("exception", "request", "review", "--until", "2099-01-01", "--reason", "docs")
+        out = self.ran("true && hymme exception request review --until=2099-01-01 --reason=docs")[2]
+        self.assertIn("検査「review」", json.loads(out)["systemMessage"])
+
+    def test_stale_and_trace_can_be_excepted(self):
+        self.write("tasks/verifiability/Cart.md", "## 対象\n\n- src/rules.py::allow\n")
+        self.write("tasks/loopeng/Cart.tla", "x")
+        self.write("src/rules.py", "def allow(n):\n    return n < 4\n")
+        self.commit("feat: raise the limit")
+        self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
+        for check in ("stale", "trace", "stages", "surface"):
+            self.request_and_approve("exception", "request", check, "--until", "2099-01-01", "--reason", "spike")
+        self.assertIn("状態の図が無い", self.bash("gh pr create --fill")[1])
+        (self.root / "tasks/loopeng/Cart.tla").unlink()
+        self.assertEqual(self.bash("gh pr create --fill")[0], 0)
+
+    def test_escape_record_fields_are_validated(self):
+        decl = {"commands": [], "paths": [("unit", "tests/unit*")], "none": None}
+        base = {"症状": "x", "見つかった段": "e2e", "拾えたはずの段": "unit", "抜けた理由": "テストの書き漏れ"}
+        base.update(
+            {"前段に足したテスト": "tests/unit.sh", "テストのコマンド": "sh tests/unit.sh", "水平展開": "該当なし"}
+        )
+
+        def problems(**over):
+            return "\n".join(
+                ledgers.escape_problems("\n".join(f"- {k}: {v}" for k, v in {**base, **over}.items()), decl)
+            )
+
+        self.assertEqual(problems(), "")
+        self.assertIn("見つかった段", problems(**{"見つかった段": "どこか"}))
+        self.assertIn("どの段のパスにも当たらない", problems(**{"前段に足したテスト": "misc/x.sh"}))
+        self.assertIn(
+            "どの段のパスにも当たらない",
+            "\n".join(ledgers.escape_problems("\n".join(f"- {k}: {v}" for k, v in base.items()), None)),
+        )
+        self.assertEqual(
+            problems(**{"抜けた理由": "要件の抜け", "前段に足したテスト": "tasks/loopeng/Cart.claims.md"}), ""
+        )
+
+
+class EscapeClosingTest(EscapeTest):
+    def test_a_requirement_gap_closes_only_after_the_list_is_approved_again(self):
+        eid = self.open_one()
+        self.fill(
+            eid,
+            **{"抜けた理由": "要件の抜け", "拾えたはずの段": "spec", "前段に足したテスト": "", "テストのコマンド": ""},
+        )
+        self.assertIn("承認を取り直す", self.cli("escape", "verify", eid)[1])
+        self.ran(f"hymme escape verify {eid}")
+        self.assertEqual(checks.open_escapes(checks.Ctx(self.root, self.key)), [eid])
+        self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
+        self.request_and_approve("claims", "request", "Cart")
+        self.ran(f"hymme escape verify {eid}")
+        self.assertEqual(checks.open_escapes(checks.Ctx(self.root, self.key)), [])
+        self.assertIn("閉じた", self.cli("escape", "list")[1])
+
+    def test_a_fix_commit_is_covered_by_a_record_opened_on_this_branch_even_after_more_commits(self):
+        eid = self.open_one()
+        self.fill(eid, **{"抜けた理由": "前段では原理的に拾えない"})
+        self.request_and_approve("escape", "unreachable", eid, "--reason", "外部")
+        self.ran(f"hymme escape verify {eid}")
+        self.write("src/rules.py", "def allow(n):\n    return n < 7\n")
+        self.commit("fix: limit")
+        self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
+        self.request_and_approve("exception", "request", "surface", "--until", "2099-01-01", "--reason", "library")
+        self.assertEqual(self.bash("gh pr create --fill")[1], "")
+
+    def test_the_reproduction_must_fail_before_the_fix_and_pass_after(self):
+        eid = self.open_one()
+        self.write("tests/unit.sh", "grep -q 'n < 9' src/rules.py\n")
+        self.write("src/rules.py", "def allow(n):\n    return n < 9\n")
+        self.fill(eid, **{"再現のコマンド": "true", "準備のコマンド": "true"})
+        self.assertIn("再現になっていません", self.cli("escape", "verify", eid)[1])
+        self.fill(eid, **{"再現のコマンド": "grep -q 'n < 10' src/rules.py"})
+        self.assertIn("直っていません", self.cli("escape", "verify", eid)[1])
+
+    def test_the_unreachable_request_is_shown_to_the_worker(self):
+        eid = self.open_one()
+        self.fill(eid, **{"抜けた理由": "前段では原理的に拾えない"})
+        self.cli("escape", "unreachable", eid, "--reason", "外部の応答が要る")
+        out = self.ran(f"hymme escape unreachable {eid} --reason 外部の応答が要る")[2]
+        self.assertIn("前段では原理的に拾えない", json.loads(out)["systemMessage"])
 
 
 class CliTest(unittest.TestCase):
@@ -724,6 +971,10 @@ class CliTest(unittest.TestCase):
                 self.assertEqual(cli.main(["specs"]), 1)
             finally:
                 os.chdir(old)
+
+    def test_the_library_and_the_plugin_carry_one_version(self):
+        manifest = Path(__file__).resolve().parents[3] / ".claude-plugin" / "plugin.json"
+        self.assertEqual(json.loads(manifest.read_text())["version"], store.VERSION)
 
     def test_bad_payload_and_unknown_event_do_nothing(self):
         self.assertEqual(hook.main(io.StringIO("not json")), 0)

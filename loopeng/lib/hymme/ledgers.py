@@ -27,7 +27,9 @@ ESCAPE_CAUSES = (
 )
 SURFACE_SECTIONS = ("起動", "健全性の確認", "操作", "証跡", "後片付け")
 # words that give away the method; a claims list is read by someone who does not know them
-METHOD_WORDS = re.compile(r"TLA\+?|TLC|EARS|SMT|Z3|Lean|Inv\b|S-\d+|R-\d+|T-\d+|不変条件|モデル検査|mutation", re.I)
+METHOD_WORDS = re.compile(r"TLA\+|\b(?:TLA|TLC|EARS|SMT|Z3|Lean|Inv|[SRT]-\d+|mutation)\b|不変条件|モデル検査")
+# what a record closed without a new test still has to say
+NO_TEST_CAUSES = ("要件の抜け", "モデルで捨てた領域", "前段では原理的に拾えない")
 
 
 def section(text, heading):
@@ -180,7 +182,12 @@ def fields(text):
 def escape_problems(text, decl):
     """Why an escape record cannot be closed yet, apart from running its test."""
     f = fields(text)
-    problems = [f"「{k}」が空" for k in ESCAPE_FIELDS if not f.get(k) or "<" in f[k]]
+    needed = [
+        k
+        for k in ESCAPE_FIELDS
+        if k not in ("前段に足したテスト", "テストのコマンド") or f.get("抜けた理由") not in NO_TEST_CAUSES
+    ]
+    problems = [f"「{k}」が空" for k in needed if not f.get(k) or "<" in f[k]]
     if problems:
         return problems
     if f["抜けた理由"] not in ESCAPE_CAUSES:
@@ -192,7 +199,7 @@ def escape_problems(text, decl):
         return problems
     if STAGES.index(f["拾えたはずの段"]) >= STAGES.index(f["見つかった段"]):
         problems.append("「拾えたはずの段」が「見つかった段」より前でない")
-    if f["抜けた理由"] not in ("要件の抜け", "モデルで捨てた領域", "前段では原理的に拾えない"):
+    if f["抜けた理由"] not in NO_TEST_CAUSES:
         stage = stage_of_path(decl, f["前段に足したテスト"]) if decl else None
         if stage is None:
             problems.append(

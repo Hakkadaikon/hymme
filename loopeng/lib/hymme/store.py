@@ -68,6 +68,13 @@ def sha256_file(path):
         return None
 
 
+def branch(cwd=None):
+    try:
+        return git("rev-parse", "--abbrev-ref", "HEAD", cwd=cwd)
+    except NoRepo:
+        return None
+
+
 def default_base(cwd=None):
     """The branch a change is measured against: origin's default, else main, else master."""
     for ref in ("refs/remotes/origin/HEAD", "refs/heads/main", "refs/heads/master"):
@@ -155,10 +162,3 @@ def records(cwd=None, key=None, kind=None, **match):
             continue
         out.append(rec)
     return out
-
-
-def version_mismatch(cwd=None, key=None):
-    """Versions other than ours among the signed records of the last day (hook and tools out of step)."""
-    cutoff = time.time() - 86400
-    seen = {r.get("version") for r in records(cwd, key) if r.get("ts", 0) >= cutoff}
-    return sorted(v for v in seen if v and v != VERSION)

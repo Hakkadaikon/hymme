@@ -36,6 +36,7 @@ MESSAGES = {
 
 RULES = [
     re.compile(r"Invariant (\S+) is violated"),
+    re.compile(r"Temporal property (\S+) was violated"),
     re.compile(r"(Temporal properties were violated)"),
     re.compile(r"(Deadlock reached)"),
     re.compile(r"不一致: (\d+ 行目)"),
@@ -111,10 +112,7 @@ def leaves(gate, ctx):
 
 
 def current_branch(cwd):
-    try:
-        return store.git("rev-parse", "--abbrev-ref", "HEAD", cwd=cwd)
-    except store.NoRepo:
-        return None
+    return store.branch(cwd)
 
 
 def on_default_branch(cwd):
@@ -254,16 +252,14 @@ def open_escape(ctx, root, decl, stage, command, text):
     lines += [f"- {k}: " for k in ledgers.ESCAPE_FIELDS if k != "見つかった段"]
     lines += ["- 再現のコマンド: ", "- 修正前のコミット: ", "", "## 失敗の出力", "", "```", tail, "```", ""]
     path.write_text("\n".join(lines), encoding="utf-8")
-    store.append("escape-open", {"id": eid, "stage": stage, "change_opened": ctx.change()}, ctx.cwd, ctx.key)
+    opened = {"id": eid, "stage": stage, "branch": store.branch(ctx.cwd)}
+    store.append("escape-open", opened, ctx.cwd, ctx.key)
     emit(system=msg("escape_opened", stage=stage, id=eid, path=path))
 
 
-def pending(cwd, code=None):
-    base = store.root(cwd) / "pending"
-    if code:
-        text = ledgers.read(base / f"{code}.json")
-        return json.loads(text) if text else None
-    return base
+def pending(cwd, code):
+    text = ledgers.read(store.root(cwd) / "pending" / f"{code}.json")
+    return json.loads(text) if text else None
 
 
 def option(args, flag):
@@ -317,17 +313,18 @@ def hymme_results(ctx, root, gate):
             for path in sorted((root / "tasks" / "escapes").glob("E*.md")):
                 if not ctx.recs("escape-open", id=path.stem):
                     stage = ledgers.fields(path.read_text()).get("見つかった段", "")
-                    store.append(
-                        "escape-open",
-                        {"id": path.stem, "stage": stage, "change_opened": ctx.change()},
-                        ctx.cwd,
-                        ctx.key,
-                    )
+                    opened = {"id": path.stem, "stage": stage, "branch": store.branch(ctx.cwd)}
+                    store.append("escape-open", opened, ctx.cwd, ctx.key)
         elif words[:2] == ["escape", "verify"] and len(words) > 2:
             text = ledgers.read(root / "tasks" / "escapes" / f"{words[2]}.md") or ""
-            if ledgers.fields(text).get("抜けた理由") == "前段では原理的に拾えない":
+            cause = ledgers.fields(text).get("抜けた理由")
+            if cause == "前段では原理的に拾えない":
                 if not ctx.recs("approval", type="unreachable", id=words[2], hash=ledgers.sha(text)):
                     continue  # closing this way needs the worker's approval, verify alone does not close it
+            elif cause in ("要件の抜け", "モデルで捨てた領域"):
+                opened = max((r["ts"] for r in ctx.recs("escape-open", id=words[2])), default=0)
+                if not any(r["ts"] > opened for r in ctx.recs("approval", type="claims")):
+                    continue  # the requirement was wrong: the worker approves the corrected list first
             store.append(
                 "escape-closed", {"id": words[2], "change": ctx.change(), "hash": ledgers.sha(text)}, ctx.cwd, ctx.key
             )

@@ -310,7 +310,11 @@ class Gate:
             specs = [a for a in rest if a.endswith(".tla")] or [a for a in rest[-1:] if not a.startswith("-")]
             for spec in specs[-1:]:
                 path = os.path.normpath(os.path.join(cwd, spec))
-                self.ok(root_of(path, cwd), re.sub(r"\.tla$", "", os.path.basename(path)), "direct")
+                name = re.sub(r"\.tla$", "", os.path.basename(path))
+                # MC<Name>.tla is a throwaway module that EXTENDS <Name> (the reachability check of a premise)
+                if name.startswith("MC") and os.path.exists(os.path.join(os.path.dirname(path), name[2:] + ".tla")):
+                    name = name[2:]
+                self.ok(root_of(path, cwd), name, "direct")
         elif verb == "lake" and "build" in args:
             if "$" in cwd and "/tasks/fv/" in cwd.split("$", 1)[1] + "/":
                 self.block(msg("var_cd"))
