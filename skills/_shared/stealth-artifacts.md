@@ -27,7 +27,7 @@ hymme の4行はいずれも `tasks/todo.md` と同じエリアで作り、`git 
 
 ### worktree と台帳
 
-superpowers は実装を worktree で行う(superpowers:using-git-worktrees)。`tasks/` は git 管理外なので worktree 間を移動しない。規則: **台帳は従来どおり、作業が起きる worktree の `tasks/` に置く**(hook は実行された場所のリポジトリ直下の `tasks/` を見る)。worktree をまたぐのは上の hook の記録だけで、台帳はまたがない。brainstorming / writing-plans 段(worktree 作成前)で作った台帳は、plan 実行(executing-plans / SDD)の Setup で worktree を作った直後に、本体(SDD ならコントローラ)が `tasks/` ごと worktree へコピーする(`cp -r`、git 外)。承認と reviewer の判定は台帳の中身に結び付くので、中身を変えずにコピーした一覧や台帳はコピー先でも承認済みとして扱われる。コピーしないと worktree 内に台帳が無く、検証の入口は台帳や確認の一覧が無いとして止まる。test-design の hook は「台帳なし」として素通りするので implementer への安全網が効かない。worktree の担当へ渡す指示が参照する設計文書も、worktree の中から読めるもの(コミット済みか、`tasks/` ごとコピーしたもの)に限る。ブランチを終えて worktree を消すとき、台帳はマージも移動もしない。トレーサビリティは表に出た結果(テスト名・spec の受け入れ条件)に引き継がれて残る。次の作業で台帳が要れば、その worktree で作り直す。
+superpowers は実装を worktree で行う(superpowers:using-git-worktrees)。`tasks/` は git 管理外なので worktree 間を移動しない。規則: **台帳は作業が起きる worktree の `tasks/` に置く**(検証の入口の検査はコマンドを実行したディレクトリの `tasks/` を、`hymme` コマンドと統合の入口の検査はリポジトリ直下の `tasks/` を見る。入口はリポジトリ直下から実行する)。worktree をまたぐのは上の hook の記録だけで、台帳はまたがない。brainstorming / writing-plans 段(worktree 作成前)で作った台帳は、plan 実行(executing-plans / SDD)の Setup で worktree を作った直後に、本体(SDD ならコントローラ)が `tasks/` ごと worktree へコピーする(`cp -r`、git 外)。承認と reviewer の判定は台帳の中身に結び付くので、中身を変えずにコピーした一覧や台帳はコピー先でも承認済みとして扱われる。コピーしないと worktree 内に台帳が無く、検証の入口は台帳や確認の一覧が無いとして止まる。test-design の hook は「台帳なし」として素通りするので implementer への安全網が効かない。worktree の担当へ渡す指示が参照する設計文書も、worktree の中から読めるもの(コミット済みか、`tasks/` ごとコピーしたもの)に限る。ブランチを終えて worktree を消すとき、台帳はマージも移動もしない。トレーサビリティは表に出た結果(テスト名・spec の受け入れ条件)に引き継がれて残る。次の作業で台帳が要れば、その worktree で作り直す。
 
 ## git 管理下ドキュメントに手法の存在を書かない(loop-engineering 系 / formal-verification)
 
