@@ -107,8 +107,10 @@ def leaves(gate, ctx):
                 rest = rest[2:] if rest[0] in ("-C", "-c", "--git-dir", "--work-tree") else rest[1:]
             sub = rest[0] if rest else None
             if sub == "merge" and "--abort" not in args and on_default_branch(ctx.cwd):
+                # what leaves is the branch being merged, not the default branch it lands on
+                ctx.ref = next((a for a in rest[1:] if not a.startswith("-")), "HEAD")
                 return "merge", None
-            if sub == "push" and ctx.recs("integrated", branch=current_branch(ctx.cwd)):
+            if sub == "push" and (on_default_branch(ctx.cwd) or ctx.recs("integrated", branch=current_branch(ctx.cwd))):
                 return "push", None
     return None
 
@@ -118,10 +120,8 @@ def current_branch(cwd):
 
 
 def on_default_branch(cwd):
-    try:
-        return store.git("rev-parse", "HEAD", cwd=cwd) == store.default_base(cwd)
-    except store.NoRepo:
-        return False
+    here = store.branch(cwd)
+    return here is not None and here == store.default_branch(cwd)
 
 
 def pre_tool(payload, key):
@@ -146,7 +146,8 @@ def pre_tool(payload, key):
                 checks.extract(ctx) + checks.claims(ctx) + checks.review(ctx) + checks.premise(ctx)
             )
         leave = leaves(gate, ctx)
-        if leave:
+        # a push from the default branch with nothing ahead of the remote carries no change out
+        if leave and not (leave[0] == "push" and on_default_branch(cwd) and ctx.change() == "empty"):
             reasons += need_key(key) or checks.integration(ctx, leave[1])
     if reasons:
         print("\n".join(dict.fromkeys(reasons)), file=sys.stderr)
