@@ -37,7 +37,7 @@ MESSAGES = {
     "chart_open": "作業者の確認ゲート: {name} の状態の図に、破れた規則か検査されなかった規則が残っている。設計を直して `hymme chart draw {name}` をやり直す。",
     "chart_unapproved": "作業者の確認ゲート: {name} の状態の図は作業者の承認が無い。`hymme chart request {name}` を実行し、表示された1行を作業者に入力してもらう。",
     "log_not_captured": "統合ゲート: {name} の実ログ({labels})は `hymme capture` で採ったものではない。`hymme capture <ログ> -- <実システムを動かすコマンド>` で採り直す。",
-    "no_stages": "統合ゲート: tasks/stages.md に段のコマンドの宣言が無い。どのコマンドとパスがどの段(unit / integration / e2e)かを宣言する。"
+    "no_stages": "統合ゲート: tasks/stages.md に、後段(integration か e2e)のコマンドの宣言が無い。どのコマンドとパスがどの段かを宣言する。"
     "後段のテストが無いリポジトリは、`hymme exception request stages` で作業者の承認を取る。",
     "no_surface": "統合ゲート: tasks/surface.md が無い。実システムの動かし方(起動、健全性の確認、操作、証跡、後片付け)と「- 確認のコマンド:」を書く。",
     "surface_invalid": "統合ゲート: tasks/surface.md が足りない: {why}",
@@ -164,7 +164,8 @@ def premise(ctx):
     """4-16: after two failures on the same rule with a fix in between, the premise is written down first."""
     out = []
     for root, name, _kind in ctx.gate.entries():
-        runs = ctx.recs("run", name=name)[-2:]
+        # the log of a deliberately broken build is meant to fail; it says nothing about the design
+        runs = [r for r in ctx.recs("run", name=name) if r.get("label") != "broken"][-2:]
         if len(runs) < 2 or any(r.get("exit") == 0 or not r.get("rule") for r in runs):
             continue
         a, b = runs
@@ -238,7 +239,9 @@ def integration(ctx, body=None):
     ids = open_escapes(ctx)
     if ids:
         out.append(msg("escape_open", ids=", ".join(ids)))
-    if not ctx.exempt("fix_without_escape") and not ctx.recs("escape-open", branch=store.branch(ctx.cwd)):
+    here = store.branch(ctx.cwd)
+    handled = ctx.recs("escape-open", branch=here) + ctx.recs("escape-closed", branch=here)
+    if not ctx.exempt("fix_without_escape") and not handled:
         if any(re.match(r"fix(\(.+\))?!?:", s) for s in branch_log(ctx.cwd)):
             out.append(msg("fix_without_escape"))
 
@@ -285,7 +288,12 @@ def integration(ctx, body=None):
                 out.append(msg("log_not_captured", name=name, labels=", ".join(loose)))
 
     decl = ledgers.stages(root)
-    if not ctx.exempt("stages") and (decl is None or not decl["commands"]):
+    later = [
+        s
+        for s, _c in (decl or {}).get("commands", [])
+        if ledgers.STAGES.index(s) >= ledgers.STAGES.index("integration")
+    ]
+    if not ctx.exempt("stages") and not later:
         out.append(msg("no_stages"))
 
     surf = ledgers.surface(root)

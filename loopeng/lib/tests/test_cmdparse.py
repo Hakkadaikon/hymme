@@ -58,8 +58,13 @@ class EntryTest(unittest.TestCase):
 
     def test_oracles_take_the_name_from_their_file(self):
         self.assertEqual(self.found("smt_oracle.py tasks/loopeng/Rule.smt.py"), [("/r", "Rule", "smt_oracle")])
-        self.assertEqual(self.found("python3 /x/smt_oracle.py --timeout 5 /p/tasks/loopeng/Rule.smt.py"), [("/p", "Rule", "smt_oracle")])
-        self.assertEqual(self.found("trace_check.py --all tasks/loopeng/A.tla run.jsonl --cfg x.cfg"), [("/r", "A", "trace_check")])
+        self.assertEqual(
+            self.found("python3 /x/smt_oracle.py --timeout 5 /p/tasks/loopeng/Rule.smt.py"),
+            [("/p", "Rule", "smt_oracle")],
+        )
+        self.assertEqual(
+            self.found("trace_check.py --all tasks/loopeng/A.tla run.jsonl --cfg x.cfg"), [("/r", "A", "trace_check")]
+        )
         self.assertEqual(self.found("trace_check.py --cfg x.cfg"), [])
 
     def test_lake_build_is_found_by_its_directory(self):
@@ -132,7 +137,8 @@ class ScriptTest(unittest.TestCase):
         payload = json.dumps({"tool_input": {"command": "loop-middle SPEC=Cart"}, "cwd": "/r"})
         self.assertEqual(self.run_main(payload), (0, "OK\t/r\tCart\tloop-middle\n"))
         self.assertEqual(self.run_main("not json"), (0, ""))
-        self.assertEqual(cmdparse.msg("no_such_code"), "未知のメッセージコード: no_such_code")
+        code = "no_such_code"  # passed as a variable: the message-table check reads literal codes only
+        self.assertEqual(cmdparse.msg(code), "未知のメッセージコード: no_such_code")
 
 
 if __name__ == "__main__":

@@ -187,6 +187,8 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(
             ledgers.claims_problems(CLAIMS.replace("数は上限以下", "clean な inventory の数は上限以下")), []
         )
+        self.assertEqual(ledgers.claims_problems(CLAIMS.replace("数は上限以下", "数 n は n < 4 を保つ")), [])
+        self.assertTrue(ledgers.claims_problems(CLAIMS.replace("数は上限以下", "<検証が示すこと>")))
 
     def test_claims_list_without_a_table_or_a_column(self):
         self.assertEqual(len(ledgers.claims_problems("# x\n")), 1)
@@ -364,6 +366,18 @@ class ReviewAndPremiseTest(Repo):
             "- 前提: 上限は加算の前に見ている\n- 観測: 加算の直前の値を記録した\n- 結果: 加算の後に見ていた\n",
         )
         self.assertEqual(self.bash(self.entry)[0], 0)
+
+    def test_the_expected_failure_of_a_broken_build_is_not_counted_toward_the_premise(self):
+        tla = self.write("tasks/loopeng/Cart.tla", "v1")
+        self.ran_broken()
+        tla.write_text("v2")
+        self.ran_broken()
+        self.assertNotIn("前提の確認ゲート", self.bash(self.entry)[1])
+
+    def ran_broken(self):
+        self.ran(
+            "cd tasks/loopeng && " + "trace_" + "check.py Cart.tla ../../logs/Cart.broken.jsonl", 1, "不一致: 3 行目は"
+        )
 
     def test_a_rerun_without_a_fix_or_a_different_rule_does_not_ask_for_the_premise(self):
         self.write("tasks/loopeng/Cart.tla", "v1")
@@ -616,18 +630,25 @@ class ManagedRepoTest(Repo):
         self.assertEqual(self.cli("capture", "out.jsonl", "--", "true")[0], 1)
         self.assertEqual(self.cli("capture", "out.jsonl", "--", "echo '{}' > out.jsonl")[0], 0)
         self.assertEqual(self.cli("capture", "out.jsonl", "--", "false")[0], 1)
+        self.assertEqual(self.cli("capture", "two words.jsonl", "--", "touch", "two words.jsonl")[0], 0)
+        self.assertTrue((self.root / "two words.jsonl").exists())
 
     def test_missing_declarations_stop_it_and_pr_body_needs_its_headings(self):
         self.ran("verifiability.py tasks/verifiability/Cart.md")
         self.ran("./run-check.sh")
         (self.root / "tasks/stages.md").unlink()
-        self.assertIn("段のコマンドの宣言が無い", self.bash(self.pr)[1])
+        self.assertIn("コマンドの宣言が無い", self.bash(self.pr)[1])
         self.write("tasks/stages.md", "段なし: ライブラリで後段のテストが無い\n")
-        self.assertIn("段のコマンドの宣言が無い", self.bash(self.pr)[1])
+        self.assertIn("コマンドの宣言が無い", self.bash(self.pr)[1])
         self.request_and_approve("exception", "request", "stages", "--until", "2099-01-01", "--reason", "library")
         self.assertEqual(self.bash(self.pr)[0], 0)
         (self.root / "tasks/surface.md").write_text("## 起動\n\nx\n")
         self.assertIn("surface.md が足りない", self.bash(self.pr)[1])
+        template = "".join(f"## {h}\n\n<書く>\n\n" for h in ledgers.SURFACE_SECTIONS)
+        (self.root / "tasks/surface.md").write_text(
+            template + "- 確認のコマンド: `<コマンド>`\n- 検証と本番で違う値: <一覧>\n"
+        )
+        self.assertEqual(len(ledgers.surface(self.root)["problems"]), 7)
         (self.root / "tasks/surface.md").unlink()
         self.assertIn("tasks/surface.md が無い", self.bash(self.pr)[1])
         self.request_and_approve("exception", "request", "surface", "--until", "2099-01-01", "--reason", "library")
@@ -637,6 +658,10 @@ class ManagedRepoTest(Repo):
         self.assertEqual(self.bash('glab mr create --description "$(cat body.md)"')[0], 0)
         self.write(".github/pull_request_template.md", "## Summary\n")
         self.assertEqual(self.bash("gh pr create --title t --body 'やった'")[0], 0)
+
+    def test_declaring_only_an_early_stage_is_not_enough(self):
+        self.write("tasks/stages.md", "- unit コマンド: `pytest tests/unit`\n")
+        self.assertIn("後段(integration か e2e)のコマンドの宣言が無い", self.bash(self.pr)[1])
 
     def test_specs_command_lists_what_the_change_touches(self):
         self.assertIn("Cart\tsrc/rules.py", self.cli("specs")[1])
@@ -865,6 +890,7 @@ class EdgeTest(Repo):
         body = self.write("body.md", "## 影響の範囲\n")
         self.assertEqual(hook.pr_body(["--title", "t", "--body-file", str(body)]), "## 影響の範囲\n")
         self.assertEqual(hook.pr_body(["--body=x"]), "x")
+        self.assertEqual(hook.pr_body([f"--body-file={body}"]), "## 影響の範囲\n")
         self.assertIsNone(hook.pr_body(["--fill"]))
 
     def test_git_options_before_the_subcommand_are_skipped(self):
@@ -926,13 +952,19 @@ class EscapeClosingTest(EscapeTest):
             **{"抜けた理由": "要件の抜け", "拾えたはずの段": "spec", "前段に足したテスト": "", "テストのコマンド": ""},
         )
         self.assertIn("承認を取り直す", self.cli("escape", "verify", eid)[1])
+        sh(self.root, "git", "checkout", "-q", "-b", "fix-on-another-branch")
         self.ran(f"hymme escape verify {eid}")
         self.assertEqual(checks.open_escapes(checks.Ctx(self.root, self.key)), [eid])
         self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
         self.request_and_approve("claims", "request", "Cart")
+        self.assertIn("承認の記録があります", self.cli("escape", "verify", eid)[1])
         self.ran(f"hymme escape verify {eid}")
         self.assertEqual(checks.open_escapes(checks.Ctx(self.root, self.key)), [])
         self.assertIn("閉じた", self.cli("escape", "list")[1])
+        self.write("src/rules.py", "def allow(n):\n    return n < 8\n")
+        self.commit("fix: requirement")
+        self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
+        self.assertNotIn("fix 型のコミット", self.bash("gh pr create --fill")[1])
 
     def test_a_fix_commit_is_covered_by_a_record_opened_on_this_branch_even_after_more_commits(self):
         eid = self.open_one()

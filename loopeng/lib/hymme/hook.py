@@ -84,6 +84,8 @@ def pr_body(args):
             return args[i + 1]
         if a in ("--body-file", "-F") and i + 1 < len(args):
             return ledgers.read(args[i + 1])
+        if a.startswith("--body-file="):
+            return ledgers.read(a.split("=", 1)[1])
         for flag in ("--body=", "--description="):
             if a.startswith(flag):
                 return a[len(flag) :]
@@ -330,7 +332,10 @@ def hymme_results(ctx, root, gate):
                 if not any(r["ts"] > opened for r in ctx.recs("approval", type="claims")):
                     continue  # the requirement was wrong: the worker approves the corrected list first
             store.append(
-                "escape-closed", {"id": words[2], "change": ctx.change(), "hash": ledgers.sha(text)}, ctx.cwd, ctx.key
+                "escape-closed",
+                {"id": words[2], "change": ctx.change(), "hash": ledgers.sha(text), "branch": store.branch(ctx.cwd)},
+                ctx.cwd,
+                ctx.key,
             )
 
 

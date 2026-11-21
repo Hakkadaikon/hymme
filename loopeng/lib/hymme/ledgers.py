@@ -32,6 +32,11 @@ METHOD_WORDS = re.compile(r"TLA\+|\b(?:TLA|TLC|EARS|SMT|Z3|Lean|Inv|[SRT]-\d+|mu
 NO_TEST_CAUSES = ("要件の抜け", "モデルで捨てた領域", "前段では原理的に拾えない")
 
 
+def placeholder(text):
+    """Whether a template's <…> is still in the text (a bare < as in `a < b` is not one)."""
+    return bool(re.search(r"<[^<>\n]*[^\s<>0-9=][^<>\n]*>", text))
+
+
 def section(text, heading):
     """Lines under '## <heading>' up to the next '## '."""
     out, on = [], False
@@ -89,10 +94,10 @@ def claims_problems(text):
     for row in body:
         row = row + [""] * (len(header) - len(row))
         for field in ("要件", *CLAIM_FIELDS):
-            if not row[header.index(field)] or "<" in row[header.index(field)]:
+            if not row[header.index(field)] or placeholder(row[header.index(field)]):
                 problems.append(f"「{row[header.index('要件')] or '?'}」の「{field}」が空")
     for heading in ("有限にした範囲", "扱わない領域"):
-        if not [ln for ln in section(text, heading) if ln.strip() and "<" not in ln]:
+        if not [ln for ln in section(text, heading) if ln.strip() and not placeholder(ln)]:
             problems.append(f"「## {heading}」が空(無ければ「無し: 理由」と書く)")
     leaked = sorted(set(METHOD_WORDS.findall(text)))
     if leaked:
@@ -187,7 +192,7 @@ def escape_problems(text, decl):
         for k in ESCAPE_FIELDS
         if k not in ("前段に足したテスト", "テストのコマンド") or f.get("抜けた理由") not in NO_TEST_CAUSES
     ]
-    problems = [f"「{k}」が空" for k in needed if not f.get(k) or "<" in f[k]]
+    problems = [f"「{k}」が空" for k in needed if not f.get(k) or placeholder(f[k])]
     if problems:
         return problems
     if f["抜けた理由"] not in ESCAPE_CAUSES:
@@ -223,11 +228,15 @@ def surface(root):
     text = read(Path(root) / "tasks" / "surface.md")
     if text is None:
         return None
-    problems = [f"「## {h}」が空" for h in SURFACE_SECTIONS if not [ln for ln in section(text, h) if ln.strip()]]
-    command = fields(text).get("確認のコマンド")
+
+    def filled(lines):
+        return [ln for ln in lines if ln.strip() and not placeholder(ln)]  # a template line left as it was is empty
+
+    problems = [f"「## {h}」が空" for h in SURFACE_SECTIONS if not filled(section(text, h))]
+    command = (filled([fields(text).get("確認のコマンド", "")]) or [None])[0]
     if not command:
         problems.append("「- 確認のコマンド: <実物を動かして確かめるコマンドの先頭>」が無い")
-    if not fields(text).get("検証と本番で違う値"):
+    if not filled([fields(text).get("検証と本番で違う値", "")]):
         problems.append("「- 検証と本番で違う値: <容量やタイムアウトなどの一覧。無ければ「無し: 理由」>」が無い")
     return {"problems": problems, "command": command.strip("`") if command else None}
 

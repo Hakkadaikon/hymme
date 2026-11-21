@@ -6,6 +6,7 @@ result behind; the hook that watches the command writes the signed record.
 
 import argparse
 import json
+import shlex
 import shutil
 import subprocess
 import sys
@@ -30,6 +31,7 @@ MESSAGES = {
     "repro_red": "再現のコマンドが修正前のコード({base})で失敗しません。再現になっていません。\nコマンド: {command}",
     "repro_green": "再現のコマンドが今のコードで通りません(終了コード {code})。直っていません。\nコマンド: {command}\n{tail}",
     "verified": "欠陥の記録 {id} の確認が通りました(修正前に失敗、修正後に成功)。",
+    "approval_seen": "欠陥の記録 {id} には作業者の承認の記録があります。このコマンドを hook が見ていれば、記録は閉じます(`hymme escape list` で確かめる)。",
     "needs_approval": "欠陥の記録 {id} の欄は埋まっています。この閉じ方には作業者の承認が要ります: {how}",
     "capture_failed": "ログを採れませんでした(終了コード {code})。コマンドが {log} を書いたかを確かめてください。",
     "captured": "ログを採りました: {log} (sha256 {sha})",
@@ -162,11 +164,16 @@ def escape(args):
     f = ledgers.fields(text)
     if args.action == "unreachable":
         return request("unreachable", ledgers.sha(text), id=args.id, path=str(path), reason=args.reason)
-    if f["抜けた理由"] == "前段では原理的に拾えない":
-        print(msg("needs_approval", id=args.id, how=f"`hymme escape unreachable {args.id} --reason <理由>` で申請する"))
-        return 0
-    if f["抜けた理由"] in ("要件の抜け", "モデルで捨てた領域"):
-        print(msg("needs_approval", id=args.id, how="要件と一覧を直し、`hymme claims request <名前>` で承認を取り直す"))
+    if f["抜けた理由"] in ledgers.NO_TEST_CAUSES:
+        # no key here: this reads what the log says, the hook decides from the signed records
+        opened = max((r.get("ts", 0) for r in store.records(root, kind="escape-open", id=args.id)), default=0)
+        if f["抜けた理由"] == "前段では原理的に拾えない":
+            done = store.records(root, kind="approval", type="unreachable", id=args.id, hash=ledgers.sha(text))
+            how = f"`hymme escape unreachable {args.id} --reason <理由>` で申請する"
+        else:
+            done = [r for r in store.records(root, kind="approval", type="claims") if r.get("ts", 0) > opened]
+            how = "要件と一覧を直し、`hymme claims request <名前>` で承認を取り直す"
+        print(msg("approval_seen", id=args.id) if done else msg("needs_approval", id=args.id, how=how))
         return 0
     base = f.get("修正前のコミット") or store.merge_base(root)
     before, after, tail = red_then_green(
@@ -190,7 +197,9 @@ def capture(args):
     """Run the real system and keep the log it wrote; the hook records the log's hash when this exits 0."""
     started = time.time()
     command = [a for a in args.command if a != "--"]
-    code = subprocess.run(" ".join(command), shell=True, check=False).returncode
+    # one argument is a shell line (pipes, redirects); several are one command whose quoting is kept
+    line = command[0] if len(command) == 1 else shlex.join(command)
+    code = subprocess.run(line, shell=True, check=False).returncode
     log = Path(args.log)
     if code != 0 or not log.is_file() or log.stat().st_mtime < started - 1:
         return fail("capture_failed", log=log, code=code)
