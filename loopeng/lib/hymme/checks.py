@@ -69,6 +69,7 @@ def msg(code, /, **kw):
 class Ctx:
     def __init__(self, cwd, key, gate=None, command=""):
         self.cwd, self.key, self.gate, self.command = cwd, key, gate, command
+        self.ref = "HEAD"  # the ref whose change is leaving: the branch being merged, when a merge is checked
         self._change = None
 
     def recs(self, kind, **match):
@@ -76,7 +77,7 @@ class Ctx:
 
     def change(self):
         if self._change is None:
-            self._change = store.change_id(self.cwd) or "none"
+            self._change = store.change_id(self.cwd, self.ref) or "none"
         return self._change
 
     def exempt(self, check):
@@ -186,18 +187,18 @@ def open_escapes(ctx):
     return sorted({r["id"] for r in ctx.recs("escape-open")} - closed)
 
 
-def branch_log(cwd):
-    base = store.merge_base(cwd)
+def branch_log(cwd, ref="HEAD"):
+    base = store.merge_base(cwd, ref)
     if base is None:
         return []
-    return store.git("log", "--format=%s", f"{base}..HEAD", cwd=cwd).splitlines()
+    return store.git("log", "--format=%s", f"{base}..{ref}", cwd=cwd).splitlines()
 
 
-def branch_diff(cwd):
-    base = store.merge_base(cwd)
+def branch_diff(cwd, ref="HEAD"):
+    base = store.merge_base(cwd, ref)
     if base is None:
         return ""
-    return subprocess.run(["git", "diff", base, "HEAD"], cwd=cwd, capture_output=True, text=True, check=False).stdout
+    return subprocess.run(["git", "diff", base, ref], cwd=cwd, capture_output=True, text=True, check=False).stdout
 
 
 def weakened(diff):
@@ -212,7 +213,7 @@ def weakened(diff):
 
 def stale_names(ctx, root):
     """Names whose mirrored code this branch changed (1-15, 1-16)."""
-    changed = store.changed_files(ctx.cwd)
+    changed = store.changed_files(ctx.cwd, ctx.ref)
     return {n: sorted(set(p) & changed) for n, p in ledgers.verifiability_targets(root).items() if set(p) & changed}
 
 
@@ -243,10 +244,10 @@ def integration(ctx, body=None):
     here = store.branch(ctx.cwd)
     handled = ctx.recs("escape-open", branch=here) + ctx.recs("escape-closed", branch=here)
     if not ctx.exempt("fix_without_escape") and not handled:
-        if any(re.match(r"fix(\(.+\))?!?:", s) for s in branch_log(ctx.cwd)):
+        if any(re.match(r"fix(\(.+\))?!?:", s) for s in branch_log(ctx.cwd, ctx.ref)):
             out.append(msg("fix_without_escape"))
 
-    what = weakened(branch_diff(ctx.cwd))
+    what = weakened(branch_diff(ctx.cwd, ctx.ref))
     if what and not ctx.exempt("weaken"):
         out.append(msg("weakened", what="、".join(what)))
 
@@ -277,16 +278,17 @@ def integration(ctx, body=None):
         if problem:
             out.append(problem)
         if not ctx.exempt("trace"):
-            runs = ctx.recs("run", name=ledgers.log_spec(root, name), entry="trace_check", change=change)
+            logged = ledgers.log_spec(root, name)
+            runs = ctx.recs("run", name=logged, entry="trace_check", change=change)
             # the log of the broken build must be a mismatch (exit 1), not a run that could not decide (exit 2)
             good = [r for r in runs if r.get("exit") == (1 if r.get("label") == "broken" else 0)]
             need = [k for k in TRACE_KINDS if k not in {r.get("label") for r in good}]
             if need:
-                out.append(msg("trace_missing", name=ledgers.log_spec(root, name), need=", ".join(need)))
+                out.append(msg("trace_missing", name=logged, need=", ".join(need)))
             captured = {r.get("log") for r in ctx.recs("capture")}
             loose = sorted({str(r.get("label")) for r in good if r.get("log") not in captured})
             if loose:
-                out.append(msg("log_not_captured", name=name, labels=", ".join(loose)))
+                out.append(msg("log_not_captured", name=logged, labels=", ".join(loose)))
 
     decl = ledgers.stages(root)
     later = [

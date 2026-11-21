@@ -481,6 +481,21 @@ class IntegrationTest(Repo):
         sh(self.root, "git", "checkout", "-q", "main")
         self.assertEqual(self.bash("git merge work")[0], 2)
         self.assertEqual(self.bash("git merge --abort")[0], 0)
+        sh(self.root, "git", "checkout", "-q", "work")
+        self.review()
+        sh(self.root, "git", "checkout", "-q", "main")
+        self.assertEqual(self.bash("git merge --no-ff work")[1], "")
+
+    def test_commits_made_on_the_default_branch_cannot_be_pushed_without_a_review(self):
+        sh(self.root, "git", "checkout", "-q", "main")
+        sh(self.root, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
+        sh(self.root, "git", "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+        self.assertEqual(self.bash("git push origin main")[0], 0)
+        self.write("src/rules.py", "def allow(n):\n    return n < 2\n")
+        self.commit("feat: straight onto main")
+        self.assertIn("diff-review の記録が無い", self.bash("git push origin main")[1])
+        self.review()
+        self.assertEqual(self.bash("git push origin main")[1], "")
 
     def test_fix_commit_needs_an_escape_record(self):
         self.write("src/rules.py", "def allow(n):\n    return n < 3\n")
@@ -599,7 +614,7 @@ class ManagedRepoTest(Repo):
         self.ran("./run-check.sh")
         self.assertIn("Cart の実ログの突き合わせが足りない", self.bash(self.pr)[1])
         ledger = self.root / "tasks/verifiability/Cart.md"
-        ledger.write_text(ledger.read_text() + "\n実ログの spec: CartAtomic\n")
+        ledger.write_text(ledger.read_text() + "\n- 実ログの spec: `CartAtomic`\n")
         self.fire(
             "SubagentStop",
             agent_type="hymme:verification-reviewer",

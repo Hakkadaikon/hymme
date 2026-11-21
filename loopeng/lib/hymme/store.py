@@ -75,6 +75,21 @@ def branch(cwd=None):
         return None
 
 
+def default_branch(cwd=None):
+    """The name of the branch changes are merged into: origin's default, else main, else master."""
+    try:
+        return git("symbolic-ref", "--short", "refs/remotes/origin/HEAD", cwd=cwd).split("/", 1)[1]
+    except (NoRepo, IndexError):
+        pass
+    for name in ("main", "master"):
+        try:
+            git("rev-parse", "--verify", "--quiet", f"refs/heads/{name}", cwd=cwd)
+            return name
+        except NoRepo:
+            continue
+    return None
+
+
 def default_base(cwd=None):
     """The branch a change is measured against: origin's default, else main, else master."""
     for ref in ("refs/remotes/origin/HEAD", "refs/heads/main", "refs/heads/master"):
@@ -85,34 +100,34 @@ def default_base(cwd=None):
     return None
 
 
-def merge_base(cwd=None):
+def merge_base(cwd=None, ref="HEAD"):
     base = default_base(cwd)
     if base is None:
         return None
     try:
-        return git("merge-base", base, "HEAD", cwd=cwd)
+        return git("merge-base", base, ref, cwd=cwd)
     except NoRepo:
         return None
 
 
-def change_id(cwd=None):
+def change_id(cwd=None, ref="HEAD"):
     """patch-id of the branch's committed change, so a rebase onto a new base keeps the same id."""
-    base = merge_base(cwd)
+    base = merge_base(cwd, ref)
     if base is None:
         return None
-    diff = subprocess.run(["git", "diff", base, "HEAD"], cwd=cwd, capture_output=True, check=False).stdout
+    diff = subprocess.run(["git", "diff", base, ref], cwd=cwd, capture_output=True, check=False).stdout
     if not diff.strip():
         return "empty"
     out = subprocess.run(["git", "patch-id", "--stable"], input=diff, cwd=cwd, capture_output=True, check=False)
     return out.stdout.decode().split()[0] if out.stdout.strip() else None
 
 
-def changed_files(cwd=None):
+def changed_files(cwd=None, ref="HEAD"):
     """Paths the branch changed, committed or not, relative to the repository root."""
-    base = merge_base(cwd)
+    base = merge_base(cwd, ref)
     names = set()
     untracked = ["ls-files", "--others", "--exclude-standard"]
-    for args in (["diff", "--name-only", base, "HEAD"] if base else None, ["diff", "--name-only", "HEAD"], untracked):
+    for args in (["diff", "--name-only", base, ref] if base else None, ["diff", "--name-only", "HEAD"], untracked):
         if args:
             try:
                 names.update(n for n in git(*args, cwd=cwd).splitlines() if n)

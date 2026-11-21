@@ -120,7 +120,9 @@ def log_spec(root, name):
     """The spec real logs are checked against for <name>: itself, unless its verifiability ledger names
     another with '実ログの spec: <Other>' (a spec that models lock steps cannot read a log with one line per command)."""
     m = re.search(
-        r"^実ログの spec[:：]\s*(\w+)\s*$", read(Path(root) / "tasks" / "verifiability" / f"{name}.md") or "", re.M
+        r"^(?:- )?実ログの spec[:：]\s*`?(\w+)`?\s*$",
+        read(Path(root) / "tasks" / "verifiability" / f"{name}.md") or "",
+        re.M,
     )
     return m.group(1) if m else name
 
