@@ -53,11 +53,11 @@ hook の仕様と、hymme と pstack の未読部分を確かめます。結果�
 - [~] 0-01 AskUserQuestion の回答を PostToolUse の hook が受け取れるか試す → 未実験。`-p` では AskUserQuestion が使えない。承認は 0-02 の方法にしたので、この確かめは不要になった(tasks/ideal-hymme/phase0.md)
 - [x] 0-02 UserPromptSubmit の hook で作業者の承認の語を記録できるか試す(0-01 が使えないときの代わり) → tasks/ideal-hymme/phase0.md。実際のセッションで承認が記録されることも確認(scratchpad の e2e-repo、記録は approval claims Counter)
 - [x] 0-03 レビュー担当のサブエージェントの判定を hook 側で記録できるか試す → tasks/ideal-hymme/phase0.md(SubagentStop に agent_type と last_assistant_message)
-- [~] 0-04 記録ファイルへの本人の書き込みを止められるか試す。Write、Edit、NotebookEdit、Bash、シェルを実行できる MCP の道具の5経路を対象にする → tasks/ideal-hymme/phase0.md。Write は実験、MCP と NotebookEdit は文書の確認だけ。残り: MCP の道具での実験
+- [x] 0-04 記録ファイルへの本人の書き込みを止められるか試す。Write、Edit、NotebookEdit、Bash、シェルを実行できる MCP の道具の5経路を対象にする → 実際のセッション(プラグイン 0.14.1)で確かめた。Bash と、シェルを実行できる MCP の道具(context-mode の実行の道具)から記録の置き場を名指しすると、PreToolUse で止まる。Write は入口のテストで確認(ProtectedTest)。限界: 置き場のパスを計算で組み立てるコマンドは、文字列の照合では見つからない
 - [x] 0-05 Bash の終了コードを PostToolUse の hook が読めるか試す → tasks/ideal-hymme/phase0.md(PostToolUseFailure の error が `Exit code N`)
 - [x] 0-06 0-03、0-04、0-05 のそれぞれについて、使えなかったときの代わりの方法を決める。候補は、hymme が配る実行用のスクリプトが終了コードを記録する方法、書き込みを止める代わりに作業ツリーの外の保存とハッシュで改ざんを見つける方法、判定用のスクリプトがレビューの結果を記録する方法 → tasks/ideal-hymme/phase0.md の「0-06 代わりの方法」
 - [x] 0-07 pstack の statechart のスクリプト一式を取得し、`example-counter.md` の spec で動かして報告の形を確かめる(取得済みなのは markdown だけ) → tasks/ideal-hymme/phase0.md の「0-07 状態図」。pstack 版が Counter で動くことを確認し、hymme で作ると決めた
-- [~] 0-08 サブエージェントと、別の worktree での作業に、hook と `tasks/` の記録がどう見えるか試す → tasks/ideal-hymme/phase0.md。記録が worktree をまたぐことはテストで確認(loopeng/lib/tests/test_hymme.py の test_records_are_shared_with_a_second_worktree)。残り: サブエージェントの中の hook の発火は文書の確認だけ
+- [x] 0-08 サブエージェントと、別の worktree での作業に、hook と `tasks/` の記録がどう見えるか試す → 実際のセッションで確かめた。サブエージェントに検証の入口を1回実行させると、0段の検査と作業者の確認の検査が止めた。記録が worktree をまたぐことはテストで確認(test_records_are_shared_with_a_second_worktree)
 - [x] 0-09 `loop-*` と `trace_check.py` と `smt_oracle.py` が失敗をファイルに残しているか調べる → tasks/ideal-hymme/existing-survey.md の B(記録は残していない)
 - [x] 0-10 loopeng-modelcheck の references、formal-verification、test-extract、nonfunctional-perf、levels-operational を通読し、この台帳の「今は無い」の判定を見直す → tasks/ideal-hymme/existing-survey.md の A(無い 38、一部在る 45、既に在る 2)
 - [x] 0-11 pstack の全スキルと全 playbook について、取り込む、取り込まない、既に在る、の採否の表を作る。未読の playbook 8本と原則の残りもここで読む → tasks/ideal-hymme/pstack-adoption.md(取り込む 27、既に在る 8、取り込まない 46)
