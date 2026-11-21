@@ -1,0 +1,5 @@
+#!/bin/sh
+# loop-outer SPEC=<Name> [VAR=値 …]: Makefile.loopeng の loop-outer を、どのシェルからでも同じ名前で呼べるようにする入口。
+# Makefile と templates は、このファイルの1つ上の階層に置く(リポジトリでも、インストール先でも同じ並び)。
+home="$(cd "$(dirname "$(realpath "$0")")/.." && pwd)"
+exec make -f "$home/Makefile.loopeng" LOOPENG_HOME="$home" loop-outer "$@"

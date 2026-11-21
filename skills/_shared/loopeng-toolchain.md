@@ -4,10 +4,10 @@ loopeng-* 各スキルが呼ぶ外部コマンドと駆動装置。未導入な�
 
 - `tlc` / `sany`: TLA+ のモデル検査器とパーサ。`apalache-mc`: 型チェック + 記号モデル検査(無限状態向け)。
   プラグインの flake が提供する(`./scripts/bootstrap.sh` 済みなら入っている)。
-- `loop-outer` / `loop-middle` / `loop-inner`: `loopeng/Makefile.loopeng` 経由のループ駆動(fish 関数、または
-  `make -f <このプラグインの loopeng ディレクトリ>/Makefile.loopeng loop-outer SPEC=<Name>` を直接叩いてもよい)。
-  Makefile 本体・Python オラクル(`trace_to_gherkin.py`/`tla_mutate_oracle.py` 等)・テンプレートはこのプラグインの
-  `loopeng/` 配下に同梱されている。fish 関数を使う場合は `LOOPENG_HOME` をこのプラグインの `loopeng/` へ向ける。
+- `loop-outer` / `loop-middle` / `loop-inner`: `loopeng/Makefile.loopeng` 経由のループ駆動。flake の `skill-tools` を入れると、
+  同じ名前のコマンドとして PATH に入り、どのシェルからでも `loop-middle SPEC=<Name>` の形で呼べる。
+  Makefile 本体・Python オラクル(`trace_to_gherkin.py`/`tla_mutate_oracle.py` 等)・テンプレートは同じ場所に入るので、
+  `LOOPENG_HOME` を設定する必要は無い。
 - `loopeng/bin/` のスクリプト(`tla_mutate_oracle.py`、`trace_to_gherkin.py`、`feature_to_c.py`、`gherkin_steps.py`、`trace_check.py`、`smt_oracle.py`、`verifiability.py`、`tla_lint.sh`)は、flake の `skill-tools` を入れると同じ名前のコマンドとして PATH に入る。
   **検証対象のリポジトリに置くツールや文書からは、PATH のコマンドとして呼ぶ。** プラグインのキャッシュ(`~/.claude/plugins/cache/hymme/hymme/<版>/...`)の絶対パスを書かない。版が上がると切れ、ユーザー名もリポジトリに漏れる。
   リポジトリ側のツールが oracle を import して使うときは、`shutil.which("tla_mutate_oracle.py")` が返すパスを読み込む。別の版を使いたいときに備え、環境変数 `TLA_MUTATE_ORACLE`(スクリプトのパス)を先に見る形を勧める。この変数を読むのはリポジトリ側のツールで、hymme は読まない。

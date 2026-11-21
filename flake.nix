@@ -55,7 +55,10 @@
       # repository can call them without pointing at a versioned plugin cache.
       loopengTools = pkgs.runCommand "hymme-loopeng-tools" { buildInputs = [ python pkgs.bashNonInteractive ]; } ''
         mkdir -p $out/bin
-        install -m 755 ${./loopeng/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability}.py ${./loopeng/bin}/tla_lint.sh ${./loopeng/bin}/hymme $out/bin/
+        install -m 755 ${./loopeng/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability}.py ${./loopeng/bin}/tla_lint.sh ${./loopeng/bin}/hymme ${./loopeng/bin}/loop-{outer,middle,inner} $out/bin/
+        # loop-* は1つ上の階層の Makefile.loopeng と templates を読む
+        cp ${./loopeng/Makefile.loopeng} $out/Makefile.loopeng
+        cp -r ${./loopeng/templates} $out/templates
         # bin/hymme は隣の lib/hymme を読む(hook と同じライブラリ。バージョンは lib/hymme/store.py の VERSION)
         mkdir -p $out/lib
         cp -r ${./loopeng/lib}/hymme $out/lib/hymme

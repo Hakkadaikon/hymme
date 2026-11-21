@@ -25,7 +25,7 @@ ng() {
   fail=1
 }
 
-for tool in tla_mutate_oracle.py trace_to_gherkin.py feature_to_c.py trace_check.py smt_oracle.py verifiability.py tla_lint.sh; do
+for tool in tla_mutate_oracle.py trace_to_gherkin.py feature_to_c.py trace_check.py smt_oracle.py verifiability.py tla_lint.sh hymme loop-outer loop-middle loop-inner; do
   if [ -x "$bin/$tool" ]; then ok "$(msg installed "$tool")"; else ng "$(msg missing "$tool")"; fi
 done
 
@@ -55,5 +55,15 @@ lint() { # lint <want-exit> <spec>
 }
 lint 0 Good
 lint 1 Bad
+
+# loop-outer は、どのシェルからでも PATH の名前のまま呼べて、ひな形から spec を作る
+work="$(mktemp -d)"
+if (cd "$work" && PATH="$bin:$PATH" loop-outer SPEC=Probe >/dev/null 2>&1) && [ -f "$work/Probe.tla" ]; then
+  ok "loop-outer SPEC=Probe"
+else
+  ng "$(msg failed "loop-outer SPEC=Probe")"
+fi
+rm -rf "$work"
+if PATH="$bin:$PATH" hymme --help >/dev/null 2>&1; then ok "hymme --help"; else ng "$(msg failed "hymme --help")"; fi
 
 exit "$fail"
