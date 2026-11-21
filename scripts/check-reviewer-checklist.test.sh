@@ -48,7 +48,7 @@ expect 1 "$names" renamed-heading "$tmp/renamed.md"
 sed '/^- 生成物の源泉一致 /d' "$src" >"$tmp/dropped.md"
 expect 1 "$names" dropped-row "$tmp/dropped.md"
 
-sed '/^- 生成物の源泉一致 /{h;d};/^- faithfulness-check /{p;x}' "$src" >"$tmp/reordered.md"
+sed -e '/^- 生成物の源泉一致 /{h;d;}' -e '/^- faithfulness-check /{p;x;}' "$src" >"$tmp/reordered.md"
 expect 1 "$names" reordered-row "$tmp/reordered.md"
 
 expect 1 "$count" count-before-items "$(with_line cbi '15項目のチェックリストを埋める')"
@@ -89,7 +89,7 @@ expect 1 '必須ゲート 節が無い' checklist-without-gate "$tmp/no-gate.md"
 # `## チェックリスト` は出力フォーマット節の中のものだけを見る
 printf '## 必須ゲート\n1. **a**: x\n## チェックリスト\n- a : x\n```\n## 出力フォーマット\n' >"$tmp/checklist-before-format.md"
 expect 0 '' checklist-before-format "$tmp/checklist-before-format.md"
-sed '/^## 出力フォーマット/i ## チェックリスト\n- 余分 : x\n```' "$src" >"$tmp/early-checklist.md"
+awk '/^## 出力フォーマット/ { print "## チェックリスト"; print "- 余分 : x"; print "```" } { print }' "$src" >"$tmp/early-checklist.md"
 expect 0 '' early-checklist-ignored "$tmp/early-checklist.md"
 
 printf '# no gate section\n' >"$tmp/other-reviewer.md"
