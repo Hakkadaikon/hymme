@@ -33,7 +33,7 @@ MESSAGES = {
     "約束が破れたおそれ」に分け、検証を今のコードに対して実行し直す(必要な実行: {need})。",
     "trace_missing": "統合ゲート: {name} の実ログの突き合わせが足りない(足りないもの: {need})。正常系、高負荷、障害注入のログが通り、"
     "わざと壊した実装のログが不一致になることを、`trace_check.py` を直接実行して示す。ログの名前は <名前>.normal.jsonl / .load.jsonl / .fault.jsonl / .broken.jsonl。"
-    "ログの粒度が spec と合わないときは、コマンド1つを1ステップで表す spec を別に作り、元の検証容易性の台帳に「実ログの spec: <その名前>」と書く。",
+    "ログの粒度が spec と合わないときは、コマンド1つを1ステップで写す spec を別に作り、元の検証容易性の台帳に「実ログの spec: <その名前>」と書く。",
     "chart_missing": "ユーザーの確認ゲート: {name} の状態遷移図が無いか、今の spec から作られていない。`hymme chart draw {name}` で作り直す。",
     "chart_open": "ユーザーの確認ゲート: {name} の状態遷移図に、破れた規則か検査されなかった規則が残っている。設計を直して `hymme chart draw {name}` をやり直す。",
     "chart_unapproved": "ユーザーの確認ゲート: {name} の状態遷移図はユーザーの承認が無い。`hymme chart request {name}` を実行し、表示された1行をユーザーに入力してもらう。",
