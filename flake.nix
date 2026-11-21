@@ -96,7 +96,7 @@
         touch $out
       '';
 
-      checks.collect-diff = pkgs.runCommand "collect-diff" { nativeBuildInputs = [ pkgs.git ]; } ''
+      checks.collect-diff = pkgs.runCommand "collect-diff" { nativeBuildInputs = [ pkgs.git pkgs.jq ]; } ''
         export HOME=$TMPDIR
         bash ${self}/scripts/collect-diff.test.sh
         touch $out
@@ -113,7 +113,7 @@
         touch $out
       '';
 
-      checks.hymme-core = pkgs.runCommand "hymme-core" { nativeBuildInputs = [ pkgs.python3 pkgs.git ]; } ''
+      checks.hymme-core = pkgs.runCommand "hymme-core" { nativeBuildInputs = [ pkgs.python3 pkgs.git tlaplus ]; } ''
         cp -r ${self} src && chmod -R u+w src
         HOME=$TMPDIR bash src/scripts/hymme-core.test.sh
         touch $out
