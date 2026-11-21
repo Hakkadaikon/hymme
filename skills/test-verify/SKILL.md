@@ -45,6 +45,7 @@ description: >
 - 緑にしたテスト群を CI の継続実行対象に入れる([`../process-static/SKILL.md`](../process-static/SKILL.md) の CI 自動実行)。
 - 変更したコードの行・分岐カバレッジ 100% を CI ゲートにし(差分カバレッジ)、割る変更をマージさせない。critical な `T-ID` は mutation もゲートにする。
 - 以後バグが出たら、その欠陥を再現する最小テストを1本固定して回帰へ積む([`../levels-operational/SKILL.md`](../levels-operational/SKILL.md) の回帰テスト)。台帳には新しい `T-ID` として追記する。
+- そのバグが後段(結合、e2e、実ログの突き合わせ、CI、本番)で見つかったものなら、欠陥の記録の流れ([`../escape-flow/SKILL.md`](../escape-flow/SKILL.md))に乗せる。固定する1本は、見つかった段より前の段に置き、記録の「前段に足したテスト」の欄にそのパスを書く。`hymme escape verify <id>` が、そのテストが修正前のコードで失敗し今のコードで通ることを実行して確かめる。記録が閉じるまで、変更は統合の入口で止まる。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 

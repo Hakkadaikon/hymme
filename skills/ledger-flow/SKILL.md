@@ -42,7 +42,7 @@ description: 進捗台帳と計画・引き継ぎ文書(todo・テストリス�
 
 ## 6. 機械検査に落とせるものは落とす
 
-未チェック残・欠番・凡例違反の検査は決定論で書ける。loopeng-extract / test-design の採番台帳ゲート(hooks/loopeng-extract-gate.sh、hooks/test-design-extract-gate.sh)が同型の実装例で、`- [ ]` の残存と ID の欠番を PreToolUse で機械ブロックしている。恒常運用する台帳には同型の検査を用意し、目視の数え上げに置き換える。
+未チェック残・欠番・凡例違反の検査は決定論で書ける。loopeng-extract / test-design の採番台帳ゲート(hooks/hymme_hook.py の抽出の台帳の検査、hooks/test-design-extract-gate.sh)が同型の実装例で、`- [ ]` の残存と ID の欠番を PreToolUse で機械ブロックしている。恒常運用する台帳には同型の検査を用意し、目視の数え上げに置き換える。
 
 ## 7. SDD 台帳(superpowers)との分担
 
@@ -51,7 +51,9 @@ superpowers:subagent-driven-development は自前の進捗台帳 `<repo-root>/.s
 - **SDD 実行中の真実源(§2)は SDD 台帳。** hymme 側の台帳(`tasks/loopeng/`・`tasks/test-design/`・`tasks/fv/`・`tasks/todo.md`・引き継ぎ文書)に同じ Task の進捗を転記しない。載せるなら「進捗は `.superpowers/sdd/<plan>/progress.md` を正とする」と 1 行。
 - §3(証跡ポインタ)と §4(コミット前に完了を書かない)は SDD 台帳にも精神として効いている: `Task N: complete` 行はコミット範囲を含み、review clean か breaker で parked 済みのときだけ書かれる。superpowers が既にそう定めているので追加記法は要らない。
 - hymme の台帳(T-ID 台帳・採番チェックリスト・性質カタログ・todo・STATUS)は §1〜6 に従う。例外は worktree 内の台帳で、closed 行で閉じず worktree と共に破棄する([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。SDD の Task が hymme 台帳の消し込みを含む場合、implementer は台帳を触らず、コントローラが SDD 台帳に `Task N: complete` を書くと同時に消し込み、証跡ポインタには Task のコミット SHA を使う。
-- writing-plans の plan 文書(`docs/superpowers/plans/*.md`)は §2 の「計画書は write-once」に当たる。plan 内の `- [ ]` ステップは superpowers の追跡用で、hymme の hook(`hooks/loopeng-extract-gate.sh` は `tasks/loopeng/*.extract.md`、`hooks/test-design-extract-gate.sh` は `tasks/test-design/*.md` だけを見る)の対象外である。
+- 欠陥の記録(`tasks/escapes/E<日時>.md`)、段の宣言(`tasks/stages.md`)、実物の定義(`tasks/surface.md`)も hymme の台帳である。欠陥の記録はチェックボックスを持たず、欄を埋めて `hymme escape verify <id>` を通すと hook が閉じた記録を書く。closed 行やチェックを手で足しても閉じたことにならない(escape-flow スキル)。
+- 段の宣言と実物の定義は、進捗を消し込む台帳ではなく、リポジトリごとに1つ置く定義である。コードやテストの配置が変わったら、その変更の中で書き直す(real-surface スキル)。hook の署名つきの記録(`<git の共通ディレクトリ>/hymme/log.jsonl`)は台帳ではない。読まず、書かず、転記もしない。
+- writing-plans の plan 文書(`docs/superpowers/plans/*.md`)は §2 の「計画書は write-once」に当たる。plan 内の `- [ ]` ステップは superpowers の追跡用で、hymme の hook(`hooks/hymme_hook.py` は `tasks/loopeng/*.extract.md`、`hooks/test-design-extract-gate.sh` は `tasks/test-design/*.md` だけを見る)の対象外である。
 
 ## やらないこと
 
