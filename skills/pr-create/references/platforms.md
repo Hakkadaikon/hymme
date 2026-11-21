@@ -53,7 +53,7 @@ glab mr create \
   --description "<body>"
 ```
 - GitLab の draft はタイトル先頭 `Draft:` でも表現される。`--draft` フラグが効かない版では `Draft: <title>` を使う。
-- description は引用符の中に本文をそのまま書いて渡す。`--description "$(cat <file>)"` の形は使わない。hook はコマンド置換の中身を読めず、「影響の範囲」と「検証」の見出しが無いと判定して止める。
+- description は引用符の中に本文をそのまま書いて渡す。`--description "$(cat <file>)"` の形は使わない。hook はコマンド置換の中身を読めず、「影響の範囲」と「検証」の見出しの検査が掛からない。
 
 ## その他・フォールバック
 

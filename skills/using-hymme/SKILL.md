@@ -33,9 +33,9 @@ description: SessionStart hook が毎セッション注入する地図。hymme �
 検査が読むのは hook が書いた署名つきの記録だけで、台帳に自分で付けたチェックは合格の根拠にならない。記録は git の共通ディレクトリに置かれ、別の worktree からも同じものが見える。記録の置き場と署名の鍵には触れない(hook が止める)。
 
 - **作業者の承認**: 申請は `hymme claims request` / `hymme chart request` / `hymme exception request` / `hymme escape unreachable`。hook が申請の中身を作業者に表示し、作業者が `承認 <符号>` とだけ入力すると記録される。作業する本人は承認を入力できない。
-- **reviewer の判定**: reviewer が返ったときに hook が最後の行から記録する。`hymme:verification-reviewer` は `判定: 合格 対象=<系統> 名前=<名前>`、`hymme:diff-reviewer` は `must:` `lenses:` `claim_only:` の3行。
+- **reviewer の判定**: reviewer が返ったときに hook が最後のメッセージから記録する。`hymme:verification-reviewer` は `判定: 合格 対象=<系統> 名前=<名前>`、`hymme:diff-reviewer` は `must:` `lenses:` `claim_only:` の3行。
 - **実行の記録**: 検証の入口、段のコマンド、実物の確認のコマンドは、終了コードつきで hook が記録する。スクリプトの中から呼ぶと記録されないので、直接実行する。
-- **統合の入口**: diff-review の記録(must と claim_only が 0)、閉じていない欠陥の記録が無いこと、検査を弱める変更が無いこと。hymme の台帳を持つリポジトリでは、変わったコードに対する検証のやり直し、実ログの突き合わせ、段の宣言(`tasks/stages.md`)、実物での確かめも要る。
-- **例外**: 検査を外すには `hymme exception request <検査> --until <日付> --reason <理由>` で申請し、作業者が承認する。作業者の確認そのものは外せない。
+- **統合の入口**: diff-review の記録(must と claim_only が 0)、閉じていない欠陥の記録が無いこと、`fix` 型のコミットがあるブランチではそのブランチの上で開いた欠陥の記録、検査を弱める変更が無いこと。hymme の台帳を持つリポジトリでは、変わったコードに対する検証のやり直し、実ログの突き合わせ、段の宣言(`tasks/stages.md`)、実物での確かめ、PR の本文の「影響の範囲」と「検証」の見出しも要る。
+- **例外**: 検査を外すには `hymme exception request <検査> --until <日付> --reason <理由>` で申請し、作業者が承認する。作業者の確認そのものと、閉じていない欠陥の記録の検査は外せない。
 
 止められたら、表示された文言の手順に従う。検査をよける別の経路を探さない。

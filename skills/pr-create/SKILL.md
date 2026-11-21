@@ -56,7 +56,7 @@ bash <skill-dir>/scripts/pr-context.sh [base-branch]
 
 1. 未コミットの差分があれば先に確定（コミット）してから始める。レビュー対象はコミット済み差分。
 2. diff-review スキルを実行する。レンズは既定（design, test）に加えて **spec・fresh-eyes を必須**で含め、差分の性質に応じて security / ops / compat / performance / concurrency を追加する。
-3. must 指摘が出たら: 修正 → コミット → diff-review 再実行。**must がゼロになるまで反復する**。1 周で終えてよいのは初回から must ゼロの場合のみ。should は対応するか見送るか判断し、見送るものは PR 本文に理由を書ける状態にしておく。
+3. must 指摘が出たら: 修正 → コミット → diff-review 再実行。**must がゼロになるまで反復する**。1 周で終えてよいのは初回から must ゼロの場合のみ。want+ 以下は対応するか見送るか判断し、見送るものは PR 本文に理由を書ける状態にしておく。
 4. 各周のレンズと must 件数を控えておく（§4 の本文の「検証」に記載する）。
 
 判定は diff-reviewer が報告の最後に書く3行（`must:` / `lenses:` / `claim_only:`）から hook が記録する（diff-review スキルの「判定の記録」節）。本体が書く証跡のファイルは無い。`tasks/diff-review/evidence.md` はもう検査に使わない。
@@ -76,7 +76,7 @@ bash <skill-dir>/scripts/pr-context.sh [base-branch]
 |---|---|---|
 | この変更の ID に対する diff-review の記録が在り、レンズの組ごとの最新の記録で must と claim_only が 0 | diff-review スキル | review |
 | 閉じていない欠陥の記録が無い | escape-flow スキルで閉じる | 外せない |
-| fix 型のコミットがあるなら、欠陥の記録が在る | escape-flow スキルで開いて閉じる | fix_without_escape |
+| fix 型のコミットがあるなら、このブランチの上で開いた欠陥の記録が在る | escape-flow スキルで開いて閉じる | fix_without_escape |
 | テストの skip の追加や、足した数より多いアサーションの削除が無い | 弱めた検査を戻す | weaken |
 
 リポジトリが hymme の台帳を持つ場合（`tasks/` に loopeng、fv、verifiability、test-design、stages.md、surface.md のどれかが在る）は、次も確かめられる。
@@ -84,11 +84,12 @@ bash <skill-dir>/scripts/pr-context.sh [base-branch]
 | 確かめること | 満たし方 | 外せる例外 |
 |---|---|---|
 | 検証容易性の台帳の対象のコードがこの変更で変わっているなら、その名前の検証をこの変更の ID で実行し直して通っている | `hymme specs` で名前を出し、検証を実行し直す | stale |
-| spec のある名前は、正常系、高負荷、障害注入の実ログが通り、わざと壊した実装のログが不一致になっている。ログは `hymme capture` で採ったもの。状態の図が承認されている | loop-engineering スキルの実ログの突き合わせ | trace |
+| spec のある名前は、正常系、高負荷、障害注入の実ログが通り、わざと壊した実装のログが不一致になっている。ログは `hymme capture` で採ったもの | loop-engineering スキルの実ログの突き合わせ | trace |
+| spec のある名前は、状態の図が今の spec から作られ、作業者が承認している | `hymme chart draw <名前>` と `hymme chart request <名前>` | 外せない |
 | 判定のモデル（`.smt.py`）のある名前は、突き合わせのコマンドが通っている | verifiability スキルの台帳の「突き合わせ:」のコマンド | stale |
 | `tasks/stages.md` に段のコマンドの宣言が在る | escape-flow スキル | stages |
 | `tasks/surface.md` が在り、形が整っていて、確認のコマンドがこの変更の ID で通っている | real-surface スキル | surface |
-| PR の本文に「影響の範囲」と「検証」の見出しが在る（本文をコマンドで渡したとき） | §4 | pr_body |
+| PR の本文に「影響の範囲」と「検証」の見出しが在る（hook が本文を読めたとき） | §4 | pr_body |
 
 止まったときは hook の文言に従って満たす。満たせない事情があるときだけ、例外を申請する。
 
@@ -146,7 +147,7 @@ Web の画面で作った PR は hook から見えない。手動作成を案内
 <!-- Closes #xxx など -->
 ```
 
-**影響の範囲と検証**: この2つは hook が見出しを確かめる。本文をコマンドで渡したとき（`--body`、`--description`、`--body-file <ファイル>`、MCP の道具の `body`）、`影響の範囲` と `検証` で始まる見出しが無ければ作成は止まる。
+**影響の範囲と検証**: hymme の台帳を持つリポジトリでは、この2つの見出しを hook が確かめる。hook が本文を読めたとき（`--body`、`--description`、`--body-file <ファイル>`、MCP の道具の `body`）、`影響の範囲` と `検証` で始まる見出しが無ければ作成は止まる。本文を標準入力やコマンド置換（`"$(cat <ファイル>)"`）で渡すと hook は本文を読めず、見出しは検査されない。検査を掛けるために、読める形で渡す（§7）。
 
 - 「影響の範囲」には、diff-review の `design` レンズが報告末尾に付ける影響の範囲（安全の根拠の事実、確かさの段階、残るリスク）を素材に、差分の外で壊れうるものと、安全だと言える根拠を書く。根拠を確かめていなければ「未確認」と書く。
 - 「検証」には、実行したコマンドと結果、実物で確かめた内容（`tasks/surface.md` の確認のコマンド）、§1.5 のセルフレビューの結果（実施レンズ・周回数・最終 must 0）を書く。CI にあってローカルで回していないジョブは「未検証」と書く（§1 の CI WORKFLOWS）。長いログは本文に貼らず、要点と所在を書く。

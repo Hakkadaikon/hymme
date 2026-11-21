@@ -61,7 +61,9 @@ bash <skill-dir>/scripts/gh-ci-investigate.sh logs "<url|run_id|#PR>" [--job <jo
 hymme escape open --stage ci --symptom "<workflow / job / step と、落ちた理由を1文>"
 ```
 
-`tasks/escapes/E<日時>.md` が作られる。欄の埋め方と閉じ方は escape-flow スキルに従う(拾えたはずの前の段にテストを足し、`hymme escape verify <id>` を通す)。記録が閉じるまで、このブランチの変更は統合の入口(PR / MR の作成、既定ブランチでの merge、PR 作成後の push)で止まる。
+修正を積むブランチの上で実行する。`fix` 型のコミットがあるブランチは、そのブランチの上で開いた記録が無いと統合の入口で止まる。
+
+`tasks/escapes/E<日時>.md` が作られる。欄の埋め方と閉じ方は escape-flow スキルに従う(拾えたはずの前の段にテストを足し、`hymme escape verify <id>` を通す)。記録が閉じるまで、このリポジトリの変更は統合の入口(PR / MR の作成、既定ブランチでの merge、PR 作成後の push)で止まる。別のブランチの変更も止まる。
 
 開かなくてよいのは、コードの欠陥でない失敗だけである(runner の障害、外部サービスの一時的な不達、認証切れ)。その場合は「欠陥の記録は開かない: <理由>」を報告に書く。
 

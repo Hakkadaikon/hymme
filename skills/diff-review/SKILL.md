@@ -16,7 +16,7 @@ superpowers:subagent-driven-development のタスク単位レビュー(task-revi
 
 - **(a) PR 作成前**: pr-create が必須とし、統合の入口(PR / MR の作成、既定ブランチでの merge、PR 作成後の push)で hook が判定の記録(§4)を検査する。
 - **(b) ユーザーの明示依頼**: 「レビューして」「〇〇観点で見て」。
-- **(c) SDD 最終レビューの多観点補強**(任意): コントローラが code-reviewer.md の最終レビューに**加えて**本スキルを回す。順序は code-reviewer.md → 本スキル(同じ MERGE_BASE..HEAD)。本スキルの指摘は下の対応表で severity を読み替えて最終レビューの指摘リストに合流させ、fix 波(1 回)と scoped re-review は SDD の手順で回す(fix 波の後に本スキルを回して 2 回目の波を作らない)。本スキルの must が残るなら、code-reviewer.md の verdict に関わらず fix 波へ回し、merge 判断は scoped re-review の後にする。判定の3行(§4)はこの場面でも reviewer が書き、hook が記録する——後続の統合の入口がその記録を使う。executing-plans(inline)の最終レビューに足すときは、本スキルの must を Critical として1回の修正 pass に合流させ、executing-plans の規則どおり再レビューはしない。
+- **(c) SDD 最終レビューの多観点補強**(任意): コントローラが code-reviewer.md の最終レビューに**加えて**本スキルを回す。順序は code-reviewer.md → 本スキル(同じ MERGE_BASE..HEAD)。本スキルの指摘は下の対応表で severity を読み替えて最終レビューの指摘リストに合流させ、fix 波(1 回)と scoped re-review は SDD の手順で回す(fix 波の後に本スキルを回して 2 回目の波を作らない)。本スキルの must が残るなら、code-reviewer.md の verdict に関わらず fix 波へ回し、merge 判断は scoped re-review の後にする。判定の3行(§4)はこの場面でも reviewer が書き、hook が記録する。後続の統合の入口がその記録を使う。executing-plans(inline)の最終レビューに足すときは、本スキルの must を Critical として1回の修正 pass に合流させ、executing-plans の規則どおり再レビューはしない。
 
 diff-reviewer ワーカーはサブエージェントを起動しない。agent の分割はこのスキル(オーケストレータ)だけが決める。
 
@@ -101,7 +101,8 @@ ${CLAUDE_PLUGIN_ROOT}/skills/diff-review/scripts/run-in-copy.sh <ref> <command> 
 - `<ref>` を一時の worktree に取り出し、その直下でコマンドを1つ実行して、写しを消す。終了コードはコマンドのものが返る
 - 写しに入るのはコミット済みの内容だけ。未コミットの変更、未追跡のファイル、依存の導入先(`node_modules`、`.venv` など)は入らない。依存が無くて走らないテストは、段階を「机上でたどった」で止め、走らせるコマンドを指摘に書いて本体に渡す
 - `<ref>` に manifest の base を渡すと、変更前のコードで同じコマンドを実行できる。「変更前は通り、変更後は落ちる」を示せる
-- 連結(`&&`、`;`、`|`)とリダイレクトは許可リストが止める。実行するのは、リポジトリに在るテストかコマンドを1つ
+- 実行するのは、リポジトリに在るテストかコマンドを1つ。許可リストは、連結(`&&`、`;`、`|`)と括弧で区切った先の語も1つずつ調べる。渡すコマンドの中に連結や括弧を書くと(`sh -c 'a && b'`、`python3 -c 'f()'`)止まる。ファイルへのリダイレクトも止まる
+- 出力を `| tail` などで絞る形は通るが、返る終了コードが絞った側のものになる。終了コードを得る実行には付けない
 
 「実物で再現した」は agent には届かない段階である。実システムを動かす確かめは、本体が real-surface スキルの定義で行う。must の指摘は「主張のみ」のまま残さない。確かめられなければ取り下げるか、severity を下げる。
 
