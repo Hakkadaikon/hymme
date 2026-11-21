@@ -1,0 +1,139 @@
+"""Tests for the command parser: where an entry point is found, and where it is refused as unreadable."""
+
+import io
+import json
+import os
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from hymme import cmdparse  # noqa: E402
+from hymme.cmdparse import Gate  # noqa: E402
+
+
+def parse(command, cwd="/r"):
+    gate = Gate()
+    gate.parse(command, cwd, {})
+    return gate
+
+
+class EntryTest(unittest.TestCase):
+    def found(self, command, cwd="/r"):
+        return parse(command, cwd).entries()
+
+    def test_wrappers_are_peeled(self):
+        want = [("/r", "Cart", "loop-middle")]
+        for command in (
+            "loop-middle SPEC=Cart",
+            "env A=1 loop-middle SPEC=Cart",
+            "SPEC=Cart loop-middle",
+            "export SPEC=Cart; loop-middle",
+            "timeout -k 5 60 loop-middle SPEC=Cart",
+            "nice -n 5 loop-middle SPEC=Cart",
+            "sudo -u me loop-middle SPEC=Cart",
+            "nix develop -c loop-middle SPEC=Cart",
+            "bash -c 'loop-middle SPEC=Cart'",
+            "bash -euo pipefail -c 'loop-middle SPEC=Cart'",
+            "bash <<< 'loop-middle SPEC=Cart'",
+            "true && { loop-middle SPEC=Cart; }",
+            "if true; then loop-middle SPEC=Cart; fi",
+            "echo $(loop-middle SPEC=Cart)",
+            "echo `loop-middle SPEC=Cart`",
+            "loop-middle SPEC=Cart 2>&1 > out.txt",
+            "2> err.txt loop-middle SPEC=Cart",
+            "python3 -W ignore -m venv x; loop-middle SPEC=Cart",
+        ):
+            self.assertEqual(self.found(command), want, command)
+
+    def test_the_default_spec_name_and_a_make_directory(self):
+        self.assertEqual(self.found("loop-outer"), [("/r", "Spec", "loop-outer")])
+        self.assertEqual(self.found("make -C tasks/loopeng -f M loop-middle SPEC=A"), [("/r", "A", "loop-middle")])
+        self.assertEqual(self.found("make -Ctasks/loopeng loop-middle SPEC=A"), [("/r", "A", "loop-middle")])
+        self.assertEqual(self.found("make --directory=tasks/loopeng loop-middle SPEC=A"), [("/r", "A", "loop-middle")])
+        self.assertEqual(self.found("env -C tasks/loopeng loop-middle SPEC=A"), [("/r", "A", "loop-middle")])
+        self.assertEqual(self.found("env -u X loop-middle SPEC=A"), [("/r", "A", "loop-middle")])
+
+    def test_oracles_take_the_name_from_their_file(self):
+        self.assertEqual(self.found("smt_oracle.py tasks/loopeng/Rule.smt.py"), [("/r", "Rule", "smt_oracle")])
+        self.assertEqual(self.found("python3 /x/smt_oracle.py --timeout 5 /p/tasks/loopeng/Rule.smt.py"), [("/p", "Rule", "smt_oracle")])
+        self.assertEqual(self.found("trace_check.py --all tasks/loopeng/A.tla run.jsonl --cfg x.cfg"), [("/r", "A", "trace_check")])
+        self.assertEqual(self.found("trace_check.py --cfg x.cfg"), [])
+
+    def test_lake_build_is_found_by_its_directory(self):
+        self.assertEqual(self.found("cd tasks/fv/Sort && lake build"), [("/r", "Sort", "lake")])
+        self.assertEqual(self.found("lake -d tasks/fv/Sort build"), [("/r", "Sort", "lake")])
+        self.assertEqual(self.found("lake --dir=tasks/fv/Sort build"), [("/r", "Sort", "lake")])
+        self.assertEqual(self.found("pushd tasks/fv/Sort; lake build"), [("/r", "Sort", "lake")])
+        self.assertEqual(self.found("lake build"), [])
+        self.assertEqual(self.found("cd $HOME/other && lake build", cwd="/nonexistent"), [])
+
+    def test_a_mention_is_not_a_run(self):
+        for command in (
+            "git commit -m 'run loop-middle SPEC=Cart and lake build'",
+            "cat <<'EOF'\nloop-middle SPEC=Cart\nEOF",
+            "echo 'trace_check.py a.tla'",
+            "python3 -m unittest",
+            "python3 -c 'print(1)'",
+            "echo hi | python3",
+            "echo hi | bash",
+            "xargs ls",
+        ):
+            self.assertEqual((self.found(command), parse(command).blocks()), ([], []), command)
+
+    def test_a_heredoc_a_shell_reads_is_parsed(self):
+        self.assertEqual(self.found("bash <<EOF\nloop-middle SPEC=Cart\nEOF"), [("/r", "Cart", "loop-middle")])
+        self.assertEqual(self.found("cat <<EOF | sh\nloop-middle SPEC=Cart\nEOF"), [("/r", "Cart", "loop-middle")])
+        self.assertEqual(self.found("cat <<EOF\n$(loop-middle SPEC=Cart)\nEOF"), [("/r", "Cart", "loop-middle")])
+
+
+class BlockTest(unittest.TestCase):
+    def blocked(self, command, cwd="/r"):
+        return "\n".join(parse(command, cwd).blocks())
+
+    def test_an_entry_hidden_where_it_cannot_be_read_is_refused(self):
+        for command, why in (
+            ("python3 <<EOF\nimport os; os.system('loop-middle SPEC=Cart')\nEOF", "heredoc"),
+            ("python3 -c \"import os; os.system('loop-middle SPEC=Cart')\"", "python3 -c"),
+            ("echo 'loop-middle SPEC=Cart' | python3", "標準入力"),
+            ("echo 'loop-middle SPEC=Cart' | python3 -", "標準入力"),
+            ("echo 'loop-middle SPEC=Cart' | bash", "標準入力"),
+            ("echo 'loop-middle SPEC=Cart' | tee x | sh -s", "標準入力"),
+            ("eval 'loop-middle SPEC=Cart'", "eval"),
+            ("echo Cart | xargs -I{} loop-middle SPEC={}", "xargs"),
+            ("loop-middle SPEC='Cart", "クォート"),
+        ):
+            self.assertIn(why, self.blocked(command), command)
+
+    def test_a_name_that_is_not_fixed_or_not_plain_is_refused(self):
+        self.assertIn("変数", self.blocked("loop-middle SPEC=$NAME"))
+        self.assertIn("使えない文字", self.blocked("loop-middle SPEC=Cart-2"))
+
+    def test_lake_build_behind_a_variable_directory_is_refused_when_it_may_be_a_proof(self):
+        self.assertIn("変数を含む cd", self.blocked("cd $X/tasks/fv/Sort && lake build"))
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "tasks", "fv"))
+            self.assertIn("変数を含む cd", self.blocked("cd $X && lake build", cwd=d))
+
+
+class ScriptTest(unittest.TestCase):
+    def run_main(self, text):
+        old_in, old_out = sys.stdin, sys.stdout
+        sys.stdin, sys.stdout = io.StringIO(text), io.StringIO()
+        try:
+            code = cmdparse.main()
+            return code, sys.stdout.getvalue()
+        finally:
+            sys.stdin, sys.stdout = old_in, old_out
+
+    def test_as_a_script_it_prints_one_line_per_entry(self):
+        payload = json.dumps({"tool_input": {"command": "loop-middle SPEC=Cart"}, "cwd": "/r"})
+        self.assertEqual(self.run_main(payload), (0, "OK\t/r\tCart\tloop-middle\n"))
+        self.assertEqual(self.run_main("not json"), (0, ""))
+        self.assertEqual(cmdparse.msg("no_such_code"), "未知のメッセージコード: no_such_code")
+
+
+if __name__ == "__main__":
+    unittest.main()
