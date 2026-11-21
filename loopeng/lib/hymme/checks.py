@@ -75,6 +75,11 @@ class Ctx:
     def recs(self, kind, **match):
         return store.records(self.cwd, self.key, kind=kind, **match)
 
+    def leaving(self, ref):
+        """Measure the change of <ref> from here on (the branch a merge brings in, instead of HEAD)."""
+        self.ref, self._change = ref, None
+        return self
+
     def change(self):
         if self._change is None:
             self._change = store.change_id(self.cwd, self.ref) or "none"
