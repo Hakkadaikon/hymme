@@ -45,6 +45,15 @@ def sha(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def request_code(kind, text_hash):
+    """The 8 hex digits a worker types to approve a request; the same on the tool side and the hook side."""
+    return sha(f"{kind}:{text_hash}")[:8]
+
+
+def exception_hash(check, until, reason):
+    return sha(f"{check}|{until}|{reason}")
+
+
 def claims_path(root, name):
     """The list a worker confirms before <name> is verified, wherever the verification lives."""
     for sub in ("loopeng", "fv"):
@@ -89,6 +98,16 @@ def verifiability_targets(root):
         paths = [m.group(1) for ln in section(text, "対象") for m in [re.match(r"- (\S+?)::\S+", ln)] if m]
         if paths:
             out[ledger.stem] = sorted(set(paths))
+    return out
+
+
+def parity_commands(root):
+    """{name: command prefix} from a '突き合わせ: <command>' line of a verifiability ledger."""
+    out = {}
+    for ledger in sorted((Path(root) / "tasks" / "verifiability").glob("*.md")):
+        m = re.search(r"^突き合わせ[:：]\s*`?(.+?)`?\s*$", read(ledger) or "", re.M)
+        if m:
+            out[ledger.stem] = m.group(1)
     return out
 
 
@@ -191,6 +210,8 @@ def surface(root):
     command = fields(text).get("確認のコマンド")
     if not command:
         problems.append("「- 確認のコマンド: <実物を動かして確かめるコマンドの先頭>」が無い")
+    if not fields(text).get("検証と本番で違う値"):
+        problems.append("「- 検証と本番で違う値: <容量やタイムアウトなどの一覧。無ければ「無し: 理由」>」が無い")
     return {"problems": problems, "command": command.strip("`") if command else None}
 
 

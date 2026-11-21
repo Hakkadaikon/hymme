@@ -462,7 +462,8 @@ class ManagedRepoTest(Repo):
         super().setUp()
         self.write("tasks/verifiability/Cart.md", "## 対象\n\n- src/rules.py::allow\n")
         self.write("tasks/stages.md", "- unit コマンド: `pytest tests/unit`\n- e2e コマンド: `pytest tests/e2e`\n- unit パス: tests/unit/*\n- e2e パス: tests/e2e/*\n")
-        self.write("tasks/surface.md", "".join(f"## {h}\n\nx\n\n" for h in ledgers.SURFACE_SECTIONS) + "- 確認のコマンド: `./run-check.sh`\n")
+        surface = "".join(f"## {h}\n\nx\n\n" for h in ledgers.SURFACE_SECTIONS)
+        self.write("tasks/surface.md", surface + "- 確認のコマンド: `./run-check.sh`\n- 検証と本番で違う値: 無し: 定数を共有している\n")
         self.write("src/rules.py", "def allow(n):\n    return n < 4\n")
         self.commit("feat: raise the limit")
         self.pr = "gh pr create --fill"
@@ -483,17 +484,73 @@ class ManagedRepoTest(Repo):
         self.assertIn("写したコード", err)
         self.assertIn("通った記録が無い", err)
 
-    def test_real_logs_are_required_for_a_spec_and_the_broken_one_must_fail(self):
+    def chart_report(self, broken="なし", unchecked=0):
+        digest = chart.spec_hash(self.root / "tasks/loopeng", "Cart")
+        text = f"# Cart\n\nspec: {digest}\n検査されなかった規則: {unchecked}\n\n## 破れた規則\n\n{broken}\n\n## 守られた規則\n\n- Cap\n"
+        self.write("tasks/loopeng/Cart.chart.md", text)
+
+    def spec(self):
         self.write("tasks/loopeng/Cart.tla", "x")
+        self.write("tasks/loopeng/Cart.cfg", "INVARIANT Cap\n")
+        self.write("tasks/loopeng/Cart.extract.md", EXTRACT)
+        self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
+        self.request_and_approve("claims", "request", "Cart")
+        self.fire("SubagentStop", agent_type="hymme:verification-reviewer", last_assistant_message="判定: 合格 対象=verifiability 名前=Cart")
+
+    def test_real_logs_are_required_for_a_spec_and_the_broken_one_must_fail(self):
+        self.spec()
+        self.chart_report()
+        self.request_and_approve("chart", "request", "Cart")
         self.ran("verifiability.py tasks/verifiability/Cart.md")
         self.ran("./run-check.sh")
         self.assertIn("normal, load, fault, broken", self.bash(self.pr)[1])
+        for label in ("normal", "load", "fault", "broken"):
+            self.write(f"logs/Cart.{label}.jsonl", f'{{"c": "{label}"}}\n')
         for label in ("normal", "load", "fault"):
             self.ran(f"trace_check.py tasks/loopeng/Cart.tla logs/Cart.{label}.jsonl")
         self.ran("trace_check.py tasks/loopeng/Cart.tla logs/Cart.broken.jsonl")
         self.assertIn("足りないもの: broken", self.bash(self.pr)[1])
         self.ran("trace_check.py tasks/loopeng/Cart.tla logs/Cart.broken.jsonl", 1, "不一致: 3 行目は")
+        self.assertIn("`hymme capture` で採ったものではない", self.bash(self.pr)[1])
+        for label in ("normal", "load", "fault", "broken"):
+            self.ran(f"hymme capture logs/Cart.{label}.jsonl -- ./drive {label}")
         self.assertEqual(self.bash(self.pr)[0], 0)
+
+    def test_the_chart_must_match_the_spec_leave_nothing_open_and_be_approved(self):
+        self.spec()
+        check = "trace_check.py tasks/loopeng/Cart.tla logs/Cart.normal.jsonl"
+        self.assertIn("状態の図が無い", self.bash(check)[1])
+        self.chart_report(broken="### Cap\n\n最短の経路は 1 手です。")
+        self.assertIn("破れた規則か検査されなかった規則", self.bash(check)[1])
+        self.chart_report(unchecked=1)
+        self.assertIn("破れた規則か検査されなかった規則", self.bash(check)[1])
+        self.chart_report()
+        self.assertIn("作業者の承認が無い", self.bash(check)[1])
+        self.request_and_approve("chart", "request", "Cart")
+        self.assertIn("守られた規則", json.loads(self.ran("hymme chart request Cart")[2])["systemMessage"])
+        self.assertIn("Cart.claims.md", json.loads(self.ran("hymme claims request Cart")[2])["systemMessage"])
+        self.cli("exception", "request", "review", "--until", "2099-01-01", "--reason", "docs")
+        shown = json.loads(self.ran("hymme exception request review --until 2099-01-01 --reason docs")[2])["systemMessage"]
+        self.assertIn("検査「review」", shown)
+        self.assertEqual(self.ran("hymme exception request review --until 2099-01-02 --reason other")[2], "")
+        self.assertEqual(self.bash(check)[0], 0)
+        self.write("tasks/loopeng/Cart.tla", "y")
+        self.assertIn("状態の図が無い", self.bash(check)[1])
+        self.assertEqual(self.cli("chart", "request", "Nope")[0], 1)
+
+    def test_a_model_of_a_pure_decision_needs_the_real_function_compared(self):
+        self.write("tasks/loopeng/Cart.smt.py", "x")
+        self.write("tasks/verifiability/Cart.md", "突き合わせ: `python3 tests/parity.py`\n\n## 対象\n\n- src/rules.py::allow\n")
+        self.ran("verifiability.py tasks/verifiability/Cart.md")
+        self.ran("./run-check.sh")
+        self.assertIn("必要な実行: parity", self.bash(self.pr)[1])
+        self.ran("python3 tests/parity.py --seed 1")
+        self.assertEqual(self.bash(self.pr)[0], 0)
+
+    def test_capture_runs_the_system_and_needs_the_log_it_wrote(self):
+        self.assertEqual(self.cli("capture", "out.jsonl", "--", "true")[0], 1)
+        self.assertEqual(self.cli("capture", "out.jsonl", "--", "echo '{}' > out.jsonl")[0], 0)
+        self.assertEqual(self.cli("capture", "out.jsonl", "--", "false")[0], 1)
 
     def test_missing_declarations_stop_it_and_pr_body_needs_its_headings(self):
         self.ran("verifiability.py tasks/verifiability/Cart.md")

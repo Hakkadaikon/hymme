@@ -20,6 +20,8 @@ MESSAGES = {
     "プラグインとして読み込まれているかを確かめる。",
     "show_claims": "【作業者の確認】{name} について、検証で実証する項目です。内容が正しければ、次の1行だけを入力してください: 承認 {code}\n"
     "(一覧のファイル: {path})\n\n{text}",
+    "show_chart": "【作業者の確認】{name} の検査の結果と状態の図です。振る舞いが意図どおりなら、次の1行だけを入力してください: 承認 {code}\n"
+    "(ファイル: {path})\n\n{text}",
     "show_exception": "【作業者の確認】検査「{check}」を {until} まで外す申請です。理由: {reason}\n認めるなら、次の1行だけを入力してください: 承認 {code}",
     "show_unreachable": "【作業者の確認】欠陥の記録 {id} を「前段では原理的に拾えない」として閉じる申請です。理由: {reason}\n"
     "認めるなら、次の1行だけを入力してください: 承認 {code}",
@@ -195,14 +197,19 @@ def post_tool(payload, key):
         if "unverified" in text:
             rec["inconclusive"] = True
         if kind == "trace_check":
-            args = next((a for v, a, _c, _e in gate.commands if v == "trace_check.py"), [])
+            args, at = next(((a, c) for v, a, c, _e in gate.commands if v == "trace_check.py"), ([], cwd))
             rec["label"] = trace_label(args)
+            rec["log"] = next((store.sha256_file(Path(at) / a) for a in args if a.endswith(".jsonl")), None)
         store.append("run", rec, cwd, key)
 
     for verb, args, _c, _e in gate.commands:
         if verb == "verifiability.py":
             ledger = next((a for a in args if a.endswith(".md")), "")
             store.append("run", {"name": Path(ledger).stem, "entry": "verifiability", "exit": code, "change": change}, cwd, key)
+
+    for name, prefix in ledgers.parity_commands(root).items():
+        if command.strip().startswith(prefix):
+            store.append("run", {"name": name, "entry": "parity", "exit": code, "change": change}, cwd, key)
 
     surf = ledgers.surface(root)
     if surf and surf["command"] and command.strip().startswith(surf["command"]):
@@ -253,17 +260,42 @@ def pending(cwd, code=None):
     return base
 
 
+def option(args, flag):
+    for i, a in enumerate(args):
+        if a == flag and i + 1 < len(args):
+            return args[i + 1]
+        if a.startswith(flag + "="):
+            return a[len(flag) + 1 :]
+    return ""
+
+
+def requested_code(root, words, args):
+    """The code of the request this very command made, worked out from its arguments (never 'the newest file')."""
+    target = words[2] if len(words) > 2 else ""
+    if words[:2] == ["claims", "request"]:
+        return ledgers.request_code("claims", ledgers.sha(ledgers.read(ledgers.claims_path(root, target)) or ""))
+    if words[:2] == ["chart", "request"]:
+        text = ledgers.read(Path(root) / "tasks" / "loopeng" / f"{target}.chart.md") or ""
+        return ledgers.request_code("chart", ledgers.sha(text))
+    if words[:2] == ["escape", "unreachable"]:
+        text = ledgers.read(Path(root) / "tasks" / "escapes" / f"{target}.md") or ""
+        return ledgers.request_code("unreachable", ledgers.sha(text))
+    digest = ledgers.exception_hash(target, option(args, "--until"), option(args, "--reason"))
+    return ledgers.request_code("exception", digest)
+
+
 def hymme_results(ctx, root, gate):
     """Turn what a hymme command left behind into signed records or a message to the worker."""
     for verb, args, _c, _e in gate.commands:
         if verb != "hymme":
             continue
         words = [a for a in args if not a.startswith("-")]
-        if words[:2] in (["claims", "request"], ["exception", "request"], ["escape", "unreachable"]):
-            newest = max(pending(ctx.cwd).glob("*.json"), key=lambda p: p.stat().st_mtime, default=None)
-            req = json.loads(newest.read_text()) if newest else None
+        if words[:1] == ["capture"] and len(words) > 1:
+            store.append("capture", {"log": store.sha256_file(Path(_c) / words[1]), "path": words[1]}, ctx.cwd, ctx.key)
+        elif words[:2] in (["claims", "request"], ["exception", "request"], ["escape", "unreachable"], ["chart", "request"]):
+            req = pending(ctx.cwd, requested_code(root, words, args))
             if req:
-                show = {"claims": "show_claims", "exception": "show_exception", "unreachable": "show_unreachable"}
+                show = {"claims": "show_claims", "exception": "show_exception", "unreachable": "show_unreachable", "chart": "show_chart"}
                 emit(system=msg(show[req["type"]], **req))
         elif words[:2] == ["escape", "open"]:
             for path in sorted((root / "tasks" / "escapes").glob("E*.md")):
@@ -327,14 +359,15 @@ def user_prompt(payload, key):
         emit(system=text, context=text, event=event)
         return 0
     kind = req["type"]
-    if kind in ("claims", "unreachable"):
+    if kind in ("claims", "unreachable", "chart"):
         if ledgers.sha(ledgers.read(req["path"]) or "") != req["hash"]:
             text = msg("approve_changed", what=req["path"])
             emit(system=text, context=text, event=event)
             return 0
-        fields = {"type": kind, "hash": req["hash"], **({"name": req["name"]} if kind == "claims" else {"id": req["id"]})}
+        fields = {"type": kind, "hash": req["hash"], **({"id": req["id"]} if kind == "unreachable" else {"name": req["name"]})}
         store.append("approval", fields, cwd, key)
-        what = f"{req.get('name') or req.get('id')} の{'一覧' if kind == 'claims' else '閉じ方'}"
+        label = {"claims": "一覧", "chart": "状態の図", "unreachable": "閉じ方"}[kind]
+        what = f"{req.get('name') or req.get('id')} の{label}"
     else:
         limit = time.strftime("%Y-%m-%d", time.localtime(time.time() + MAX_EXCEPTION_DAYS * 86400))
         until = min(req["until"], limit)

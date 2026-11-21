@@ -31,6 +31,8 @@ MESSAGES = {
     "repro_green": "再現のコマンドが今のコードで通りません(終了コード {code})。直っていません。\nコマンド: {command}\n{tail}",
     "verified": "欠陥の記録 {id} の確認が通りました(修正前に失敗、修正後に成功)。",
     "needs_approval": "欠陥の記録 {id} の欄は埋まっています。この閉じ方には作業者の承認が要ります: {how}",
+    "capture_failed": "ログを採れませんでした(終了コード {code})。コマンドが {log} を書いたかを確かめてください。",
+    "captured": "ログを採りました: {log} (sha256 {sha})",
     "no_escapes": "欠陥の記録はありません。",
     "specs": "この変更が触れている検証の対象:",
     "no_specs": "この変更が触れている検証の対象はありません。",
@@ -50,7 +52,7 @@ def fail(code, /, **kw):
 
 def request(kind, text_hash, **fields):
     """Leave a request for the worker; the hook shows it and records the answer."""
-    code = ledgers.sha(f"{kind}:{text_hash}")[:8]
+    code = ledgers.request_code(kind, text_hash)
     base = store.root() / "pending"
     base.mkdir(parents=True, exist_ok=True)
     req = {"type": kind, "hash": text_hash, "code": code, "version": store.VERSION, **fields}
@@ -85,7 +87,8 @@ def exception(args):
         ok = False
     if not ok:
         return fail("bad_date")
-    return request("exception", ledgers.sha(f"{args.check}|{args.until}|{args.reason}"), check=args.check, until=args.until, reason=args.reason)
+    digest = ledgers.exception_hash(args.check, args.until, args.reason)
+    return request("exception", digest, check=args.check, until=args.until, reason=args.reason)
 
 
 def escape_path(root, eid):
@@ -174,6 +177,18 @@ def escape(args):
     return 0
 
 
+def capture(args):
+    """Run the real system and keep the log it wrote; the hook records the log's hash when this exits 0."""
+    started = time.time()
+    command = [a for a in args.command if a != "--"]
+    code = subprocess.run(" ".join(command), shell=True, check=False).returncode
+    log = Path(args.log)
+    if code != 0 or not log.is_file() or log.stat().st_mtime < started - 1:
+        return fail("capture_failed", log=log, code=code)
+    print(msg("captured", log=log, sha=store.sha256_file(log)[:12]))
+    return 0
+
+
 def specs(_args):
     root = store.toplevel()
     changed = store.changed_files(root)
@@ -218,6 +233,10 @@ def main(argv=None):
     e.add_argument("--symptom", default="")
     e.add_argument("--reason", default="")
     e.set_defaults(fn=escape)
+    k = sub.add_parser("capture", help="実システムを動かしてログを採る")
+    k.add_argument("log")
+    k.add_argument("command", nargs=argparse.REMAINDER)
+    k.set_defaults(fn=capture)
     s = sub.add_parser("specs", help="この変更が触れている検証の対象")
     s.set_defaults(fn=specs)
     d = sub.add_parser("chart", help="状態の図と、規則ごとの結果")

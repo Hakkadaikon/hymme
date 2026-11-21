@@ -9,7 +9,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from . import ledgers, store
+from . import chart, ledgers, store
 
 MESSAGES = {
     "claims_missing": "作業者の確認ゲート: {path} が無い。要件ごとに「示すこと」「示さないこと」「破れたときの害」を書き、"
@@ -33,6 +33,10 @@ MESSAGES = {
     "約束が破れたおそれ」に分け、検証を今のコードに対して実行し直す(必要な実行: {need})。",
     "trace_missing": "統合ゲート: {name} の実ログの突き合わせが足りない(足りないもの: {need})。正常系、高負荷、障害注入のログが通り、"
     "わざと壊した実装のログが不一致になることを、`trace_check.py` を直接実行して示す。ログの名前は <名前>.normal.jsonl / .load.jsonl / .fault.jsonl / .broken.jsonl。",
+    "chart_missing": "作業者の確認ゲート: {name} の状態の図が無いか、今の spec から作られていない。`hymme chart draw {name}` で作り直す。",
+    "chart_open": "作業者の確認ゲート: {name} の状態の図に、破れた規則か検査されなかった規則が残っている。設計を直して `hymme chart draw {name}` をやり直す。",
+    "chart_unapproved": "作業者の確認ゲート: {name} の状態の図は作業者の承認が無い。`hymme chart request {name}` を実行し、表示された1行を作業者に入力してもらう。",
+    "log_not_captured": "統合ゲート: {name} の実ログ({labels})は `hymme capture` で採ったものではない。`hymme capture <ログ> -- <実システムを動かすコマンド>` で採り直す。",
     "no_stages": "統合ゲート: tasks/stages.md が無い。どのコマンドとパスがどの段(unit / integration / e2e)かを宣言する。"
     "後段のテストが無いリポジトリは「段なし: 理由」と書き、`hymme exception request stages` で作業者の承認を取る。",
     "no_surface": "統合ゲート: tasks/surface.md が無い。実システムの動かし方(起動、健全性の確認、操作、証跡、後片付け)と「- 確認のコマンド:」を書く。",
@@ -97,7 +101,26 @@ def claims(ctx):
             out.append(msg("claims_invalid", path=path, why="; ".join(ledgers.claims_problems(text))))
         elif not approved(ctx, root, name):
             out.append(msg("claims_unapproved", name=name))
+        elif _kind == "trace_check" and chart_problem(ctx, root, name):
+            out.append(chart_problem(ctx, root, name))
     return out
+
+
+def chart_problem(ctx, root, name):
+    """2-13, 2-14: the chart was drawn from the spec as it is, leaves no rule open, and the worker approved it."""
+    spec_dir = Path(root) / "tasks" / "loopeng"
+    text = ledgers.read(spec_dir / f"{name}.chart.md")
+    try:
+        digest = chart.spec_hash(spec_dir, name)
+    except OSError:
+        digest = None
+    if text is None or digest is None or f"spec: {digest}" not in text:
+        return msg("chart_missing", name=name)
+    if "検査されなかった規則: 0" not in text or not re.search(r"^## 破れた規則\n+なし$", text, re.M):
+        return msg("chart_open", name=name)
+    if not ctx.recs("approval", type="chart", name=name, hash=ledgers.sha(text)):
+        return msg("chart_unapproved", name=name)
+    return None
 
 
 def extract(ctx):
@@ -232,8 +255,11 @@ def integration(ctx, body=None):
     for name, paths in stale_names(ctx, root).items():
         if ctx.exempt("stale"):
             break
-        ran = {r["entry"] for r in ctx.recs("run", name=name, change=change) if r.get("exit") == 0}
-        need = sorted({r["entry"] for r in ctx.recs("run", name=name)} - ran) or (["verifiability"] if not ran else [])
+        ran = {r["entry"] for r in ctx.recs("run", name=name, change=change) if r.get("exit") == 0 and not r.get("inconclusive")}
+        want = {r["entry"] for r in ctx.recs("run", name=name)} | {"verifiability"}
+        if (root / "tasks" / "loopeng" / f"{name}.smt.py").exists():
+            want.add("parity")  # 4-13: the real function and the model agree on the inputs that were tried
+        need = sorted(want - ran - {"trace_check", "loop-inner", "loop-outer"})
         if need:
             out.append(msg("stale", name=name, paths=", ".join(paths), need=", ".join(need)))
 
@@ -243,10 +269,17 @@ def integration(ctx, body=None):
             if not (root / "tasks" / "loopeng" / f"{name}.tla").exists():
                 continue
             runs = ctx.recs("run", name=name, entry="trace_check", change=change)
-            have = {r.get("label") for r in runs if (r.get("exit") == 0) != (r.get("label") == "broken")}
-            need = [k for k in TRACE_KINDS if k not in have]
+            good = [r for r in runs if (r.get("exit") == 0) != (r.get("label") == "broken")]
+            need = [k for k in TRACE_KINDS if k not in {r.get("label") for r in good}]
             if need:
                 out.append(msg("trace_missing", name=name, need=", ".join(need)))
+            captured = {r.get("log") for r in ctx.recs("capture")}
+            loose = sorted({str(r.get("label")) for r in good if r.get("log") not in captured})
+            if loose:
+                out.append(msg("log_not_captured", name=name, labels=", ".join(loose)))
+            problem = chart_problem(ctx, root, name)
+            if problem:
+                out.append(problem)
 
     decl = ledgers.stages(root)
     if not ctx.exempt("stages") and (decl is None or (not decl["commands"] and not decl["none"])):
