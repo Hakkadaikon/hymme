@@ -22,7 +22,7 @@
       # Versions/hashes pinned via nix-prefetch-url; bump both together.
       tla2tools = pkgs.fetchurl {
         url = "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar";
-        hash = "sha256-0VZV7q/0s/ez1lxGuDi8DzXRMbLvSx5HNom2LJjUcm8=";
+        hash = "sha256-/f/vJH9WPvbtv9RJWNKoLbeedWTgfLZzJi2JY1P6ZxM=";
       };
       tlaplus = pkgs.runCommand "tlaplus-1.8.0" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
         mkdir -p $out/share/tlaplus $out/bin
