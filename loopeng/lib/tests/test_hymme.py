@@ -591,6 +591,31 @@ class ManagedRepoTest(Repo):
             self.ran(f"hymme capture logs/Cart.{label}.jsonl -- ./drive {label}")
         self.assertEqual(self.bash(self.pr)[0], 0)
 
+    def test_real_logs_may_be_checked_against_a_coarser_spec_named_in_the_ledger(self):
+        self.spec()
+        self.chart_report()
+        self.request_and_approve("chart", "request", "Cart")
+        self.ran("verifiability.py tasks/verifiability/Cart.md")
+        self.ran("./run-check.sh")
+        self.assertIn("Cart の実ログの突き合わせが足りない", self.bash(self.pr)[1])
+        ledger = self.root / "tasks/verifiability/Cart.md"
+        ledger.write_text(ledger.read_text() + "\n実ログの spec: CartAtomic\n")
+        self.fire(
+            "SubagentStop",
+            agent_type="hymme:verification-reviewer",
+            last_assistant_message="判定: 合格 対象=verifiability 名前=Cart",
+        )
+        self.assertIn("CartAtomic の実ログの突き合わせが足りない", self.bash(self.pr)[1])
+        for label in ("normal", "load", "fault", "broken"):
+            self.write(f"logs/CartAtomic.{label}.jsonl", f'{{"c": "{label}"}}\n')
+            self.ran(f"hymme capture logs/CartAtomic.{label}.jsonl -- ./drive {label}")
+            self.ran_trace(label)
+        self.assertEqual(self.bash(self.pr)[1], "")
+
+    def ran_trace(self, label):
+        command = "trace_" + f"check.py tasks/loopeng/CartAtomic.tla logs/CartAtomic.{label}.jsonl"
+        self.ran(command, 1 if label == "broken" else 0, "不一致: 2 行目は" if label == "broken" else "")
+
     def test_the_chart_must_match_the_spec_leave_nothing_open_and_be_approved(self):
         self.spec()
         check = "trace_check.py tasks/loopeng/Cart.tla logs/Cart.normal.jsonl"

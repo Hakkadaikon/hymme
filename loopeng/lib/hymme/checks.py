@@ -32,7 +32,8 @@ MESSAGES = {
     "stale": "統合ゲート: {name} の検証が写したコード({paths})がこの変更で変わっている。変更を「影響なし / 記述が合わなくなった / 約束を意図して変えた / "
     "約束が破れたおそれ」に分け、検証を今のコードに対して実行し直す(必要な実行: {need})。",
     "trace_missing": "統合ゲート: {name} の実ログの突き合わせが足りない(足りないもの: {need})。正常系、高負荷、障害注入のログが通り、"
-    "わざと壊した実装のログが不一致になることを、`trace_check.py` を直接実行して示す。ログの名前は <名前>.normal.jsonl / .load.jsonl / .fault.jsonl / .broken.jsonl。",
+    "わざと壊した実装のログが不一致になることを、`trace_check.py` を直接実行して示す。ログの名前は <名前>.normal.jsonl / .load.jsonl / .fault.jsonl / .broken.jsonl。"
+    "ログの粒度が spec と合わないときは、コマンド1つを1ステップで写す spec を別に作り、元の検証容易性の台帳に「実ログの spec: <その名前>」と書く。",
     "chart_missing": "作業者の確認ゲート: {name} の状態の図が無いか、今の spec から作られていない。`hymme chart draw {name}` で作り直す。",
     "chart_open": "作業者の確認ゲート: {name} の状態の図に、破れた規則か検査されなかった規則が残っている。設計を直して `hymme chart draw {name}` をやり直す。",
     "chart_unapproved": "作業者の確認ゲート: {name} の状態の図は作業者の承認が無い。`hymme chart request {name}` を実行し、表示された1行を作業者に入力してもらう。",
@@ -276,12 +277,12 @@ def integration(ctx, body=None):
         if problem:
             out.append(problem)
         if not ctx.exempt("trace"):
-            runs = ctx.recs("run", name=name, entry="trace_check", change=change)
+            runs = ctx.recs("run", name=ledgers.log_spec(root, name), entry="trace_check", change=change)
             # the log of the broken build must be a mismatch (exit 1), not a run that could not decide (exit 2)
             good = [r for r in runs if r.get("exit") == (1 if r.get("label") == "broken" else 0)]
             need = [k for k in TRACE_KINDS if k not in {r.get("label") for r in good}]
             if need:
-                out.append(msg("trace_missing", name=name, need=", ".join(need)))
+                out.append(msg("trace_missing", name=ledgers.log_spec(root, name), need=", ".join(need)))
             captured = {r.get("log") for r in ctx.recs("capture")}
             loose = sorted({str(r.get("label")) for r in good if r.get("log") not in captured})
             if loose:
