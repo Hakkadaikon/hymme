@@ -11,7 +11,7 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     ok) printf '合格   %s\n' "$2" ;;
     ng) printf '不合格 %s\n' "$2" ;;
@@ -146,7 +146,7 @@ function swallow(s, k) {
 }
 EOF
 mkdir -p "$tmp/bin"
-# shebang の /usr/bin/env が無い sandbox(Linux の nix build)でも動くよう、PATH に置く道具は /bin/sh で包む
+# shebang の /usr/bin/env が無い sandbox(Linux の nix build)でも動くよう、PATH に置くツールは /bin/sh でラップする
 printf '#!/bin/sh\nexec python3 "%s/loopeng/bin/verifiability.py" "$@"\n' "$root" >"$tmp/bin/verifiability.py"
 chmod +x "$tmp/bin/verifiability.py"
 
@@ -463,20 +463,20 @@ gate 0 'echo loop-middle SPEC=Ccn'
 gate 0 'grep smt_oracle.py README.md'
 gate 2 'loop-middle' # SPEC 省略は Makefile.loopeng の既定 Spec
 
-# 指標の道具が無い環境では止める(検証の入口を素通りさせない)
+# 指標のツールが無い環境では止める(検証の入口を素通りさせない)
 mkdir -p "$tmp/nobin"
 for c in bash cat grep awk sed head cut dirname basename python3; do ln -s "$(command -v "$c")" "$tmp/nobin/$c"; done
 got=0
 printf '{"tool_input":{"command":"loop-middle SPEC=Good"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
 if [ "$got" -eq 2 ] && grep -q 'verifiability.py' "$tmp/gate.out"; then ok "verifiability.py が無ければ gate は止める"; else
-  ng "$(msg exit "道具なしの gate" "$got" 2)"
+  ng "$(msg exit "ツールなしの gate" "$got" 2)"
   cat "$tmp/gate.out"
 fi
-# 写すコードが無い台帳は、計測の道具が無くても通す
+# 写すコードが無い台帳は、計測のツールが無くても通す
 got=0
 printf '{"tool_input":{"command":"loop-middle SPEC=NoCodeNoReview"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
 if [ "$got" -eq 0 ]; then ok "対象コード無しの台帳は verifiability.py が無くても通す"; else
-  ng "$(msg exit "道具なしの対象コード無し" "$got" 0)"
+  ng "$(msg exit "ツールなしの対象コード無し" "$got" 0)"
   cat "$tmp/gate.out"
 fi
 # 作業中のリポジトリに json.py があっても hook はそれを読み込まない

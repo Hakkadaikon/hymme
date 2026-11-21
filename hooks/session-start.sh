@@ -8,7 +8,7 @@ skill="${root}/skills/using-hymme/SKILL.md"
 
 # 2 つ目の `---` 以降だけを出す(frontmatter を落とす)
 body="$(awk 'f; /^---$/ { if (++c == 2) f = 1 }' "$skill")"
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     empty_body) printf 'session-start: %s の本文が空か frontmatter が壊れている\n' "$2" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
@@ -20,7 +20,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   exit 1
 }
 
-# 注入文は変数を展開しないので、Read させるパスを実パスに置き換える(bash の置換は版で & やクォートの扱いが違うので python で)
+# 注入文は変数を展開しないので、Read させるパスを実パスに置き換える(bash の置換はバージョンで & やクォートの扱いが違うので python で)
 # shellcheck disable=SC2016 # python のコードと、置換したい変数名そのものの文字列
 BODY="$body" ROOT="$root" python3 -I -c '
 import json, os

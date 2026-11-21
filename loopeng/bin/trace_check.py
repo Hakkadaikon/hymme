@@ -76,7 +76,7 @@ MESSAGES = {
     "all_partial": (
         "--all は全行に全変数が要る({variables})。{no} 行目に欠けがある。--all を外せば見えない変数を spec に選ばせる"
     ),
-    "no_tlc": "tlc が PATH に無い(hymme の skill-tools を入れる)",
+    "no_tlc": "tlc が PATH に無い(hymme の skill-tools をインストールする)",
     "timeout": "TLC が {timeout} 秒で終わらなかった。ログを短くするか、観測する変数を増やす",
     "tlc_failed": "生成した trace spec で TLC が失敗した:\n{tail}",
     "mismatch_init": "不一致: {no} 行目は {name} の初期状態ではない",
@@ -93,7 +93,7 @@ MESSAGES = {
 
 
 def msg(code, **kw):
-    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    """端末に出すメッセージをコードから引く(メッセージをこの表1か所に集める)。"""
     return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 

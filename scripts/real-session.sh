@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# 実物での確かめ: このリポジトリをプラグインとして読み込んだ Claude Code のセッションを1回動かし、
+# 実システムでの確かめ: このリポジトリをプラグインとして読み込んだ Claude Code のセッションを1回動かし、
 # hook が実際に検証の入口を止めることを確かめる(tasks/surface.md の確認のコマンド)。
 # 使い方: real-session.sh   (exit 0: 止めた、1: 止めなかった、2: 動かせなかった)
 # 要: claude(Claude Code)、git。トークンを少し使う。インストール済みの hymme は切り、この作業ツリーだけを読ませる。
 # 証跡は tasks/evidence/real-session.log に残す(git 管理外)。
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
-    no_claude) printf '実物での確かめ: claude が見つからない(CLAUDE_BIN で場所を渡せる)。\n' ;;
+    no_claude) printf '実システムでの確かめ: claude が見つからない(CLAUDE_BIN で場所を渡せる)。\n' ;;
     stopped) printf '合格   実際のセッションで、承認の無い検証の入口が止まった\n' ;;
     not_stopped) printf '不合格 実際のセッションで、承認の無い検証の入口が止まらなかった。出力: %s\n' "$2" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
@@ -58,7 +58,7 @@ cat >"$work/tasks/loopeng/Probe.claims.md" <<'EOF'
 - 無し: 状態は数1つだけ
 EOF
 
-# 承認の無い一覧のまま、検証の入口を1回実行させる。hook が働いていれば「作業者の確認ゲート」で止まる。
+# 承認の無い一覧のまま、検証の入口を1回実行させる。hook が働いていれば「ユーザーの確認ゲート」で止まる。
 prompt='Run exactly this one bash command and report the literal output or error, then stop: cd tasks/loopeng && tlc -deadlock Probe.tla'
 out="$(cd "$work" && PATH="$root/loopeng/bin:$PATH" "$claude" -p "$prompt" --plugin-dir "$root" \
   --settings '{"enabledPlugins":{"hymme@hymme":false}}' --model haiku --allowedTools Bash </dev/null 2>&1 || true)"
@@ -70,7 +70,7 @@ mkdir -p "$root/tasks/evidence"
   printf '%s\n' "$out"
 } >"$root/tasks/evidence/real-session.log"
 
-if grep -q '作業者の確認ゲート' <<<"$out"; then
+if grep -q 'ユーザーの確認ゲート' <<<"$out"; then
   msg stopped
 else
   msg not_stopped "$(printf '%s' "$out" | tail -c 300)"

@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 fix=0
 [ "${1:-}" = --fix ] && fix=1
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     start) printf '== %s ==\n' "$2" ;;
     ok) printf '品質ゲート: すべて通った\n' ;;

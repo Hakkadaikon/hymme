@@ -12,12 +12,12 @@ from pathlib import Path
 from . import chart, ledgers, store
 
 MESSAGES = {
-    "claims_missing": "作業者の確認ゲート: {path} が無い。要件ごとに「示すこと」「示さないこと」「破れたときの害」を書き、"
-    "`hymme claims request {name}` で作業者に承認を求めてから検証へ進む。",
-    "claims_invalid": "作業者の確認ゲート: {path} は作業者に見せられる形になっていない: {why}",
-    "claims_unapproved": "作業者の確認ゲート: {name} の一覧は作業者の承認が無い(承認のあとに一覧を変えた場合も同じ)。"
-    "`hymme claims request {name}` を実行し、表示された1行を作業者に入力してもらう。"
-    "作業者と対話できない実行(サブエージェント、無人の実行)は、ここで止めて BLOCKED で返す。",
+    "claims_missing": "ユーザーの確認ゲート: {path} が無い。要件ごとに「示すこと」「示さないこと」「破れたときの害」を書き、"
+    "`hymme claims request {name}` でユーザーに承認を求めてから検証へ進む。",
+    "claims_invalid": "ユーザーの確認ゲート: {path} はユーザーに見せられる形になっていない: {why}",
+    "claims_unapproved": "ユーザーの確認ゲート: {name} の一覧はユーザーの承認が無い(承認のあとに一覧を変えた場合も同じ)。"
+    "`hymme claims request {name}` を実行し、表示された1行をユーザーに入力してもらう。"
+    "ユーザーと対話できない実行(サブエージェント、無人の実行)は、ここで止めて BLOCKED で返す。",
     "extract_missing": "0段ゲート: 抽出の台帳 {path} が無い。loopeng-extract の手順で台帳を完成させてから進む。",
     "extract_open": "0段ゲート: {path} が閉じていない: {why}",
     "review_missing": "検証容易性ゲート: {name} の reviewer の合格が記録されていない(台帳か対象のコードを合格のあとに変えた場合も同じ)。"
@@ -33,20 +33,20 @@ MESSAGES = {
     "約束が破れたおそれ」に分け、検証を今のコードに対して実行し直す(必要な実行: {need})。",
     "trace_missing": "統合ゲート: {name} の実ログの突き合わせが足りない(足りないもの: {need})。正常系、高負荷、障害注入のログが通り、"
     "わざと壊した実装のログが不一致になることを、`trace_check.py` を直接実行して示す。ログの名前は <名前>.normal.jsonl / .load.jsonl / .fault.jsonl / .broken.jsonl。"
-    "ログの粒度が spec と合わないときは、コマンド1つを1ステップで写す spec を別に作り、元の検証容易性の台帳に「実ログの spec: <その名前>」と書く。",
-    "chart_missing": "作業者の確認ゲート: {name} の状態の図が無いか、今の spec から作られていない。`hymme chart draw {name}` で作り直す。",
-    "chart_open": "作業者の確認ゲート: {name} の状態の図に、破れた規則か検査されなかった規則が残っている。設計を直して `hymme chart draw {name}` をやり直す。",
-    "chart_unapproved": "作業者の確認ゲート: {name} の状態の図は作業者の承認が無い。`hymme chart request {name}` を実行し、表示された1行を作業者に入力してもらう。",
+    "ログの粒度が spec と合わないときは、コマンド1つを1ステップで表す spec を別に作り、元の検証容易性の台帳に「実ログの spec: <その名前>」と書く。",
+    "chart_missing": "ユーザーの確認ゲート: {name} の状態遷移図が無いか、今の spec から作られていない。`hymme chart draw {name}` で作り直す。",
+    "chart_open": "ユーザーの確認ゲート: {name} の状態遷移図に、破れた規則か検査されなかった規則が残っている。設計を直して `hymme chart draw {name}` をやり直す。",
+    "chart_unapproved": "ユーザーの確認ゲート: {name} の状態遷移図はユーザーの承認が無い。`hymme chart request {name}` を実行し、表示された1行をユーザーに入力してもらう。",
     "log_not_captured": "統合ゲート: {name} の実ログ({labels})は `hymme capture` で採ったものではない。`hymme capture <ログ> -- <実システムを動かすコマンド>` で採り直す。",
     "no_stages": "統合ゲート: tasks/stages.md に、後段(integration か e2e)のコマンドの宣言が無い。どのコマンドとパスがどの段かを宣言する。"
-    "後段のテストが無いリポジトリは、`hymme exception request stages` で作業者の承認を取る。",
+    "後段のテストが無いリポジトリは、`hymme exception request stages` でユーザーの承認を取る。",
     "no_surface": "統合ゲート: tasks/surface.md が無い。実システムの動かし方(起動、健全性の確認、操作、証跡、後片付け)と「- 確認のコマンド:」を書く。",
     "surface_invalid": "統合ゲート: tasks/surface.md が足りない: {why}",
-    "surface_not_run": "統合ゲート: この変更に対して、tasks/surface.md の確認のコマンド({command})が通った記録が無い。実物を動かして確かめる。",
-    "weakened": "統合ゲート: 検査を弱める変更がある({what})。`hymme exception request weaken` で作業者の承認を取る。",
+    "surface_not_run": "統合ゲート: この変更に対して、tasks/surface.md の確認のコマンド({command})が通った記録が無い。実システムを動かして確かめる。",
+    "weakened": "統合ゲート: 検査を弱める変更がある({what})。`hymme exception request weaken` でユーザーの承認を取る。",
     "pr_body": "統合ゲート: PR の本文に「{heading}」の見出しが無い。影響の範囲と検証の結果を書く。",
-    "protected": "記録の保護: 署名の鍵と記録の置き場({path})は、hymme の道具以外から読み書きできない。",
-    "approval_text": "記録の保護: 承認の入力と同じ形の文字列を、道具の入力に入れることはできない。",
+    "protected": "記録の保護: 署名の鍵と記録の置き場({path})は、hymme のツール以外から読み書きできない。",
+    "approval_text": "記録の保護: 承認の入力と同じ形の文字列を、ツールの入力に入れることはできない。",
     "no_repo": "統合ゲート: git リポジトリの状態を確認できない。リポジトリの中で実行する。",
 }
 
@@ -62,7 +62,7 @@ ASSERT_ADDED = re.compile(r"^\+(?!\+).*\b(assert\w*|expect|should)\b", re.M)
 
 
 def msg(code, /, **kw):
-    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    """端末に出すメッセージをコードから引く(メッセージをこの表1か所に集める)。"""
     return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 

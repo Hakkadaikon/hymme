@@ -8,7 +8,7 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     pass) printf '合格   %s -> %s\n' "$2" "$3" ;;
     fail) printf '不合格 %s: exit %s(期待は %s)\n' "$2" "$3" "$4" ;;

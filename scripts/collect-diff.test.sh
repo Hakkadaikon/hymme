@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # collect-diff.sh manifest の回帰テスト。未追跡のエントリがディレクトリを指すシンボリックリンクでも落ちないこと。
-# あわせて diff-reviewer の Bash の許可リスト(validate-readonly-bash.sh)と、写しの中での実行(run-in-copy.sh)を見る。
+# あわせて diff-reviewer の Bash の許可リスト(validate-readonly-bash.sh)と、コピーの中での実行(run-in-copy.sh)を見る。
 # 要: git, jq
 set -euo pipefail
 
@@ -49,7 +49,7 @@ verdict 2 deny-worktree-add 'git worktree add --detach /tmp/x HEAD'
 verdict 2 deny-redirect 'echo x > a.txt'
 verdict 2 deny-chain-after-copy "$run HEAD true && touch a.txt"
 
-# 写しの中で実行する: 終了コードを返し、作業ツリーにファイルを残さず、worktree を片付ける
+# コピーの中で実行する: 終了コードを返し、作業ツリーにファイルを残さず、worktree を片付ける
 code=0
 bash "$run" HEAD sh -c 'test -f a.txt && touch made.txt && exit 7' || code=$?
 if [ "$code" = 7 ] && [ ! -e made.txt ] && [ "$(git worktree list | wc -l)" -eq 1 ]; then

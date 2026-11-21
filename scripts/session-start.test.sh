@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # session-start.sh の回帰テスト。出力が JSON として読め、注入文に未展開の ${CLAUDE_PLUGIN_ROOT} が残らないこと。
-# & を含むプラグインのパスでも壊れないこと(bash の置換は版で & の扱いが違う)。
+# & を含むプラグインのパスでも壊れないこと(bash の置換はバージョンで & の扱いが違う)。
 set -euo pipefail
 
 src="$(cd "$(dirname "$0")/.." && pwd)"

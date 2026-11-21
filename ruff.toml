@@ -6,5 +6,5 @@ target-version = "py312"
 select = ["E", "F", "W", "B", "I", "UP"]
 
 [lint.per-file-ignores]
-# メッセージの表とテストの文面は、1文を1行で書く(grep で文言を引けるようにする)
+# メッセージの表とテストの文面は、1文を1行で書く(grep でメッセージを引けるようにする)
 "loopeng/lib/**" = ["E501"]

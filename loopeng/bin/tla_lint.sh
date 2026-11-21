@@ -11,7 +11,7 @@
 # exit: 0 = 通過、1 = spec にエラー(直してから TLC へ)、2 = 使い方・ツール不在。
 set -uo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     no_spec) printf 'tla_lint: spec が無い: %s\n' "$2" ;;
     no_cmd) printf "tla_lint: \`%s\` が PATH に無い\n" "$2" ;;

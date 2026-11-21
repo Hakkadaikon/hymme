@@ -16,7 +16,7 @@ from pathlib import Path
 
 MESSAGES = {
     "no_spec": "{path} が無い。",
-    "no_tlc": "tlc が PATH に無い。hymme の skill-tools を入れてから実行する。",
+    "no_tlc": "tlc が PATH に無い。hymme の skill-tools をインストールしてから実行する。",
     "tlc_error": "TLC が判定できずに止まった(spec か cfg の誤り)。出力の末尾:\n{tail}",
     "wrote": "{report} と {chart} を書いた。破れた規則 {broken} 件、検査されなかった規則 {unchecked} 件。",
 }
@@ -27,7 +27,7 @@ KEYWORDS |= {"PROPERTIES", "SYMMETRY", "VIEW", "CONSTRAINT", "CONSTRAINTS", "ACT
 
 
 def msg(code, /, **kw):
-    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    """端末に出すメッセージをコードから引く(メッセージをこの表1か所に集める)。"""
     return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 
@@ -171,7 +171,7 @@ def spec_hash(spec_dir, name):
 
 def report(name, digest, held, broken, unchecked, nodes, edges):
     lines = [
-        f"# {name} の状態の図",
+        f"# {name} の状態遷移図",
         "",
         f"spec: {digest}",
         f"到達した状態: {len(nodes)}",

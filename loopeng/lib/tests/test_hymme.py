@@ -121,7 +121,7 @@ class Repo(unittest.TestCase):
     def request_and_approve(self, *argv):
         code, text = self.cli(*argv)
         self.assertEqual(code, 0, text)
-        self.approve(text.split("符号: ")[1].split()[0])
+        self.approve(text.split("承認コード: ")[1].split()[0])
 
 
 class StoreTest(Repo):
@@ -288,7 +288,7 @@ class ClaimsGateTest(Repo):
         self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
         code, err, _ = self.bash(self.entry)
         self.assertEqual(code, 2)
-        self.assertIn("作業者の承認が無い", err)
+        self.assertIn("ユーザーの承認が無い", err)
 
     def test_passes_after_the_worker_approves_and_stops_again_when_the_list_changes(self):
         self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
@@ -301,7 +301,7 @@ class ClaimsGateTest(Repo):
     def test_approval_needs_the_whole_input_and_a_known_code(self):
         self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
         _, text = self.cli("claims", "request", "Cart")
-        code = text.split("符号: ")[1].split()[0]
+        code = text.split("承認コード: ")[1].split()[0]
         self.fire("UserPromptSubmit", prompt=f"<task-notification>承認 {code}</task-notification>")
         self.fire("UserPromptSubmit", prompt=f"よさそうです。承認 {code}")
         self.assertEqual(self.bash(self.entry)[0], 2)
@@ -312,7 +312,7 @@ class ClaimsGateTest(Repo):
     def test_request_from_a_tool_of_another_version_is_refused(self):
         self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
         _, text = self.cli("claims", "request", "Cart")
-        code = text.split("符号: ")[1].split()[0]
+        code = text.split("承認コード: ")[1].split()[0]
         p = store.root(self.root) / "pending" / f"{code}.json"
         p.write_text(p.read_text().replace(store.VERSION, "0.0.1"))
         self.assertIn("食い違っています", self.approve(code)[2])
@@ -662,13 +662,13 @@ class ManagedRepoTest(Repo):
     def test_the_chart_must_match_the_spec_leave_nothing_open_and_be_approved(self):
         self.spec()
         check = "trace_check.py tasks/loopeng/Cart.tla logs/Cart.normal.jsonl"
-        self.assertIn("状態の図が無い", self.bash(check)[1])
+        self.assertIn("状態遷移図が無い", self.bash(check)[1])
         self.chart_report(broken="### Cap\n\n最短の経路は 1 手です。")
         self.assertIn("破れた規則か検査されなかった規則", self.bash(check)[1])
         self.chart_report(unchecked=1)
         self.assertIn("破れた規則か検査されなかった規則", self.bash(check)[1])
         self.chart_report()
-        self.assertIn("作業者の承認が無い", self.bash(check)[1])
+        self.assertIn("ユーザーの承認が無い", self.bash(check)[1])
         self.request_and_approve("chart", "request", "Cart")
         self.assertIn("守られた規則", json.loads(self.ran("hymme chart request Cart")[2])["systemMessage"])
         self.assertIn("Cart.claims.md", json.loads(self.ran("hymme claims request Cart")[2])["systemMessage"])
@@ -680,7 +680,7 @@ class ManagedRepoTest(Repo):
         self.assertEqual(self.ran("hymme exception request review --until 2099-01-02 --reason other")[2], "")
         self.assertEqual(self.bash(check)[0], 0)
         self.write("tasks/loopeng/Cart.tla", "y")
-        self.assertIn("状態の図が無い", self.bash(check)[1])
+        self.assertIn("状態遷移図が無い", self.bash(check)[1])
         self.assertEqual(self.cli("chart", "request", "Nope")[0], 1)
 
     def test_a_model_of_a_pure_decision_needs_the_real_function_compared(self):
@@ -986,7 +986,7 @@ class EdgeTest(Repo):
         self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
         for check in ("stale", "trace", "stages", "surface"):
             self.request_and_approve("exception", "request", check, "--until", "2099-01-01", "--reason", "spike")
-        self.assertIn("状態の図が無い", self.bash("gh pr create --fill")[1])
+        self.assertIn("状態遷移図が無い", self.bash("gh pr create --fill")[1])
         (self.root / "tasks/loopeng/Cart.tla").unlink()
         self.assertEqual(self.bash("gh pr create --fill")[0], 0)
 

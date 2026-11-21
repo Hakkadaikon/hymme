@@ -250,7 +250,7 @@ def surface(root):
     problems = [f"「## {h}」が空" for h in SURFACE_SECTIONS if not filled(section(text, h))]
     command = (filled([fields(text).get("確認のコマンド", "")]) or [None])[0]
     if not command:
-        problems.append("「- 確認のコマンド: <実物を動かして確かめるコマンドの先頭>」が無い")
+        problems.append("「- 確認のコマンド: <実システムを動かして確かめるコマンドの先頭>」が無い")
     if not filled([fields(text).get("検証と本番で違う値", "")]):
         problems.append("「- 検証と本番で違う値: <容量やタイムアウトなどの一覧。無ければ「無し: 理由」>」が無い")
     return {"problems": problems, "command": command.strip("`") if command else None}

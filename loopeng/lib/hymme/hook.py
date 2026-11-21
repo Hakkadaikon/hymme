@@ -18,20 +18,20 @@ from .cmdparse import Gate
 MESSAGES = {
     "no_key": "hymme: 署名の鍵を置く場所(CLAUDE_PLUGIN_DATA)が hook に渡っていない。記録を確かめられないので止める。"
     "プラグインとして読み込まれているかを確かめる。",
-    "show_claims": "【作業者の確認】{name} について、検証で実証する項目です。内容が正しければ、次の1行だけを入力してください: 承認 {code}\n"
+    "show_claims": "【ユーザーの確認】{name} について、検証で実証する項目です。内容が正しければ、次の1行だけを入力してください: 承認 {code}\n"
     "(一覧のファイル: {path})\n\n{text}",
-    "show_chart": "【作業者の確認】{name} の検査の結果と状態の図です。振る舞いが意図どおりなら、次の1行だけを入力してください: 承認 {code}\n"
+    "show_chart": "【ユーザーの確認】{name} の検査の結果と状態遷移図です。振る舞いが意図どおりなら、次の1行だけを入力してください: 承認 {code}\n"
     "(ファイル: {path})\n\n{text}",
-    "show_exception": "【作業者の確認】検査「{check}」を {until} まで外す申請です。理由: {reason}\n認めるなら、次の1行だけを入力してください: 承認 {code}",
-    "show_unreachable": "【作業者の確認】欠陥の記録 {id} を「前段では原理的に拾えない」として閉じる申請です。理由: {reason}\n"
+    "show_exception": "【ユーザーの確認】検査「{check}」を {until} まで外す申請です。理由: {reason}\n認めるなら、次の1行だけを入力してください: 承認 {code}",
+    "show_unreachable": "【ユーザーの確認】欠陥の記録 {id} を「前段では原理的に拾えない」として閉じる申請です。理由: {reason}\n"
     "認めるなら、次の1行だけを入力してください: 承認 {code}",
     "approved": "hymme: 承認を記録しました({what})。",
-    "approve_unknown": "hymme: 符号 {code} に当たる申請がありません。申請をやり直してください。",
+    "approve_unknown": "hymme: 承認コード {code} に当たる申請がありません。申請をやり直してください。",
     "approve_changed": "hymme: 申請のあとに内容が変わっています。申請をやり直してください({what})。",
-    "approve_version": "hymme: 道具(バージョン {tool})と hook(バージョン {hook})が食い違っています。両方を同じバージョンに更新してください。",
+    "approve_version": "hymme: ツール(バージョン {tool})と hook(バージョン {hook})が食い違っています。両方を同じバージョンに更新してください。",
     "escape_opened": "hymme: {stage} の段のコマンドが失敗したので、欠陥の記録 {id} を開きました({path})。"
     "拾えたはずの前の段にテストを足し、`hymme escape verify {id}` を通すまで、変更は統合できません。",
-    "path_tampered": "hymme: コマンドの中で PATH を変えているので、hymme の道具の結果は記録しません。PATH を変えずに実行してください。",
+    "path_tampered": "hymme: コマンドの中で PATH を変えているので、hymme のツールの結果は記録しません。PATH を変えずに実行してください。",
 }
 
 RULES = [
@@ -49,7 +49,7 @@ MAX_EXCEPTION_DAYS = 90
 
 
 def msg(code, /, **kw):
-    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    """端末に出すメッセージをコードから引く(メッセージをこの表1か所に集める)。"""
     return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 
@@ -417,7 +417,7 @@ def user_prompt(payload, key):
             **({"id": req["id"]} if kind == "unreachable" else {"name": req["name"]}),
         }
         store.append("approval", fields, cwd, key)
-        label = {"claims": "一覧", "chart": "状態の図", "unreachable": "閉じ方"}[kind]
+        label = {"claims": "一覧", "chart": "状態遷移図", "unreachable": "閉じ方"}[kind]
         what = f"{req.get('name') or req.get('id')} の{label}"
     else:
         limit = time.strftime("%Y-%m-%d", time.localtime(time.time() + MAX_EXCEPTION_DAYS * 86400))

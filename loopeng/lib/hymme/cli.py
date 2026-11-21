@@ -18,9 +18,9 @@ from . import chart, ledgers, store
 
 MESSAGES = {
     "claims_missing": "{path} が無い。要件ごとに「示すこと」「示さないこと」「破れたときの害」を書く。",
-    "claims_invalid": "{path} は作業者に見せられる形になっていない:\n{why}",
-    "request": "申請を作りました。作業者に次の内容が表示されます。承認の入力は作業者だけができます。\n符号: {code}",
-    "claims_ok": "{path} は作業者に見せられる形です。",
+    "claims_invalid": "{path} はユーザーに見せられる形になっていない:\n{why}",
+    "request": "申請を作りました。ユーザーに次の内容が表示されます。承認の入力はユーザーだけができます。\n承認コード: {code}",
+    "claims_ok": "{path} はユーザーに見せられる形です。",
     "bad_check": "検査 {check} は例外で外せません。外せる検査: {known}",
     "bad_date": "--until は YYYY-MM-DD の形で、今日以降にします。",
     "escape_created": "欠陥の記録を作りました: {path}\n欄を埋めたら `hymme escape verify {id}` を実行します。",
@@ -31,8 +31,8 @@ MESSAGES = {
     "repro_red": "再現のコマンドが修正前のコード({base})で失敗しません。再現になっていません。\nコマンド: {command}",
     "repro_green": "再現のコマンドが今のコードで通りません(終了コード {code})。直っていません。\nコマンド: {command}\n{tail}",
     "verified": "欠陥の記録 {id} の確認が通りました(修正前に失敗、修正後に成功)。",
-    "approval_seen": "欠陥の記録 {id} には作業者の承認の記録があります。このコマンドを hook が見ていれば、記録は閉じます(`hymme escape list` で確かめる)。",
-    "needs_approval": "欠陥の記録 {id} の欄は埋まっています。この閉じ方には作業者の承認が要ります: {how}",
+    "approval_seen": "欠陥の記録 {id} にはユーザーの承認の記録があります。このコマンドを hook が見ていれば、記録は閉じます(`hymme escape list` で確かめる)。",
+    "needs_approval": "欠陥の記録 {id} の欄は埋まっています。この閉じ方にはユーザーの承認が要ります: {how}",
     "capture_failed": "ログを採れませんでした(終了コード {code})。コマンドが {log} を書いたかを確かめてください。",
     "captured": "ログを採りました: {log} (sha256 {sha})",
     "no_escapes": "欠陥の記録はありません。",
@@ -43,7 +43,7 @@ MESSAGES = {
 
 
 def msg(code, /, **kw):
-    """端末に出す文言をコードから引く(文言をこの表1か所に集める)。"""
+    """端末に出すメッセージをコードから引く(メッセージをこの表1か所に集める)。"""
     return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 
@@ -234,7 +234,7 @@ def draw(args):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="hymme")
     sub = p.add_subparsers(dest="cmd", required=True)
-    c = sub.add_parser("claims", help="検証の前に作業者へ確かめる一覧")
+    c = sub.add_parser("claims", help="検証の前にユーザーへ確かめる一覧")
     c.add_argument("action", choices=["check", "request"])
     c.add_argument("name")
     c.set_defaults(fn=claims)
@@ -257,7 +257,7 @@ def main(argv=None):
     k.set_defaults(fn=capture)
     s = sub.add_parser("specs", help="この変更が触れている検証の対象")
     s.set_defaults(fn=specs)
-    d = sub.add_parser("chart", help="状態の図と、規則ごとの結果")
+    d = sub.add_parser("chart", help="状態遷移図と、規則ごとの結果")
     d.add_argument("action", choices=["draw", "request"])
     d.add_argument("name")
     d.set_defaults(fn=draw)

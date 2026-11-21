@@ -12,13 +12,13 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 mode="${1:-develop}"
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     not_tty) printf '端末から実行されていない。続けるなら HYMME_ASSUME_YES=1 を付けて再実行する\n' ;;
     confirm) printf '%s [y/N] ' "$2" ;;
     no_nix) printf 'Nix が見つからない\n' ;;
     ask_install) printf 'Determinate Nix をインストールするか(システム全体に入る。sudo が要る)' ;;
-    aborted) printf '中止した。Nix を自分で入れてから再実行する\n' ;;
+    aborted) printf '中止した。Nix を自分でインストールしてから再実行する\n' ;;
     not_on_path) printf 'Nix は入ったが PATH に無い。新しいシェルを開いて再実行する\n' ;;
     usage) printf '使い方: %s [develop|install]\n' "$2" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;

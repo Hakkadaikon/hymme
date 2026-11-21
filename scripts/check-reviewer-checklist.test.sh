@@ -11,7 +11,7 @@ fail=0
 names='見出し語とチェックリストの項目名が一致しない'
 count='件数を数字で直書きしている'
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     pass) printf '合格   %s\n' "$2" ;;
     fail) printf '不合格 %s: exit %s(期待は %s)%s\n' "$2" "$3" "$4" "${5:+、stderr に「$5」が要る}" ;;
@@ -19,7 +19,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   esac
 }
 
-expect() { # expect <exit> <stderr に含まれるべき文言(空なら不問)> <name> <file...>
+expect() { # expect <exit> <stderr に含まれるべきメッセージ(空なら不問)> <name> <file...>
   local want="$1" msg="$2" name="$3" got=0
   shift 3
   bash "$check" "$@" 2>"$tmp/err" || got=$?

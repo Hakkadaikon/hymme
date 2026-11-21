@@ -8,7 +8,7 @@ set -euo pipefail
 # 件数直書き検出の近さの窓をバイトでなく文字で数える
 export LC_ALL=C.UTF-8
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     no_file) printf '%s: ファイルが無い\n' "$2" ;;
     no_gate) printf '%s: チェックリストがあるのに ## 必須ゲート 節が無い\n' "$2" ;;

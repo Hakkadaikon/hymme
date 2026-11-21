@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""hymme の道具の入口。本体は ../lib/hymme/cli.py(インストール先でも bin の隣に lib を置く)。"""
+"""hymme のツールの入口。本体は ../lib/hymme/cli.py(インストール先でも bin の隣に lib を置く)。"""
 
 import os
 import sys

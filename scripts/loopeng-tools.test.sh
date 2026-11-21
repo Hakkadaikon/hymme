@@ -3,7 +3,7 @@
 # 使い方: loopeng-tools.test.sh <skill-tools の bin ディレクトリ>
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     usage) printf '使い方: loopeng-tools.test.sh <bin ディレクトリ>' ;;
     ok) printf '合格   %s\n' "$2" ;;

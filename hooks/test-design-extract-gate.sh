@@ -49,7 +49,7 @@ ledger_dir="tasks/test-design"
 ledgers="$(find "$ledger_dir" -maxdepth 1 -name '*.md' 2>/dev/null || true)"
 [ -n "$ledgers" ] || exit 0
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     unchecked) printf 'test-design 0段ゲート: %s に未チェック(- [ ] T-...)が残っている。手法割り当てとテスト名を埋めて [x] にしてから実装へ進め。\n' "$2" ;;
     gap) printf 'test-design 0段ゲート: %s の T-ID 連番に欠番がある(T-%s..T-%s のうち %s 件)。抜けを埋めるか採番し直せ。\n' "$2" "$3" "$4" "$5" ;;
@@ -58,7 +58,7 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
   esac
 }
 
-block() { # block <code> [args...]: 文言を stderr に出して exit 2
+block() { # block <code> [args...]: メッセージを stderr に出して exit 2
   msg "$@" >&2
   exit 2
 }

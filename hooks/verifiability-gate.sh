@@ -6,13 +6,13 @@
 # PreToolUse(matcher: Bash)。stdin に hook の JSON。
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     block) printf '検証容易性ゲート: %s\n' "$2" ;;
     unparsed) printf '%s' 'コマンドを解析できなかった(python3 が無い、または解析の失敗)。検証の入口は止める。' ;;
     no_ledger) printf '台帳 %s が無い。コントローラが verifiability スキルの assets/verifiability-template.md をコピーし、検証する判定の関数を「## 対象」に書くか、写すコードが無ければ「対象コード無し: 理由」と書いてから進める(modeler/prover は台帳を書かずに BLOCKED で返す)。' "$2" ;;
     post_impl) printf '%s は対象コードが無いが、実ログの突き合わせは実装後の段。対象の関数を「## 対象」に書き直すか、手元に実装が無い理由を「対象コード無し(実装後): 理由」と書く。' "$2" ;;
-    no_tool) printf '%s' 'verifiability.py が PATH に(絶対パスで)無い。hymme の skill-tools を入れてから進め(指標を測れないまま検証へ進ませない)。' ;;
+    no_tool) printf '%s' 'verifiability.py が PATH に(絶対パスで)無い。hymme の skill-tools をインストールしてから進め(指標を測れないまま検証へ進ませない)。' ;;
     metrics) printf '%s の指標が通らない。判定を小さな純粋関数へ切り出して再計測するか、理由付きの例外を書け:\n%s' "$2" "$3" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac
@@ -41,7 +41,7 @@ while IFS=$'\t' read -r kind root name entry; do
   ledger="$root/tasks/verifiability/${name}.md"
   [ -f "$ledger" ] || block "$(msg no_ledger "$ledger")"
 
-  # 写すコードが無い設計検証は、計測の道具が無くても通す。実ログの突き合わせは実装後の段なので、
+  # 写すコードが無い設計検証は、計測のツールが無くても通す。実ログの突き合わせは実装後の段なので、
   # 手元に実装が無い理由を「対象コード無し(実装後): 理由」と明示したときだけ通す。
   targets_sec="$(awk '/^## 対象[[:space:]]*$/{f=1;next} /^## /{f=0} f' "$ledger")"
   if ! printf '%s\n' "$targets_sec" | grep -qE '^- [^[:space:]]+::[^[:space:]]+'; then

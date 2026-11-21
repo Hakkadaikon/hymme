@@ -9,7 +9,7 @@ trap 'rm -rf "$tmp"' EXIT
 export TMPDIR="$tmp" _JAVA_OPTIONS="-Djava.io.tmpdir=$tmp"
 fail=0
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     ok) printf '合格   %s\n' "$2" ;;
     ng) printf '不合格 %s\n' "$2" ;;
