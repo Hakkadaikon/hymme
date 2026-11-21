@@ -503,7 +503,8 @@ class IntegrationTest(Repo):
         sh(self.root, "git", "checkout", "-q", "main")
         self.assertEqual(self.bash("git merge --no-ff work")[1], "")
         self.assertEqual(self.bash("git merge -m 'take the work' --no-ff work")[1], "")
-        self.assertIn("diff-review の記録が無い", self.bash("git merge")[1])
+        sh(self.root, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
+        self.assertEqual(self.bash("git merge origin/main")[1], "")
         self.assertEqual(hook.merged_ref(["-s", "ours", "--no-ff"]), "HEAD")
 
     def test_a_remote_default_branch_is_found_without_origin_head(self):
@@ -961,6 +962,8 @@ class EdgeTest(Repo):
         self.assertIsNone(hook.pr_body(["--fill"]))
 
     def test_git_options_before_the_subcommand_are_skipped(self):
+        self.write("src/rules.py", "def allow(n):\n    return n < 4\n")
+        self.commit("feat: raise the limit")
         sh(self.root, "git", "checkout", "-q", "main")
         self.assertEqual(self.bash("git -C . merge work")[0], 2)
         self.assertEqual(self.bash("git -c a=b status")[0], 0)
@@ -1059,6 +1062,15 @@ class EscapeClosingTest(EscapeTest):
         sh(self.root, "git", "merge", "-q", "work")
         self.fire("SubagentStop", agent_type="hymme:diff-reviewer", last_assistant_message="must: 0\nlenses: design")
         self.assertEqual(self.bash("git push origin main")[1], "")
+
+    def test_a_record_on_another_branch_does_not_cover_a_fix_branch(self):
+        self.open_one()
+        sh(self.root, "git", "checkout", "-q", "-b", "other")
+        self.write("src/rules.py", "def allow(n):\n    return n < 7\n")
+        self.commit("fix: limit")
+        self.assertIn("fix 型のコミット", self.bash("gh pr create --fill")[1])
+        sh(self.root, "git", "checkout", "-q", "main")
+        self.assertIn("fix 型のコミット", self.bash("git merge other")[1])
 
     def test_the_reproduction_must_fail_before_the_fix_and_pass_after(self):
         eid = self.open_one()

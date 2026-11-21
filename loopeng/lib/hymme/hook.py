@@ -160,8 +160,9 @@ def pre_tool(payload, key):
         leave = leaves(gate, ctx)
         if leave:
             ctx.ref, ctx._change = leave[2], None
-        # a push from the default branch with nothing ahead of the remote carries no change out
-        if leave and not (leave[0] == "push" and on_default_branch(cwd) and ctx.change() == "empty"):
+        # nothing leaves when the default branch pushes with nothing ahead of the remote, or merges a ref
+        # that adds nothing to it (catching up with origin)
+        if leave and not (leave[0] != "pr" and on_default_branch(cwd) and ctx.change() == "empty"):
             reasons += need_key(key) or checks.integration(ctx, leave[1])
     if reasons:
         print("\n".join(dict.fromkeys(reasons)), file=sys.stderr)
