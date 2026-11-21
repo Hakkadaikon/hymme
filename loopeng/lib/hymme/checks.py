@@ -241,8 +241,11 @@ def integration(ctx, body=None):
     ids = open_escapes(ctx)
     if ids:
         out.append(msg("escape_open", ids=", ".join(ids)))
-    here = store.branch(ctx.cwd)
-    handled = ctx.recs("escape-open", branch=here) + ctx.recs("escape-closed", branch=here)
+    # the record belongs to the branch that leaves: the one being merged, or the one checked out.
+    # Once fixes sit on the default branch, the branch they were recorded on is gone from view: any record counts.
+    here = ctx.ref if ctx.ref != "HEAD" else store.branch(ctx.cwd)
+    match = {} if here == store.default_branch(ctx.cwd) else {"branch": here}
+    handled = ctx.recs("escape-open", **match) + ctx.recs("escape-closed", **match)
     if not ctx.exempt("fix_without_escape") and not handled:
         if any(re.match(r"fix(\(.+\))?!?:", s) for s in branch_log(ctx.cwd, ctx.ref)):
             out.append(msg("fix_without_escape"))
