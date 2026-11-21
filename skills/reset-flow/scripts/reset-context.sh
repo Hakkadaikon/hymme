@@ -13,7 +13,7 @@
 #   WARNING: は全て計画に明記して承認対象に含める。
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     usage) printf '使い方: reset-context.sh <target-ref> <hard|mixed|soft>\n' ;;
     bad_mode) printf 'エラー: mode は hard | mixed | soft のいずれか(指定: %s)\n' "$2" ;;

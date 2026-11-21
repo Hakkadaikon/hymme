@@ -9,7 +9,7 @@
 #               渡すと onto 型でも比較範囲が正確になる（推奨）。
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     usage) printf '使い方: rebase-verify.sh <backup-ref> [base-ref]\n' ;;
     bad_backup) printf "エラー: backup ref '%s' を解決できない\n" "$2" ;;

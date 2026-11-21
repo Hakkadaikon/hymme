@@ -20,7 +20,7 @@ argument-hint: "[証明したい性質/仕様(ファイルパス or 説明)]"
 `elan`(flake の tools に含む)が入っていること。なければ `nix profile install .#skill-tools`。
 
 - `elan`：Lean toolchain manager。`lake` / `lean` を供給する。
-- 初回のみ `elan default stable` で Lean 4 本体を入れる(これをやるまで `lake` は "no default toolchain" で落ちる)。
+- 初回のみ `elan default stable` で Lean 4 本体をインストールする(これをやるまで `lake` は "no default toolchain" で落ちる)。
 - 新規プロジェクト: `lake new <name> math`(Mathlib 付き)or `lake new <name>`(素)。Mathlib は重い。roundtrip / 範囲 / 単射性 / 状態機械程度なら素の `Init`/`Std` で足り、`lake build` も速い。**本当に必要になるまで Mathlib を足さない**(YAGNI)。
 - ビルド/証明チェック: `lake build`。エラーが証明の穴。
 
@@ -36,7 +36,7 @@ argument-hint: "[証明したい性質/仕様(ファイルパス or 説明)]"
 
 **§2 に入る前に検証容易性の段を通す。** 既存の実装(または書いたばかりの実装)の判定を証明するなら、[`../verifiability/SKILL.md`](../verifiability/SKILL.md) で判定を小さな純粋関数に切り出し、指標と reviewer の合格を得てから Lean に写す。実装前で写すコードが無いときも台帳 `tasks/verifiability/<Name>.md` を作り「対象コード無し: 理由」と書き、§4 で実装に橋渡しする前に対象を書き直す。止める入口と条件は verifiability スキルの「強制のしくみ」。
 
-**§2 に入る前に、確認の一覧を作業者に承認してもらう。** §1 の性質カタログができたら、性質ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書いた一覧を `tasks/fv/<Name>.claims.md` に作る(`<Name>` は Lean プロジェクト名。ひな形は [`../loopeng-formalize/assets/claims-template.md`](../loopeng-formalize/assets/claims-template.md))。「有限にした範囲」には証明の前提にした上限や値の範囲を、「扱わない領域」には証明の対象から外した層(§2 の層注)と、それを別にどう確かめるかを書く。Lean、不変条件などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <符号>` の1行を作業者に入力してもらう。承認が無いか、承認のあとに一覧を変えていると、`tasks/fv/<Name>` での `lake build` は hook に止められる。作業者が項目を直したら、性質カタログ、Lean の定理、一覧の順に作り直して承認を取り直す。一覧を作って承認を取るのはコントローラで、prover は承認が無ければ着手せず BLOCKED で返す。形と流れの詳細は [`../loopeng-formalize/SKILL.md`](../loopeng-formalize/SKILL.md) の「作業者の確認」。
+**§2 に入る前に、確認の一覧をユーザーに承認してもらう。** §1 の性質カタログができたら、性質ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書いた一覧を `tasks/fv/<Name>.claims.md` に作る(`<Name>` は Lean プロジェクト名。ひな形は [`../loopeng-formalize/assets/claims-template.md`](../loopeng-formalize/assets/claims-template.md))。「有限にした範囲」には証明の前提にした上限や値の範囲を、「扱わない領域」には証明の対象から外した層(§2 の層注)と、それを別にどう確かめるかを書く。Lean、不変条件などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <承認コード>` の1行をユーザーに入力してもらう。承認が無いか、承認のあとに一覧を変えていると、`tasks/fv/<Name>` での `lake build` は hook に止められる。ユーザーが項目を直したら、性質カタログ、Lean の定理、一覧の順に作り直して承認を取り直す。一覧を作って承認を取るのはコントローラで、prover は承認が無ければ着手せず BLOCKED で返す。形と流れの詳細は [`../loopeng-formalize/SKILL.md`](../loopeng-formalize/SKILL.md) の「ユーザーの確認」。
 
 ### 1. 仕様を網羅形式へ
 

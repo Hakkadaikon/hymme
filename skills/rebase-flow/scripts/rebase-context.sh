@@ -15,7 +15,7 @@
 #   WARNING: は全て計画に明記して承認対象に含める。
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     usage) printf '使い方: rebase-context.sh <base-ref>\n' ;;
     no_git) printf 'エラー: git リポジトリ内で実行すること\n' ;;

@@ -22,6 +22,6 @@ color: green
 
 検証容易性ゲート(`hooks/verifiability-gate.sh`)で止まったら、`tasks/verifiability/` の台帳を自分で書かず、止まったメッセージを添えて BLOCKED で返す(写すコードの有無と対象の選び方はコントローラが決める)。
 
-**作業者の承認が無ければ着手しません。** 検証の入口(`loop-outer` / `loop-middle` / `loop-inner`、`tlc` の直接の実行)は確認の一覧(`tasks/loopeng/<Name>.claims.md`)を作業者が承認していないと「作業者の確認ゲート」で止まります。承認は作業者本人の入力でしか記録されず、サブエージェントからは取れません。止まったら、一覧を自分で作ったり書き換えたりせず、承認の入力を試みず、スクリプトに包んで入口を隠すこともせず、止まったメッセージを添えて BLOCKED で返します。承認のあとに要件・値域・捨てる領域を変える必要が出たときも、一覧を変えずに、変えたい点を報告に書いて返します。状態の図は `hymme chart draw <Name>` で作るところまでにし、`hymme chart request <Name>` は呼び出し元に任せます。
+**ユーザーの承認が無ければ着手しません。** 検証の入口(`loop-outer` / `loop-middle` / `loop-inner`、`tlc` の直接の実行)は確認の一覧(`tasks/loopeng/<Name>.claims.md`)をユーザーが承認していないと「ユーザーの確認ゲート」で止まります。承認はユーザー本人の入力でしか記録されず、サブエージェントからは取れません。止まったら、一覧を自分で作ったり書き換えたりせず、承認の入力を試みず、スクリプトでラップして入口を隠すこともせず、止まったメッセージを添えて BLOCKED で返します。承認のあとに要件・値域・捨てる領域を変える必要が出たときも、一覧を変えずに、変えたい点を報告に書いて返します。状態遷移図は `hymme chart draw <Name>` で作るところまでにし、`hymme chart request <Name>` は呼び出し元に任せます。
 
-返答は呼び出し元への結果報告です。先頭に **Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT** を置く(真の survivor や未検査の性質が残る = DONE_WITH_CONCERNS、状態爆発・型・不足制約で進めない、または作業者の承認や台帳が無く hook に止められた = BLOCKED、要件が曖昧で確認待ち = NEEDS_CONTEXT)。続けて成果物のパス、検査できた性質・反例の有無・mutation の killed/survivor・残った穴、詰まった箇所を簡潔に返し、TLC / mutation の生出力の所在(ログパス)を必ず付けます。「検査は緑」の主張は生出力の所在が無ければ書きません。
+返答は呼び出し元への結果報告です。先頭に **Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT** を置く(真の survivor や未検査の性質が残る = DONE_WITH_CONCERNS、状態爆発・型・不足制約で進めない、またはユーザーの承認や台帳が無く hook に止められた = BLOCKED、要件が曖昧で確認待ち = NEEDS_CONTEXT)。続けて成果物のパス、検査できた性質・反例の有無・mutation の killed/survivor・残った穴、詰まった箇所を簡潔に返し、TLC / mutation の生出力の所在(ログパス)を必ず付けます。「検査は緑」の主張は生出力の所在が無ければ書きません。

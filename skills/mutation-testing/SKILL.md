@@ -97,7 +97,7 @@ Mutation Score = (Killed + Timeout) / (有効ミュータント − 等価ミュ
 アサーションが甘ければ、高カバレッジでもバグは漏れる。
 
 ミューテーションテストは、コードを壊してテストが落ちるかを直接問うことで、通過と検証が一致しない溝を埋める。
-カバレッジ率は穴（未到達）を見つける道具、ミューテーションスコアはテストの強さを測る道具として、役割で使い分ける。
+カバレッジ率は穴（未到達）を見つけるツール、ミューテーションスコアはテストの強さを測るツールとして、役割で使い分ける。
 どちらも、目標値の達成自体を目的化しない（高カバレッジは良いテストと同義ではない）。
 
 構造網羅（カバレッジ）の各手法は [whitebox-controlflow-basic.md](../whitebox-controlflow-basic/SKILL.md) / [whitebox-controlflow-path.md](../whitebox-controlflow-path/SKILL.md) と [whitebox-dataflow-loop.md](../whitebox-dataflow-loop/SKILL.md) で扱う。

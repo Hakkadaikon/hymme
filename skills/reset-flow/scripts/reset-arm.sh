@@ -8,7 +8,7 @@
 #                  --hard で dirty を意図的に破棄する計画が承認済みの場合のみ。
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     bad_opt) printf 'エラー: 不明なオプション: %s\n' "$2" ;;
     no_git) printf 'エラー: git リポジトリ内で実行すること\n' ;;

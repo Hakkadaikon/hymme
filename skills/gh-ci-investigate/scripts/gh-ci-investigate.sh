@@ -20,7 +20,7 @@
 # 修正は一切行わない。収集だけ。GitHub(github.com / GitHub Enterprise)専用。
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     error) printf 'エラー: %s\n' "$2" ;;
     bad_url_owner) printf 'URL から OWNER/REPO を取れない: %s\n' "$2" ;;

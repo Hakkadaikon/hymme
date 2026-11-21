@@ -16,7 +16,7 @@ description: >
 TLA+ は「どの順番で起きても」を総当たりする。状態を持たない判定の問いは「どんな入力でも」で、こちらは SMT ソルバーが一発で答える。
 対象がデータ(設定・ルール)なら、モデルが実データをそのまま読めるので、モデルと本番のずれが小さい。
 
-**前提**: `tasks/loopeng/<Name>.extract.md` の台帳が閉じていること(loopeng-extract)。判定ごとに [`../_shared/failure-semantics.md`](../_shared/failure-semantics.md) の問いへ答えてあること。`tasks/verifiability/<Name>.md` の検証容易性の台帳が通っていること([`../verifiability/SKILL.md`](../verifiability/SKILL.md) の「強制のしくみ」)。確認の一覧(`tasks/loopeng/<Name>.claims.md`)を作業者が承認していること(下の手順 2)。どれかが欠けると `smt_oracle.py` は hook に止められる。
+**前提**: `tasks/loopeng/<Name>.extract.md` の台帳が閉じていること(loopeng-extract)。判定ごとに [`../_shared/failure-semantics.md`](../_shared/failure-semantics.md) の問いへ答えてあること。`tasks/verifiability/<Name>.md` の検証容易性の台帳が通っていること([`../verifiability/SKILL.md`](../verifiability/SKILL.md) の「強制のしくみ」)。確認の一覧(`tasks/loopeng/<Name>.claims.md`)をユーザーが承認していること(下の手順 2)。どれかが欠けると `smt_oracle.py` は hook に止められる。
 
 ## 向くもの / 向かないもの
 
@@ -27,7 +27,7 @@ TLA+ は「どの順番で起きても」を総当たりする。状態を持た
 ## 手順
 
 1. **判定を純粋関数として書き出す**: 実装の配管(I/O・フレームワーク・DB)を剥がし、観測できる入力 → 結果、の関数をモデルに写す。実装を読みながら写し、記憶や要約から組まない(変換表を1つ取り違えると偽の証明になる)。
-2. **確認の一覧を作り、作業者の承認を取る**: 台帳の要件ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書き、値の範囲を絞ったなら「有限にした範囲」に、モデルに写さなかった部分(I/O、判定の外の配管)は「扱わない領域」に書く。ひな形は [`../loopeng-formalize/assets/claims-template.md`](../loopeng-formalize/assets/claims-template.md)、置き場は `tasks/loopeng/<Name>.claims.md`。SMT、Z3 などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <符号>` の1行を作業者に入力してもらう。形と流れの詳細は [`../loopeng-formalize/SKILL.md`](../loopeng-formalize/SKILL.md) の「作業者の確認」。
+2. **確認の一覧を作り、ユーザーの承認を取る**: 台帳の要件ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書き、値の範囲を絞ったなら「有限にした範囲」に、モデルに写さなかった部分(I/O、判定の外の配管)は「扱わない領域」に書く。ひな形は [`../loopeng-formalize/assets/claims-template.md`](../loopeng-formalize/assets/claims-template.md)、置き場は `tasks/loopeng/<Name>.claims.md`。SMT、Z3 などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <承認コード>` の1行をユーザーに入力してもらう。形と流れの詳細は [`../loopeng-formalize/SKILL.md`](../loopeng-formalize/SKILL.md) の「ユーザーの確認」。
 3. **性質に名前を付け、期待を先に決める**: 台帳の要件ごとに `claim` を書き、`expect` を決める。
    - `HOLDS`: どの入力でも成り立つはずの契約。成り立てば回帰の歯止めとして残す。
    - `VIOLATED`: 破れる入力があるはずのもの。既知の穴の記録、または「この条件は満たせる」の確認(`claim = Not(cond)` が VIOLATED なら、witness が cond を満たす入力)。
@@ -61,7 +61,7 @@ def properties():
 - `smt_oracle.py` が exit 0(全性質が期待どおり、`HOLDS` は全件で壊した版を捕まえる)。exit 3(Z3 の `unknown`)は証拠にしない。性質を決定可能な形に書き直すか、全列挙・property-based testing へ逃がす。
 - 台帳のトレーサビリティ表「形式手法」列に性質名を消し込む。空欄の要件 = この経路の漏れ。
 - 出た witness は全件、要件側の判断(意図/穴)が付いている。
-- 確認の一覧を作業者が承認している(今の内容に対して)。
+- 確認の一覧をユーザーが承認している(今の内容に対して)。
 - 写したコードがあるなら、突き合わせのコマンドが exit 0。写したコードをこの変更で変えていると、統合の入口(PR の作成、既定のブランチへの merge など)は突き合わせがこの変更に対して通った記録を求める。記録はブランチにコミットした差分に結び付くので、変更をコミットし終えてから実行する。
 
 ## やらないこと

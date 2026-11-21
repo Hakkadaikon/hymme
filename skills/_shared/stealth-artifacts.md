@@ -7,7 +7,7 @@ loop-engineering 系(loopeng-*)・formal-verification・test-design 系(test-*)�
 
 | 手法 | 置き場 | 中間生成物 |
 | --- | --- | --- |
-| loop-engineering 系 | `tasks/loopeng/` | 抽出台帳、EARS/モデル、`.tla`/`.cfg`/`.feature`、トレーサビリティ表、TLC スクラッチ、確認の一覧(`.claims.md`)、状態の図(`.chart.md`)、前提の記録(`.premise.md`)、実ログ(`.jsonl`) |
+| loop-engineering 系 | `tasks/loopeng/` | 抽出台帳、EARS/モデル、`.tla`/`.cfg`/`.feature`、トレーサビリティ表、TLC スクラッチ、確認の一覧(`.claims.md`)、状態遷移図(`.chart.md`)、前提の記録(`.premise.md`)、実ログ(`.jsonl`) |
 | formal-verification | `tasks/fv/` | Lean の `.lean`/`lakefile`、生成 spec、確認の一覧(`.claims.md`) |
 | verifiability | `tasks/verifiability/` | 検証容易性の台帳(`<Name>.md`。hook が検査する場所なので固定) |
 | test-design 系 | `tasks/test-design/` | T-ID 台帳(`<対象名>.md`。hook が検査する場所なので固定) |
@@ -19,10 +19,10 @@ hymme の4行はいずれも `tasks/todo.md` と同じエリアで作り、`git 
 
 ### hook の記録
 
-台帳とは別に、hook が書く署名つきの記録がある。検証の入口の実行と終了コード、作業者の承認、reviewer の判定、`hymme capture` で採ったログのハッシュがここに入る。検査が合格の根拠として読むのはこの記録だけで、作業する本人が台帳に付けたチェックは根拠にならない。
+台帳とは別に、hook が書く署名つきの記録がある。検証の入口の実行と終了コード、ユーザーの承認、reviewer の判定、`hymme capture` で採ったログのハッシュがここに入る。検査が合格の根拠として読むのはこの記録だけで、エージェントが台帳に付けたチェックは根拠にならない。
 
 - 置き場は `<git の共通ディレクトリ>/hymme/log.jsonl`。作業ツリーの外にあり、**worktree をまたいで1つ**。別の worktree やサブエージェントからも同じ記録が使われる。
-- 記録の置き場と署名の鍵を読み書きするのは hymme の道具と hook だけ。Read・Write・Bash などでこの場所を名指しすると止められる。記録を自分で読んで確かめようとしない。確かめたいときは検証の入口か統合の入口を実行して、止まるかどうかを見る。
+- 記録の置き場と署名の鍵を読み書きするのは hymme のツールと hook だけ。Read・Write・Bash などでこの場所を名指しすると止められる。記録を自分で読んで確かめようとしない。確かめたいときは検証の入口か統合の入口を実行して、止まるかどうかを見る。
 - 記録は台帳の中身のハッシュ(承認、reviewer の判定)か、ブランチにコミットした差分(実行の記録)に結び付く。台帳を変えれば承認は失効し、コミットした差分が変われば実行の記録は別の変更のものになる。
 
 ### worktree と台帳

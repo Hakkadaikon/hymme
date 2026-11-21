@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # diff-reviewer の PreToolUse hook: Bash を、作業ツリーを書き換えないコマンドに制限する。
-# 許可リスト方式: 差分収集スクリプト(collect-diff.sh)、写しの中での実行(run-in-copy.sh)、git の参照系サブコマンド、
+# 許可リスト方式: 差分収集スクリプト(collect-diff.sh)、コピーの中での実行(run-in-copy.sh)、git の参照系サブコマンド、
 # 基本テキスト処理のみ通し、それ以外・リダイレクトは exit 2 でブロック(stderr がエージェントに返る)。
 set -euo pipefail
 
@@ -8,13 +8,13 @@ INPUT=$(cat)
 COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')
 [[ -z "$COMMAND" ]] && exit 0
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     blocked) printf 'ブロック(diff-reviewer は読み取り専用): %s\n' "$2" ;;
     redirect) printf 'リダイレクトによる書き込みは不可: %s\n' "$2" ;;
     git_sub) printf 'git %s は不可(参照系サブコマンドのみ許可)\n' "$2" ;;
     no_sub) printf '(サブコマンドなし)\n' ;;
-    not_allowed) printf 'コマンド %s は許可リスト外(git 参照系と基本テキスト処理のみ使用可。テストや再現の実行は run-in-copy.sh <ref> <command> で写しの中で行う)\n' "$2" ;;
+    not_allowed) printf 'コマンド %s は許可リスト外(git 参照系と基本テキスト処理のみ使用可。テストや再現の実行は run-in-copy.sh <ref> <command> でコピーの中で行う)\n' "$2" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac
 }
@@ -35,7 +35,7 @@ NORMALIZED=$(printf '%s' "$STRIPPED" | tr '\n`' ';;' | sed -E 's/\$\(/;/g; s/[()
 
 GIT_SUB_RE='^(diff|log|status|show|merge-base|ls-files|ls-tree|rev-parse|rev-list|symbolic-ref|blame|grep|shortlog|describe|for-each-ref|cat-file|name-rev)$'
 UTIL_RE='^(rg|grep|head|tail|wc|sort|uniq|cut|tr|cat|ls|jq|echo|true|basename|dirname|readlink)$'
-# 差分収集スクリプト(読み取り専用・stdout のみ)と、写しの中での実行(一時の worktree でコマンドを1つ実行して消す)。
+# 差分収集スクリプト(読み取り専用・stdout のみ)と、コピーの中での実行(一時の worktree でコマンドを1つ実行して消す)。
 # ~ / $HOME を展開した上で正規パスとの完全一致のみ許可
 SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 COLLECT_SH="$SCRIPT_DIR/collect-diff.sh"

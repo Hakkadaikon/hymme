@@ -25,7 +25,7 @@ for p in "${EXCLUDE_PATTERNS[@]}"; do
   EXCLUDE_PATHSPEC+=(":(exclude)$p")
 done
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     usage) sed -n '2,8p' "$0" | cut -c3- ;;
     no_base) printf 'エラー: デフォルトブランチを特定できない。base-ref を引数で指定すること\n' ;;

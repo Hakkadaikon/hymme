@@ -54,7 +54,7 @@ spec を書く前に、確認の一覧(`tasks/loopeng/Counter.claims.md`)を作�
 - 値の保存と表示。別に単体テストで確かめる
 ```
 
-`hymme claims request Counter` を実行し、表示された `承認 <符号>` の1行を作業者に入力してもらう。承認が記録されるまで `loop-outer` は止まる。
+`hymme claims request Counter` を実行し、表示された `承認 <承認コード>` の1行をユーザーに入力してもらう。承認が記録されるまで `loop-outer` は止まる。
 
 状態変数は `c`(カウンタ)、定数は `N`。`Counter.tla`:
 
@@ -86,7 +86,7 @@ INVARIANT Inv
 - model-check: `No error`(c は 0..3 で Inv を守る)。
 - mutation oracle: `c < N`→`c <= N` の変異を注入すると c=N+1 に到達でき Inv 違反 → TLC が killed(捕まえる)。これで「上限ガードが効いている」ことが spec レベルで実証される。survivor が equivalent だけになったら閉じる。
 - 文面の往復確認: `Init`・`Inc`・`Inv` だけ(コメントの `\* S-00x` は消す)を `Counter.faithfulness-input.md` に写し、別の subagent に平文へ戻させる。言い直しは「c は 0 で始まる」(`Init`)、「c が N 未満のときだけ 1 増やす」(`Inc`)、「c は常に N 以下」(`Inv`)。R-1 は `Init` で `full`。R-2「1 ずつ増える」は `Inc` の増分で `full`。R-3「N のとき増やさない」は遷移の禁止なので、担うのは `Inc` のガード `c < N` で、`Inv` はその帰結にすぎない。式欄に `Inc` のガードと `Inv` を併記して `full` とする(`Inv` だけを当てるなら `partial` で、理由欄に「ガードで担保」と書く)。`Counter.faithfulness.md` にこの 3 行を記録する。含意の不変条件が無いので空成立の確認は要らない。
-- 状態の図: `hymme chart draw Counter` が `Counter.chart.md` に図と規則ごとの結果を書く(到達した状態は c = 0..3 の 4 つ、破れた規則はなし)。`hymme chart request Counter` で作業者の承認を取る。
+- 状態遷移図: `hymme chart draw Counter` が `Counter.chart.md` に図と規則ごとの結果を書く(到達した状態は c = 0..3 の 4 つ、破れた規則はなし)。`hymme chart request Counter` でユーザーの承認を取る。
 
 内ループを体験するためのデモとして、わざとガードを `c < N+1` に弱めて回すと反例が出る → 内ループへ。
 

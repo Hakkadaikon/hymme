@@ -26,7 +26,7 @@
 #   2 = 使い方エラー（引数不足・ファイル無し）
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     usage) printf '使い方: template-check.sh <template-file> <draft-body-file>\n' ;;
     no_file) printf 'エラー: ファイルが見つからない: %s\n' "$2" ;;

@@ -14,7 +14,7 @@
 # これを読んでタイトル・本文を組み立てる。
 set -euo pipefail
 
-msg() { # msg <code> [args...]: 端末に出す文言はここで引く
+msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     no_git) printf 'エラー: git リポジトリ内で実行すること\n' ;;
     detached) printf 'エラー: detached HEAD 状態。ブランチをチェックアウトすること\n' ;;

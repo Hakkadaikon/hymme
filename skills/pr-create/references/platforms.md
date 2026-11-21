@@ -7,7 +7,7 @@ PR/MR 作成の CLI コマンド・テンプレート配置・フォールバッ
 - **push は無断で行わない**。未 push のブランチは、作成直前に AskUserQuestion で push 可否の承認を取ってから push する（SKILL.md §7）。承認が得られなければ push せず停止。SSH 認証（publickey）で弾かれる非対話環境では、push コマンドを提示してユーザーに実行を委ねる。
 - **作成は draft 既定**、**作成前にユーザー承認**。
 - 本文は一時ファイルに書いてファイル渡しで渡す（改行・特殊文字の崩れを避ける。hook が本文の「影響の範囲」と「検証」の見出しを読めるのも、`--body` などの引数か実在するファイルで渡したときだけ）。一時ファイルはセッションの scratchpad 等リポジトリ外の一時領域に置き、作成後は不要なら削除。
-- **どの入口にも同じ検査が掛かる**。`gh pr create`、`glab mr create`、`gh api …/pulls` への POST、PR / MR を作る MCP の道具、既定ブランチでの `git merge`、PR 作成後の `git push` は、どれも統合の入口として hook が検査する（確かめられることは SKILL.md §1.5）。CLI を替えても検査は外れない。
+- **どの入口にも同じ検査が掛かる**。`gh pr create`、`glab mr create`、`gh api …/pulls` への POST、PR / MR を作る MCP のツール、既定ブランチでの `git merge`、PR 作成後の `git push` は、どれも統合の入口として hook が検査する（確かめられることは SKILL.md §1.5）。CLI を替えても検査は外れない。
 
 ## GitHub (`gh`)
 
@@ -52,7 +52,7 @@ glab mr create \
   --draft \
   --description "<body>"
 ```
-- GitLab の draft はタイトル先頭 `Draft:` でも表現される。`--draft` フラグが効かない版では `Draft: <title>` を使う。
+- GitLab の draft はタイトル先頭 `Draft:` でも表現される。`--draft` フラグが効かないバージョンでは `Draft: <title>` を使う。
 - description は引用符の中に本文をそのまま書いて渡す。`--description "$(cat <file>)"` の形は使わない。hook はコマンド置換の中身を読めず、「影響の範囲」と「検証」の見出しの検査が掛からない。
 
 ## その他・フォールバック

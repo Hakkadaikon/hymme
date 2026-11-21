@@ -14,5 +14,5 @@
 - ci コマンド: `<CI の結果を待つコマンド。例: gh run watch --exit-status>`
 
 <!-- 後段(integration 以降)のテストが無いリポジトリは段を宣言できない。
-     `hymme exception request stages --until YYYY-MM-DD --reason <理由>` で申請し、作業者の承認を取る。 -->
+     `hymme exception request stages --until YYYY-MM-DD --reason <理由>` で申請し、ユーザーの承認を取る。 -->
 

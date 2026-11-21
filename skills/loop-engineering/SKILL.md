@@ -13,7 +13,7 @@ argument-hint: "[検証したい要求/仕様(ファイルパス or 説明)]"
 
 設計の正しさは **TLA+**(このループ)、実装そのものの数学的証明は **formal-verification(Lean 4)**。役割が違う。無理に結線しない(YAGNI)。
 
-## 道具の選び方(必ず最初に1回)
+## ツールの選び方(必ず最初に1回)
 
 **既定は「使わない」。** 形式手法を持ち出すのは、全入力・全順序で成り立つべき性質があり、それを手書きのテストでは網羅しきれないときだけ。迷いは「使わない」寄りに倒す。導入・学習コストは判断材料に入れない。
 
@@ -38,15 +38,15 @@ argument-hint: "[検証したい要求/仕様(ファイルパス or 説明)]"
 
 どの経路でも 0段(loopeng-extract)の抽出台帳と、判定ごとの境界と失敗時の意味論([`../_shared/failure-semantics.md`](../_shared/failure-semantics.md))は共通に通す。
 検証の段(SMT・TLA+・実ログ突き合わせ)に入る前に、**検証容易性の段**([`../verifiability/SKILL.md`](../verifiability/SKILL.md))も共通に通す。コードがあるなら判定を小さな純粋関数に切り出して指標と reviewer の合格を得る。コードが無い設計検証でも台帳に「対象コード無し」と書き、実装が入ったら書き直す。止める入口と条件はそのスキルの「強制のしくみ」。
-検証の入口の前に、**作業者の確認**も共通に通す。検証で何を示し、何を示さないかを確認の一覧(`tasks/loopeng/<Name>.claims.md`)に平文で書き、`hymme claims request <Name>` で作業者の承認を取る。承認が無いと検証の入口はすべて止まる。一覧の形と手順は [`loopeng-formalize`](../loopeng-formalize/SKILL.md) の「作業者の確認」。
+検証の入口の前に、**ユーザーの確認**も共通に通す。検証で何を示し、何を示さないかを確認の一覧(`tasks/loopeng/<Name>.claims.md`)に平文で書き、`hymme claims request <Name>` でユーザーの承認を取る。承認が無いと検証の入口はすべて止まる。一覧の形と手順は [`loopeng-formalize`](../loopeng-formalize/SKILL.md) の「ユーザーの確認」。
 
 例外が1つある。**外部互換が目標の実装**(第三者実装・外部仕様・プロトコルの相手方と繋ぐもの)では、上の判断とは独立に、0段(loopeng-extract)だけを先に回して相手側仕様の MUST/SHOULD を全件抽出する。自分の実装を先に書いて後から相手と突き合わせると、非互換が1個ずつ芋づる式に露呈して終わらない——相手のバイト・相手の判定条件を起点に設計する。また、複数のゲート・タイマ・ポーリングが相互作用する送受信制御は「遷移の途中状態」そのものであり、TDD だけで進めると相互作用バグを実走で1個ずつ回収する羽目になる(問い1で全順序 × 時間に当たる)。
 
-工程へ進むと決めたら、外部ライブラリやブラウザなど実物の振る舞いに頼る前提を、形式化を深める前に小さな spike で確かめる。崩れると spec と台帳の一部がやり直しになる。
+工程へ進むと決めたら、外部ライブラリやブラウザなど実際の振る舞いに頼る前提を、形式化を深める前に小さな spike で確かめる。崩れると spec と台帳の一部がやり直しになる。
 
 ## superpowers ワークフロー上の位置
 
-- **入口は superpowers:brainstorming の Architectural パス。** アプローチを選び設計セクションの承認を得た後、spec(`docs/superpowers/specs/`)を書き上げる**前**に上の道具の選び方を掛ける。SMT か TLA+ の経路に当たればここで回し、固めた設計と正常系シナリオを spec の要件・受け入れ条件に**手法名なしで**書く(「TLA+ で検証した」とは書かない。[`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。これは設計の検証であって実装行為ではなく、成果物は git 管理外の `tasks/loopeng/` にしか置かない。Bounded パスの途中で SMT か TLA+ の経路に当たったら、それは brainstorming の言う隠れた複雑さであり、パスを Architectural に上げる。
+- **入口は superpowers:brainstorming の Architectural パス。** アプローチを選び設計セクションの承認を得た後、spec(`docs/superpowers/specs/`)を書き上げる**前**に上のツールの選び方を掛ける。SMT か TLA+ の経路に当たればここで回し、固めた設計と正常系シナリオを spec の要件・受け入れ条件に**手法名なしで**書く(「TLA+ で検証した」とは書かない。[`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。これは設計の検証であって実装行為ではなく、成果物は git 管理外の `tasks/loopeng/` にしか置かない。Bounded パスの途中で SMT か TLA+ の経路に当たったら、それは brainstorming の言う隠れた複雑さであり、パスを Architectural に上げる。
 - **重い工程はコントローラが hymme:modeler へ dispatch する**(brainstorming を進めている本人がコントローラ)。modeler は検証ワーカー: `tasks/loopeng/` に成果物を残すだけで、コミットせず、レビュアーを自分で呼ばない。superpowers:subagent-driven-development の implementer にモデル検査をさせない(implementer は subagent を生めず、検査は実装タスクではない)。
 - **出口は test-design。** `.feature` は test-extract が T-ID 台帳へ転記し、superpowers:writing-plans の各 Task の失敗テストになる。
 
@@ -56,8 +56,8 @@ argument-hint: "[検証したい要求/仕様(ファイルパス or 説明)]"
 flowchart TD
     SPEC[元仕様<br/>RFC / 標準 / NL] --> L0[0. loopeng-extract<br/>採番台帳 + トレーサビリティ表]
     L0 --> V[0.5 verifiability<br/>判定を純粋関数へ + 指標]
-    V -->|要件| L1[1. loopeng-formalize<br/>EARS + モデル → Name.tla<br/>確認の一覧を作業者が承認]
-    L1 -->|spec| L2[2. loopeng-modelcheck<br/>TLC + mutation oracle<br/>+ 文面の往復確認<br/>状態の図を作業者が承認]
+    V -->|要件| L1[1. loopeng-formalize<br/>EARS + モデル → Name.tla<br/>確認の一覧をユーザーが承認]
+    L1 -->|spec| L2[2. loopeng-modelcheck<br/>TLC + mutation oracle<br/>+ 文面の往復確認<br/>状態遷移図をユーザーが承認]
     L2 -->|反例トレース| L3[3. loopeng-gherkin<br/>反例 → 失敗する Gherkin]
     L3 -->|設計を直して| L1
     L2 -.->|critical な実装片| LEAN[formal-verification<br/>Lean 4 で証明]
@@ -73,10 +73,10 @@ flowchart TD
 | --- | --- | --- | --- |
 | 0 | **loopeng-extract** | 元仕様から要件を採番チェックリスト台帳へ網羅抽出、トレーサビリティ表を立てる | 全 `S-ID` が `[x]`・欠番なし、閉じる前のチェック(信頼境界・STRIDE・CWE・境界と失敗時の意味論・やり直しと並行)に未チェックと空の行が無い |
 | 0.5 | **verifiability** | 検証する判定のコードを小さな純粋関数へ切り出し、指標(CCN・行数・引数・副作用・エラーの畳み込み)を閾値まで直す | `verifiability.py` exit 0、verification-reviewer(対象 verifiability) の合格を hook が記録している(コードが無ければ「対象コード無し」) |
-| 1 | **loopeng-formalize** | EARS + 状態/ドメインモデル → 確認の一覧 → `<Name>.tla`/`.cfg` | 確認の一覧を作業者が承認している、全 EARS 行が spec の disjunct/Inv に対応 |
-| 2 | **loopeng-modelcheck** | TLC で全到達状態を検査 + spec 自体を mutation testing | `No error` かつ真の survivor 0、unverified を再検査済み、文面の往復確認が終了条件を満たす([`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md))、状態の図を作業者が承認している |
+| 1 | **loopeng-formalize** | EARS + 状態/ドメインモデル → 確認の一覧 → `<Name>.tla`/`.cfg` | 確認の一覧をユーザーが承認している、全 EARS 行が spec の disjunct/Inv に対応 |
+| 2 | **loopeng-modelcheck** | TLC で全到達状態を検査 + spec 自体を mutation testing | `No error` かつ真の survivor 0、unverified を再検査済み、文面の往復確認が終了条件を満たす([`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md))、状態遷移図をユーザーが承認している |
 | 3 | **loopeng-gherkin** | 反例 → Gherkin 機械変換、正常系シナリオ追加 | 反例が尽き「テスト」列が埋まる |
-| SMT | **loopeng-smt** | 状態を持たない判定を Z3 で全入力検査、性質ごとに壊した版で検査の効きを確認 | 確認の一覧を作業者が承認している、`smt_oracle.py` exit 0、witness 全件に要件側の判断、実関数とモデルの突き合わせが exit 0 |
+| SMT | **loopeng-smt** | 状態を持たない判定を Z3 で全入力検査、性質ごとに壊した版で検査の効きを確認 | 確認の一覧をユーザーが承認している、`smt_oracle.py` exit 0、witness 全件に要件側の判断、実関数とモデルの突き合わせが exit 0 |
 | 実装後 | **loopeng-tracecheck** | 実システムの状態ログを spec に流し、許されない遷移を特定 | 正常系・高負荷・障害注入のログが exit 0、わざと壊した実装のログが不一致、`不一致` が全件閉じる |
 
 外 → 中 → 内 → 直して外へ、を反例と survivor が尽きるまで回す。前段の出口条件を満たさず次へ進まない(各スキルが前提として検査する)。
