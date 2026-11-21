@@ -150,8 +150,8 @@ mkdir -p "$tmp/bin"
 printf '#!/bin/sh\nexec python3 "%s/loopeng/bin/verifiability.py" "$@"\n' "$root" >"$tmp/bin/verifiability.py"
 chmod +x "$tmp/bin/verifiability.py"
 
-ledger() { # ledger <name> <body>  (レビュー合格済みの行を末尾に付ける)
-  printf '# 検証容易性台帳: %s\n\n%s\n\n## レビュー\n\n- [x] レビュー合格: 2026-10-25 「合格」\n' "$1" "$2" >"$tmp/tasks/verifiability/$1.md"
+ledger() { # ledger <name> <body>  (今のひな形と同じく、合格は台帳に書かない)
+  printf '# 検証容易性台帳: %s\n\n%s\n\n## レビュー\n\n合格はここに書かない。reviewer の判定の行を hook が記録する。\n' "$1" "$2" >"$tmp/tasks/verifiability/$1.md"
 }
 ledger Good '## 対象
 
