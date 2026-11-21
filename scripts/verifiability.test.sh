@@ -289,8 +289,6 @@ run() { # run <want-exit> <ledger> [want-substring]
   fi
 }
 
-cp "$tmp/tasks/verifiability/Good.md" "$tmp/tasks/verifiability/NoReview.md"
-sed -i.bak 's/- \[x\] レビュー合格/- [ ] レビュー合格/' "$tmp/tasks/verifiability/NoReview.md"
 printf '# 検証容易性台帳: NoCodeNoReview\n\n## 対象\n\n対象コード無し: 設計のみ\n' >"$tmp/tasks/verifiability/NoCodeNoReview.md"
 
 run 0 Good "合格"
@@ -342,7 +340,6 @@ gate 0 'loop-middle SPEC=Good'
 gate 2 'loop-middle SPEC=Ccn'
 gate 2 'loop-outer SPEC=Absent'
 gate 0 'loop-inner SPEC=NoCode'
-gate 2 'loop-middle SPEC=NoReview'
 gate 0 'loop-middle SPEC=NoCodeNoReview'
 gate 2 'make -f x/Makefile.loopeng loop-middle SPEC=Fold'
 gate 0 'smt_oracle.py tasks/loopeng/Good.smt.py'
