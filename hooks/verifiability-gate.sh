@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # 検証容易性ゲート: 形式検証の入口(loop-outer/middle/inner、smt_oracle.py、trace_check.py、
 # tasks/fv/<Name> での lake build)を叩く前に、tasks/verifiability/<Name>.md の台帳があり、
-# verifiability.py の指標が全対象で通り(または理由付きの例外)、対象コードがあるなら
-# reviewer の合格の行が [x] であることを検査する。満たさなければ exit 2 でブロックする。
+# verifiability.py の指標が全対象で通る(または理由付きの例外)ことを検査する。満たさなければ exit 2 でブロックする。
+# reviewer の合格は hymme_hook.py が署名つきの記録で検査する。
 # PreToolUse(matcher: Bash)。stdin に hook の JSON。
 set -euo pipefail
 
@@ -14,7 +14,6 @@ msg() { # msg <code> [args...]: 端末に出す文言はここで引く
     post_impl) printf '%s は対象コードが無いが、実ログの突き合わせは実装後の段。対象の関数を「## 対象」に書き直すか、手元に実装が無い理由を「対象コード無し(実装後): 理由」と書く。' "$2" ;;
     no_tool) printf '%s' 'verifiability.py が PATH に(絶対パスで)無い。hymme の skill-tools を入れてから進め(指標を測れないまま検証へ進ませない)。' ;;
     metrics) printf '%s の指標が通らない。判定を小さな純粋関数へ切り出して再計測するか、理由付きの例外を書け:\n%s' "$2" "$3" ;;
-    no_review) printf '%s の「## レビュー」に合格の行(- [x] レビュー合格: ...)が無い。hymme:verification-reviewer(対象 verifiability) との往復で合格を得てから進め。' "$2" ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac
 }
@@ -56,8 +55,7 @@ while IFS=$'\t' read -r kind root name entry; do
   case "$tool" in /*) ;; *) block "$(msg no_tool)" ;; esac
   out="$(cd "$root" && "$tool" "tasks/verifiability/${name}.md" 2>&1)" || block "$(msg metrics "$ledger" "$out")"
 
-  # 指標で測れない点(対象の選び方・例外の妥当性・振る舞いの保全)は reviewer の合格が要る
-  awk '/^## レビュー[[:space:]]*$/{f=1;next} /^## /{f=0} f' "$ledger" | grep -qE '^[[:space:]]*- \[[xX]\] レビュー合格' ||
-    block "$(msg no_review "$ledger")"
+  # 指標で測れない点(対象の選び方・例外の妥当性・振る舞いの保全)は reviewer の合格が要る。
+  # 合格は台帳の行でなく、reviewer が返ったときに hook が書く署名つきの記録で確かめる(hymme_hook.py の review)。
 done <<<"$targets"
 exit 0
