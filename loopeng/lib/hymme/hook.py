@@ -207,7 +207,10 @@ def post_tool(payload, key):
         if verb == "verifiability.py":
             ledger = next((a for a in args if a.endswith(".md")), "")
             store.append(
-                "run", {"name": Path(ledger).stem, "entry": "verifiability", "exit": code, "change": ctx.change()}, cwd, key
+                "run",
+                {"name": Path(ledger).stem, "entry": "verifiability", "exit": code, "change": ctx.change()},
+                cwd,
+                key,
             )
 
     for name, prefix in ledgers.parity_commands(root).items():
@@ -221,7 +224,9 @@ def post_tool(payload, key):
     decl = ledgers.stages(root)
     stage = ledgers.stage_of_command(decl, command) if decl else None
     if stage:
-        store.append("stage-run", {"stage": stage, "exit": code, "change": ctx.change(), "command": command[:200]}, cwd, key)
+        store.append(
+            "stage-run", {"stage": stage, "exit": code, "change": ctx.change(), "command": command[:200]}, cwd, key
+        )
         if code != 0 and ledgers.STAGES.index(stage) >= ledgers.STAGES.index("integration"):
             open_escape(ctx, root, decl, stage, command, text)
 
