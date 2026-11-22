@@ -37,10 +37,14 @@ def msg(code, **kw):
     return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
 
 
-LOOP = re.compile(r"agentloop-(outer|middle|inner)")
+# the loop commands: the one place their names are written (hooks/verifiability-gate.sh greps for them too; a test pins it)
+LOOPS = LOOP_OUTER, LOOP_MIDDLE, LOOP_INNER = ("agentloop-outer", "agentloop-middle", "agentloop-inner")
+OLD_LOOPS = {name.replace("agentloop-", "loop-"): name for name in LOOPS}  # what records before 0.15 call them
+_LOOPS = "|".join(map(re.escape, LOOPS))
+LOOP = re.compile(_LOOPS)
 # an entry point as it would be run, not merely mentioned (git commit -m "... lake ..." is text)
 RUNS_ENTRY = re.compile(
-    r"(^|[\s;&|(`])(agentloop-(outer|middle|inner)\b|\S*(smt_oracle|trace_check)\.py\b|lake\b[^;&|]*\bbuild\b)"
+    r"(^|[\s;&|(`])((?:" + _LOOPS + r")\b|\S*(smt_oracle|trace_check)\.py\b|lake\b[^;&|]*\bbuild\b)"
 )
 OPS = {";", "&", "&&", "|", "||", "|&", "(", ")", ";;"}
 RESERVED = {"if", "then", "do", "else", "elif", "while", "until", "!", "{", "}", "fi", "done"}
@@ -268,9 +272,7 @@ class Gate:
                 cwd = os.path.normpath(os.path.join(cwd, os.path.expanduser(target)))
 
     def entry(self, verb, args, cwd, env):
-        if verb in ("agentloop-outer", "agentloop-middle", "agentloop-inner") or (
-            verb == "make" and any(LOOP.fullmatch(a) for a in args)
-        ):
+        if verb in LOOPS or (verb == "make" and any(LOOP.fullmatch(a) for a in args)):
             here = cwd
             for i, a in enumerate(args if verb == "make" else []):
                 d = (

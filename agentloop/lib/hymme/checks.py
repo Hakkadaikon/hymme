@@ -9,7 +9,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from . import chart, ledgers, store
+from . import chart, cmdparse, ledgers, store
 
 MESSAGES = {
     "claims_missing": "ユーザーの確認ゲート: {path} が無い。要件ごとに「示すこと」「示さないこと」「破れたときの害」を書き、"
@@ -218,7 +218,7 @@ def weakened(diff):
 
 def entry_name(entry):
     """A run's entry under today's command name: a record from before 0.15 says loop-middle for agentloop-middle."""
-    return "agent" + entry if entry in ("loop-outer", "loop-middle", "loop-inner") else entry
+    return cmdparse.OLD_LOOPS.get(entry, entry)
 
 
 def stale_names(ctx, root):
@@ -279,7 +279,7 @@ def integration(ctx, body=None):
         want = {entry_name(r["entry"]) for r in ctx.recs("run", name=name)} | {"verifiability"}
         if (root / "tasks" / "loopeng" / f"{name}.smt.py").exists():
             want.add("parity")  # 4-13: the real function and the model agree on the inputs that were tried
-        need = sorted(want - ran - {"trace_check", "agentloop-inner", "agentloop-outer"})
+        need = sorted(want - ran - {"trace_check", cmdparse.LOOP_INNER, cmdparse.LOOP_OUTER})
         if need:
             out.append(msg("stale", name=name, paths=", ".join(paths), need=", ".join(need)))
 

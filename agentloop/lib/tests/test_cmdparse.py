@@ -24,6 +24,16 @@ class EntryTest(unittest.TestCase):
     def found(self, command, cwd="/r"):
         return parse(command, cwd).entries()
 
+    def test_the_shell_gate_looks_for_the_same_loop_commands(self):
+        import re
+
+        gate = (Path(__file__).resolve().parents[3] / "hooks" / "verifiability-gate.sh").read_text(encoding="utf-8")
+        pattern = re.search(r"grep -qE '([^']+)'", gate).group(1)
+        for name in cmdparse.LOOPS:
+            self.assertRegex(name + " SPEC=Cart", pattern)
+        self.assertEqual(sorted(cmdparse.OLD_LOOPS), ["loop-inner", "loop-middle", "loop-outer"])
+        self.assertNotRegex("loop-other SPEC=Cart", cmdparse.LOOP)  # only the three names are entries
+
     def test_wrappers_are_peeled(self):
         want = [("/r", "Cart", "agentloop-middle")]
         for command in (
