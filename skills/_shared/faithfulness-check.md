@@ -26,7 +26,7 @@ TLC が `No error` を出し、Lean が `sorry` 無しで通っても、それ�
    - `missing`: 対応する式が無い
 4. **空成立を機械で確かめる**(含意・前提付きの式ごと):
    - Lean: 前提を全部満たす具体例を、名前付きの定理 `theorem <定理名>_satisfiable : ∃ s, <前提> := ⟨<値>, by decide⟩` 等で示す。示せなければ `vacuous`。この定理は Lean ソースに残し、判定表の理由欄にその名前を書く。
-   - TLA+: 含意 `P => Q` と leads-to `P ~> Q` の前件について、`~P` を一時的な INVARIANT にして TLC を回し(`tasks/loopeng/MC<Name>.tla` に `EXTENDS <Name>` して前件ごとに `NotP1 == ~P1` のように名前を分けて定義し、`<Name>.cfg` を `MC<Name>.cfg` に写して `CONSTANT`・`INIT`/`NEXT`(または `SPECIFICATION`)を引き継ぎ、INVARIANT 行だけを1つずつ差し替えて1本ずつ回す。本体の `.tla` は触らない。確認後に MC ファイルは消す)、反例(=`P` が成り立つ到達状態)が出ることを確認する。TLC の出力は前件ごとに `tasks/loopeng/<Name>.reach.log` へ追記し(上書きしない)、判定表の理由欄にどの前件の証跡かを1行書く。反例が出なければ前件は一度も成り立たず `vacuous`。
+   - TLA+: 含意 `P => Q` と leads-to `P ~> Q` の前件について、`~P` を一時的な INVARIANT にして TLC を実行し(`tasks/loopeng/MC<Name>.tla` に `EXTENDS <Name>` して前件ごとに `NotP1 == ~P1` のように名前を分けて定義し、`<Name>.cfg` を `MC<Name>.cfg` に写して `CONSTANT`・`INIT`/`NEXT`(または `SPECIFICATION`)を引き継ぎ、INVARIANT 行だけを1つずつ差し替えて1本ずつ実行する。本体の `.tla` は変更しない。確認後に MC ファイルは消す)、反例(=`P` が成り立つ到達状態)が出ることを確認する。TLC の出力は前件ごとに `tasks/loopeng/<Name>.reach.log` へ追記し(上書きしない)、判定表の理由欄にどの前件の証跡かを1行書く。反例が出なければ前件は一度も成り立たず `vacuous`。
 5. `mismatch`・`vacuous`・`missing` があれば源泉(EARS・モデル・定理)を直し、検査と往復確認をやり直す。`partial` は理由欄が埋まっていれば残してよい。要件か、有限にした範囲か、扱わない領域が変わったら、確認の一覧(`<Name>.claims.md`)も直してユーザーの承認を取り直す。
 
 ## ユーザーの確認との関係
@@ -47,4 +47,4 @@ TLA+ の経路では往復確認が終了条件を満たしたあとに、状態
 ## 実行時の注意
 
 - 読み手は式を書いた本人(modeler・prover・コントローラ自身)にしない。同じ思い込みで読んでしまう。
-- 空成立の確認で Lean・TLC を回すときは、他の作業と並行させず1本ずつ回す。その前に `uptime` と `nproc` を見て、1分平均の load がコア数を超えていれば下がるまで待つ。
+- 空成立の確認で Lean・TLC を実行するときは、他の作業と並行させず1本ずつ実行する。その前に `uptime` と `nproc` を見て、1分平均の load がコア数を超えていれば下がるまで待つ。

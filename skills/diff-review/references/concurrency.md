@@ -21,13 +21,13 @@ severity 体系・2 パス自己検証は本体(diff-reviewer.md)に一元化さ
 
 - 複数ロックの取得順序の不整合
 - ロック保持中の外部呼び出し(I/O・コールバック・ユーザーコード)による保持時間の伸長
-- ロック粒度の問題は棲み分け: 正しさ(粗すぎて守れていない)は concurrency、速度(直列化ボトルネック)は performance
+- ロック粒度の問題はレンズを分ける: 正しさ(粗すぎて守れていない)は concurrency、速度(直列化ボトルネック)は performance
 
 ## async / await の誤用
 
 - async コンテキスト内のブロッキング呼び出し(イベントループ・ディスパッチャの停止)
-- fire-and-forget の例外握り潰し(await されない Promise・join されないコルーチン/goroutine)
-- await / join 漏れにより完了前に後続処理へ進む経路
+- fire-and-forget で例外が無視される(await されない Promise・join されないコルーチン/goroutine)
+- await / join が無く、完了前に後続処理へ進む経路
 
 ## 分散・DB の並行性
 

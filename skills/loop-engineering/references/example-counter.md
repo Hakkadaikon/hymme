@@ -1,6 +1,6 @@
 # 最小完全例: Counter を 0段→3ループ通す
 
-本題に広げる前に、この最小例が3ループ通ることを必ず確認する(慣らし運転)。
+本題に広げる前に、この最小例で3ループを最後まで実行できることを必ず確認する。
 要件は「0 から始まり、上限 N まで 1 ずつ増える。N を超えない」だけ。
 
 ## 0段: 抽出台帳(`tasks/loopeng/Counter.extract.md`)
@@ -84,11 +84,11 @@ INVARIANT Inv
 `loop-middle SPEC=Counter`。
 
 - model-check: `No error`(c は 0..3 で Inv を守る)。
-- mutation oracle: `c < N`→`c <= N` の変異を注入すると c=N+1 に到達でき Inv 違反 → TLC が killed(捕まえる)。これで「上限ガードが効いている」ことが spec レベルで実証される。survivor が equivalent だけになったら閉じる。
+- mutation oracle: `c < N`→`c <= N` の変異を注入すると c=N+1 に到達でき Inv 違反 → TLC が killed(検出する)。これで「上限ガードが働いている」ことが spec レベルで実証される。survivor が equivalent だけになったら閉じる。
 - 文面の往復確認: `Init`・`Inc`・`Inv` だけ(コメントの `\* S-00x` は消す)を `Counter.faithfulness-input.md` に写し、別の subagent に平文へ戻させる。言い直しは「c は 0 で始まる」(`Init`)、「c が N 未満のときだけ 1 増やす」(`Inc`)、「c は常に N 以下」(`Inv`)。R-1 は `Init` で `full`。R-2「1 ずつ増える」は `Inc` の増分で `full`。R-3「N のとき増やさない」は遷移の禁止なので、担うのは `Inc` のガード `c < N` で、`Inv` はその帰結にすぎない。式欄に `Inc` のガードと `Inv` を併記して `full` とする(`Inv` だけを当てるなら `partial` で、理由欄に「ガードで担保」と書く)。`Counter.faithfulness.md` にこの 3 行を記録する。含意の不変条件が無いので空成立の確認は要らない。
 - 状態遷移図: `hymme chart draw Counter` が `Counter.chart.md` に図と規則ごとの結果を書く(到達した状態は c = 0..3 の 4 つ、破れた規則はなし)。`hymme chart request Counter` でユーザーの承認を取る。
 
-内ループを体験するためのデモとして、わざとガードを `c < N+1` に弱めて回すと反例が出る → 内ループへ。
+内ループを体験するためのデモとして、わざとガードを `c < N+1` に弱めて実行すると反例が出る → 内ループへ。
 
 ## 3. 内ループ: 反例 → Gherkin
 
@@ -101,9 +101,9 @@ Scenario: counter must not exceed N
   Then c becomes 4   # Inv violated — これは起きてはならない
 ```
 
-ガードを `c < N` に戻すと反例が消える。設計が固まったら正常系シナリオ(0→1→2→3)を `.feature` に足し、実装の受け入れテストにする。
+ガードを `c < N` に戻すと反例が出なくなる。設計が確定したら正常系シナリオ(0→1→2→3)を `.feature` に足し、実装の受け入れテストにする。
 
 ## 本体への落とし方
 
 `c <= N` と「N でこれ以上増えない」を TDD のテストリストにする(`test_caps_at_n` 等)。
-**本体コード・テスト名・コメントに `S-003` や `Inv` や「TLA+」は書かない**(裏方ルール)。振る舞いそのものを説明する。
+**本体コード・テスト名・コメントに `S-003` や `Inv` や「TLA+」は書かない**(「痕跡を残さない」規範)。振る舞いそのものを説明する。

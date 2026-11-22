@@ -9,29 +9,29 @@ argument-hint: "[run/PR/job の URL・run_id・#PR番号（省略時は現在ブ
 
 ## このスキルの目的
 
-CI 失敗調査で毎回同じことをする——失敗した run を開き、どのジョブ・ステップが落ちたかを見て、失敗ステップのログから原因を読む——を、決定論スクリプトに寄せて安定させる。
+CI の失敗調査で毎回行う手順(失敗した run を開き、どのジョブ・ステップが失敗したかを見て、失敗ステップのログから原因を読む)を、決定論スクリプトにして安定させる。
 
-肝は **WebFetch を使わないこと**。github.com への WebFetch は Actions 画面の HTML が返るだけでログにならない。失敗ジョブ・ステップと「失敗ステップだけのログ」は `gh` で確実かつ簡潔に取れる。だから run/PR/job の URL を渡された時点で `scripts/gh-ci-investigate.sh` に解決させ、そこから調査に入る。
+重要なのは **WebFetch を使わないこと**。github.com への WebFetch は Actions 画面の HTML が返るだけでログにならない。失敗ジョブ・ステップと「失敗ステップだけのログ」は `gh` で確実かつ簡潔に取れる。だから run/PR/job の URL を渡された時点で `scripts/gh-ci-investigate.sh` に解決させ、そこから調査に入る。
 
-**REQUIRED BACKGROUND:** superpowers:systematic-debugging。本スキルはその **Phase 1(根本原因調査)** の GitHub Actions 版証拠収集(どの run / job / step / 層で壊れたか)を決定論スクリプトで安定させる部分である。Phase 2〜3 は §3 で通常どおり行い、§4 の修正案は Phase 4 の形式で書く。修正の自動適用はしない。
+**REQUIRED BACKGROUND:** superpowers:systematic-debugging。本スキルはその **Phase 1(根本原因調査)** の GitHub Actions 版証拠収集(どの run / job / step / 層で失敗したか)を決定論スクリプトで安定させる部分である。Phase 2〜3 は §3 で通常どおり行い、§4 の修正案は Phase 4 の形式で書く。
 
 ## 前提
 
 - `gh auth status` でログイン済みであること。private リポジトリのログ取得にはトークンの read 権限が要る。
-- 対象は GitHub（github.com / GitHub Enterprise）の **Actions**。GitLab CI 等 gh が扱わない CI は対象外——その場合はこのスキルを使わず該当 CLI を案内する。
-- URL がソース閲覧・PR 差分の確認目的（失敗調査でない）なら、無理にこのスキルを通さず通常の gh / Read で足りる。
+- 対象は GitHub（github.com / GitHub Enterprise）の **Actions**。GitLab CI 等 gh が扱わない CI は対象外。その場合はこのスキルを使わず該当 CLI を案内する。
+- URL がソース閲覧・PR 差分の確認目的（失敗調査でない）なら、無理にこのスキルを使わず通常の gh / Read で足りる。
 
 ## ワークフロー
 
-入力（URL / run_id / #PR / 空）の解釈、run の要約、失敗ログ取得はすべて決定論的なので、gh を手で並べ直さず `scripts/gh-ci-investigate.sh` を使う。`<skill-dir>` はこのファイルのあるディレクトリ。
+入力（URL / run_id / #PR / 空）の解釈、run の要約、失敗ログ取得はすべて決定論的なので、gh コマンドを手で組み立てず `scripts/gh-ci-investigate.sh` を使う。`<skill-dir>` はこのファイルのあるディレクトリ。
 
-### 1. preflight（何が落ちたかを掴む）
+### 1. preflight（何が失敗したかを把握する）
 
 ```bash
 bash <skill-dir>/scripts/gh-ci-investigate.sh preflight "<url|run_id|#PR|（空=現在ブランチ最新）>"
 ```
 
-`=== SECTION ===` 区切りで **対象 repo・認証状態・失敗ジョブとステップ・結論** が出る。ここでまず「どの workflow の・どのジョブの・どのステップが・どの結論（failure / cancelled / timed_out）で落ちたか」をユーザーに提示する。`エラー:` が出たら（未認証・URL 不正・repo 特定不可など）先にそれを解決する。
+`=== SECTION ===` 区切りで **対象 repo・認証状態・失敗ジョブとステップ・結論** が出る。ここでまず「どの workflow の・どのジョブの・どのステップが・どの結論（failure / cancelled / timed_out）で失敗したか」をユーザーに提示する。`エラー:` が出たら（未認証・URL 不正・repo 特定不可など）先にそれを解決する。
 
 PR URL / `#PR` を渡した場合は、その PR の checks 一覧と、失敗している check に対応する run の要約が出る。
 
@@ -41,17 +41,17 @@ PR URL / `#PR` を渡した場合は、その PR の checks 一覧と、失敗�
 bash <skill-dir>/scripts/gh-ci-investigate.sh logs "<url|run_id|#PR>" [--job <job_id>]
 ```
 
-`gh run view --log-failed` で**失敗ステップのログだけ**を取る（full log ではないので context を食い潰さない）。特定ジョブに絞るときは job URL を渡すか `--job <id>` を付ける。run がまだ実行中でログ未確定のときは要約にフォールバックする。
+`gh run view --log-failed` で**失敗ステップのログだけ**を取る（full log ではないので context を消費しすぎない）。特定ジョブに絞るときは job URL を渡すか `--job <id>` を付ける。run がまだ実行中でログ未確定のときは要約にフォールバックする。
 
 ログが大量なときは、まず末尾やエラー行（`Error`, `FAIL`, `Exception`, `exit code`, `AssertionError`, スタックトレース）に当たりを付けてから該当箇所を精読する。
 
 ### 3. 原因特定とコード突き合わせ
 
-ログで掴んだ失敗箇所を、リポジトリの該当コード・設定（テストコード、workflow yaml、依存定義など）と突き合わせて根本原因を絞る。必要なら該当ファイルを Read / Grep する。ログの時刻に言及するときは **JST** に直す。
+ログで分かった失敗箇所を、リポジトリの該当コード・設定（テストコード、workflow yaml、依存定義など）と突き合わせて根本原因を絞る。必要なら該当ファイルを Read / Grep する。ログの時刻に言及するときは **JST** に直す。
 
 ### 4. 修正案の提示
 
-原因と修正案をまとめて提示する。修正案は superpowers:systematic-debugging の Phase 4 の形式(再現テスト → 根本原因への単一の変更 → 検証)で書く。timeout 延長・retry 追加・テスト skip のような CI 特有の症状対処は「症状対処」と明記し、推奨にしない。**修正はこのスキルの役割ではない**——コードやワークフローの変更はユーザーの承認を得てから、通常の編集フロー(superpowers:test-driven-development で失敗テストから、必要なら commit-flow / pr-create)で行う。リリース PR やインフラ適用が絡むときは影響範囲を明示する。
+原因と修正案をまとめて提示する。修正案は superpowers:systematic-debugging の Phase 4 の形式(再現テスト → 根本原因への単一の変更 → 検証)で書く。timeout 延長・retry 追加・テスト skip のような CI 特有の症状対処は「症状対処」と明記し、推奨にしない。**修正はこのスキルの役割ではない**。コードやワークフローの変更はユーザーの承認を得てから、通常の編集フロー(superpowers:test-driven-development で失敗テストから、必要なら commit-flow / pr-create)で行う。リリース PR やインフラ適用が絡むときは影響範囲を明示する。
 
 ### 5. 欠陥の記録を開く
 
@@ -61,7 +61,7 @@ bash <skill-dir>/scripts/gh-ci-investigate.sh logs "<url|run_id|#PR>" [--job <jo
 hymme escape open --stage ci --symptom "<workflow / job / step と、落ちた理由を1文>"
 ```
 
-修正を積むブランチの上で実行する。`fix` 型のコミットがあるブランチは、そのブランチの上で開いた記録が無いと統合の入口で止まる。
+修正をコミットするブランチの上で実行する。`fix` 型のコミットがあるブランチは、そのブランチの上で開いた記録が無いと統合の入口で止まる。
 
 `tasks/escapes/E<日時>.md` が作られる。欄の埋め方と閉じ方は escape-flow スキルに従う(拾えたはずの前の段にテストを足し、`hymme escape verify <id>` を通す)。記録が閉じるまで、このリポジトリの変更は統合の入口(PR / MR の作成、既定ブランチでの merge、PR 作成後の push)で止まる。別のブランチの変更も止まる。
 
@@ -84,11 +84,11 @@ hymme escape open --stage ci --symptom "<workflow / job / step と、落ちた�
 
 ## 制約
 
-- **WebFetch で github.com を叩かない**。ログ・run 情報は必ず gh 経由。
+- **WebFetch で github.com にアクセスしない**。ログ・run 情報は必ず gh 経由。
 - **修正の自動適用はしない**。原因特定と修正案の提示まで。変更はユーザー承認後に別途行う。
 - private リポジトリや GitHub Enterprise で認証が通らないときは、`gh auth status` / `gh auth login --hostname <host>` を案内し、憶測で進めない。
 - ログにトークン・認証情報・顧客データ様の文字列が含まれうる。引用は原因説明に必要な最小限にとどめ、秘匿様の文字列は伏せる。
-- push・fetch が SSH 認証で弾かれる非対話環境では、コマンドを提示してユーザーに実行を委ねる。
+- push・fetch が SSH 認証で拒否される非対話環境では、コマンドを提示してユーザーに実行を委ねる。
 
 ## 完了条件
 

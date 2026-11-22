@@ -19,33 +19,33 @@ description: >
 
 ## 1. 実装/検証へ橋渡しする
 
-- **実装の駆動**: superpowers のワークフロー下では、台帳の `T-ID` 行と `.feature` シナリオから superpowers:writing-plans の各 Task の「Write the failing test」を書き、そのテスト名を台帳の「テスト」列に転記する(`T-xxx` は plan に書かない)。実装は実装する本人(既定は superpowers:executing-plans の本体、SDD なら implementer)が **REQUIRED SUB-SKILL:** superpowers:test-driven-development で1テストずつ消化する。plan の無い単発タスクなら T-ID リストをそのままテストリストにして実装する。
-- **設計に状態遷移、並行、順序があるとき**: テストで全 interleaving は踏めない。`loop-engineering`(TLA+)で設計をモデル検査し、反例を Gherkin の受け入れシナリオに落としてから、その述語をテストへ移す。
-- **critical なアルゴリズムやセキュリティ性質**: 通常テストより強い保証が要るなら `formal-verification`(Lean 4)で証明し、証明済み述語を property-based test([`../generative-property/SKILL.md`](../generative-property/SKILL.md))の property として叩く。証明は implementer にやらせず、コントローラが hymme:prover を別 dispatch する。
-- **`[~]` の行(設計の直し待ち)**: plan では1つの Task にまとめ、ほかの Task に混ぜない。ほかの行のテストとも、全状態を探索するような広いテストとも共有させない。共有すると、直し待ちの振る舞いまで期待値として固まる。行が `[x]` に戻るまで、その Task を完了にしない。
-- **端から端まで通す Task を早めに置く**: Task をモジュールごとに分けるだけにしない。受け入れシナリオ1本を、フェイクの部品で端から端まで通す Task を早い順番に置く。部品どうしの噛み合わせの誤りを最後まで持ち越さない。
+- **実装の駆動**: superpowers のワークフロー下では、台帳の `T-ID` 行と `.feature` シナリオから superpowers:writing-plans の各 Task の「Write the failing test」を書き、そのテスト名を台帳の「テスト」列に転記する(`T-xxx` は plan に書かない)。実装は実装する本人(既定は superpowers:executing-plans の本体、SDD なら implementer)が **REQUIRED SUB-SKILL:** superpowers:test-driven-development で1テストずつ進める。plan の無い単発タスクなら T-ID リストをそのままテストリストにして実装する。
+- **設計に状態遷移、並行、順序があるとき**: テストで全 interleaving は実行できない。`loop-engineering`(TLA+)で設計をモデル検査し、反例を Gherkin の受け入れシナリオにしてから、その述語をテストへ移す。
+- **critical なアルゴリズムやセキュリティ性質**: 通常テストより強い保証が要るなら `formal-verification`(Lean 4)で証明し、証明済み述語を property-based test([`../generative-property/SKILL.md`](../generative-property/SKILL.md))の property として実行する。証明は implementer にやらせず、コントローラが hymme:prover を別 dispatch する。
+- **`[~]` の行(設計の直し待ち)**: plan では1つの Task にまとめ、ほかの Task に混ぜない。ほかの行のテストとも、全状態を探索するような広いテストとも共有させない。共有すると、直し待ちの振る舞いまで期待値として固定される。行が `[x]` に戻るまで、その Task を完了にしない。
+- **端から端まで通す Task を早めに置く**: Task をモジュールごとに分けるだけにしない。受け入れシナリオ1本を、フェイクの部品で端から端まで通す Task を早い順番に置く。部品どうしの接続の誤りを最後まで持ち越さない。
 - 検証ワーカーの並列委譲(SDD 外のみ)は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md) の落とし穴に従う。
 
 ## 2. 実行ゲート(自己申告を信用しない)
 
-**REQUIRED SUB-SKILL:** superpowers:verification-before-completion(主張の前に新鮮な実行証跡。agent の「緑」報告を信じず自分で走らせる)。以下は hymme の追加分で、基底の緑確認に**上乗せ**する。実行コマンドと生出力(終了コード、緑赤の集計行)を応答に貼る。貼れないなら未完。
+**REQUIRED SUB-SKILL:** superpowers:verification-before-completion(主張の前に新鮮な実行証跡。agent の「緑」報告を信じず自分で実行する)。以下は hymme の追加分で、基底の緑確認に**加えて**行う。実行コマンドと生出力(終了コード、緑赤の集計行)を応答に貼る。貼れないなら未完。
 
-1. **網羅(取りこぼし無し)**: 台帳の全 `T-ID` について、対応するテスト名が実在のテストファイル内に見つかることを grep で1行ずつ逆引きする。緑チェックはスイートの健全性を見るだけで、implementer が一部 `T-ID` を実装し忘れても「全緑」になる。存在チェックは緑チェックと別物として必ず回す。
+1. **網羅(取りこぼし無し)**: 台帳の全 `T-ID` について、対応するテスト名が実在のテストファイル内に見つかることを grep で1行ずつ逆引きする。緑チェックはスイートの健全性を確かめるだけで、implementer が一部 `T-ID` を実装し忘れても「全緑」になる。存在チェックは緑チェックと別物として必ず実行する。
 2. **緑**: 全テスト緑・型検査クリーンは基底規範の対象。実行は修正範囲に絞る(`test-targeted` スキルの絞り込み運用)。
 3. **カバレッジ**: 変更したコードの行(C0)と分岐(C1)のカバレッジが 100% であることを、計測コマンドの生出力で示す。未到達の扱いと除外の条件は [`../tdd-cycle/SKILL.md`](../tdd-cycle/SKILL.md) の「カバレッジ 100% をテストから先に満たす」に従う。
-4. **flaky**: 性質ベースやメタモルフィック、並行を含むテストは seed を変えて複数回(最低でも数十回、または CI の連続成功)走っても落ちない。1回の緑では flaky は見えない。要因別の封じ込めは値の非決定性([`../flakiness-value/SKILL.md`](../flakiness-value/SKILL.md))と協調の非決定性([`../flakiness-concurrency/SKILL.md`](../flakiness-concurrency/SKILL.md))。
-5. **強さ(critical のみ)**: 金額、セキュリティ、状態遷移など critical な `T-ID` は、緑に加えて mutation([`../mutation-testing/SKILL.md`](../mutation-testing/SKILL.md))を回し、survived がアサーション不足として残っていないことを確認する。全部に回すのは過剰(YAGNI)。
+4. **flaky**: 性質ベースやメタモルフィック、並行を含むテストは seed を変えて複数回(最低でも数十回、または CI の連続成功)実行しても失敗しない。1回の緑では flaky は検出できない。要因別の対策は値の非決定性([`../flakiness-value/SKILL.md`](../flakiness-value/SKILL.md))と協調の非決定性([`../flakiness-concurrency/SKILL.md`](../flakiness-concurrency/SKILL.md))。
+5. **強さ(critical のみ)**: 金額、セキュリティ、状態遷移など critical な `T-ID` は、緑に加えて mutation([`../mutation-testing/SKILL.md`](../mutation-testing/SKILL.md))を実行し、survived がアサーション不足として残っていないことを確認する。全部に実行するのは過剰(YAGNI)。
 
 台帳の `T-ID` は、貼ったログ中の該当テスト名の緑に対応して初めて閉じる。
 
 ## 3. 緑にしたテストを回帰として固定する(守られ続ける状態へ渡す)
 
-実行ゲートを通った緑は、その場限りでは守られ続けない。次の変更で黙って赤化しないよう継続実行に載せて初めて「テストが守られる」状態になる。
+実行ゲートを通った緑は、その場限りでは保たれない。次の変更で気づかれずに赤にならないよう、継続実行の対象にして初めて「テストが守られる」状態になる。
 
 - 緑にしたテスト群を CI の継続実行対象に入れる([`../process-static/SKILL.md`](../process-static/SKILL.md) の CI 自動実行)。
-- 変更したコードの行・分岐カバレッジ 100% を CI ゲートにし(差分カバレッジ)、割る変更をマージさせない。critical な `T-ID` は mutation もゲートにする。
-- 以後バグが出たら、その欠陥を再現する最小テストを1本固定して回帰へ積む([`../levels-operational/SKILL.md`](../levels-operational/SKILL.md) の回帰テスト)。台帳には新しい `T-ID` として追記する。
-- そのバグが後段(結合、e2e、実ログの突き合わせ、CI、本番)で見つかったものなら、欠陥の記録の流れ([`../escape-flow/SKILL.md`](../escape-flow/SKILL.md))に乗せる。固定する1本は、見つかった段より前の段に置き、記録の「前段に足したテスト」の欄にそのパスを書く。`hymme escape verify <id>` が、そのテストが修正前のコードで失敗し今のコードで通ることを実行して確かめる。記録が閉じるまで、変更は統合の入口で止まる。
+- 変更したコードの行・分岐カバレッジ 100% を CI ゲートにし(差分カバレッジ)、下回る変更をマージさせない。critical な `T-ID` は mutation もゲートにする。
+- 以後バグが出たら、その欠陥を再現する最小テストを1本固定して回帰に加える([`../levels-operational/SKILL.md`](../levels-operational/SKILL.md) の回帰テスト)。台帳には新しい `T-ID` として追記する。
+- そのバグが後段(結合、e2e、実ログの突き合わせ、CI、本番)で見つかったものなら、欠陥の記録の手順([`../escape-flow/SKILL.md`](../escape-flow/SKILL.md))に従う。固定する1本は、見つかった段より前の段に置き、記録の「前段に足したテスト」の欄にそのパスを書く。`hymme escape verify <id>` が、そのテストが修正前のコードで失敗し今のコードで通ることを実行して確かめる。記録が閉じるまで、変更は統合の入口で止まる。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
 
@@ -55,7 +55,7 @@ description: >
 
 ## やらないこと
 
-- **「緑」の報告だけで完了にしない。** 実行ログと型検査を自分で確認する。flaky は1回の緑では見えない。
-- **API 境界の互換性維持を抜かさない。** 提供側と利用側を別々にテストするだけでは破壊的変更を見逃す。consumer-driven contract([`../nonfunctional-attributes/SKILL.md`](../nonfunctional-attributes/SKILL.md) のコントラクトテスト、粒度の選択は [`../levels/SKILL.md`](../levels/SKILL.md))で境界の互換を固定する。
+- **「緑」の報告だけで完了にしない。** 実行ログと型検査を自分で確認する。
+- **API 境界の互換性維持を省かない。** 提供側と利用側を別々にテストするだけでは破壊的変更を見逃す。consumer-driven contract([`../nonfunctional-attributes/SKILL.md`](../nonfunctional-attributes/SKILL.md) のコントラクトテスト、粒度の選択は [`../levels/SKILL.md`](../levels/SKILL.md))で境界の互換を固定する。
 - 完了条件は「対象範囲の全 T-ID が緑か、物理的に止まるまで」。自発的な区切りを完了と偽らない。
 - テストのコメント・テスト名へ `T-xxx` 等の管理番号を書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。

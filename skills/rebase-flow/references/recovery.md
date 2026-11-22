@@ -27,7 +27,7 @@ tail -5 "$(git rev-parse --git-path rebase-merge/done)"          # 消化済み 
 ### abort
 
 `git rebase --abort` は rebase 開始時点へ戻す（working tree ごと）。中断後は
-rebase-context.sh を再実行して状態を確認してから仕切り直す。
+rebase-context.sh を再実行して状態を確認してからやり直す。
 
 ### 完了後の巻き戻し（backup あり）
 
@@ -45,7 +45,7 @@ git reflog --date=iso | head -30
 ```
 
 `rebase (start)` の 1 つ前のエントリが開始前 HEAD。その SHA を target として
-reset-flow で reset する。reflog の既定保持期間は 90 日 — すぐ消えはしないが、
+reset-flow で reset する。reflog の既定保持期間は 90 日。すぐ消えはしないが、
 backup ブランチが第一の復旧手段であり、reflog は最後の頼みにしない。
 
 ### force-push 後の巻き戻し
@@ -60,7 +60,7 @@ backup ブランチが第一の復旧手段であり、reflog は最後の頼み
    ```bash
    git push <remote> <branch> --force-with-lease=<branch>:<rebase後HEADのsha>
    ```
-   （生の `git push --force`/`-f` は git-guard hook に弾かれる）
+   （生の `git push --force`/`-f` は git-guard hook に拒否される）
 4. 不一致（他者 push あり）→ 停止し、ユーザー・関係者への連絡を優先する
 
 ### あてにしないもの

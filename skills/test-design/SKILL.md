@@ -7,10 +7,10 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 
 # Test Design (テスト設計とレビューの入口)
 
-対象から「テストすべき振る舞い」を出し切り、各振る舞いに手法を割り当て、実装と回帰へ橋渡しする。
+対象から「テストすべき振る舞い」を網羅して抽出し、各振る舞いに手法を割り当て、実装と回帰へ橋渡しする。
 工程は 3 スキルに分かれており、**必要な工程のスキルだけを読む**。工程スキルは Skill ツールの一覧に出していないので、`${CLAUDE_PLUGIN_ROOT}/skills/<工程名>/SKILL.md` を Read して従う。
 
-役割分担(無理に結線しない、YAGNI):
+役割分担(無理に連携させない、YAGNI):
 - **テスト項目の抽出と手法選定**: このスキル系(test-extract / test-catalog / test-verify)
 - **TDD サイクル(Red→Green→Refactor)**: superpowers:test-driven-development(実装する本人が実行。既定は本体、SDD なら implementer)。hymme は「何をテストするか」(抽出・選定・検証)だけを担う
 - **設計の網羅検査(状態遷移、並行、プロトコル)**: `loop-engineering`(TLA+)
@@ -18,7 +18,7 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 
 ## 使うとき / 使わないとき
 
-- **使う**: 機能/モジュール/API のテスト項目を実装前に洗い出す。PR 差分や既存テストの抜け・脆さをレビューする。テスト手法(同値分割/PBT/E2E…)の選定。カバレッジやテストの強さ(mutation)の点検。
+- **使う**: 機能/モジュール/API のテスト項目を実装前に書き出す。PR 差分や既存テストの抜け・脆さをレビューする。テスト手法(同値分割/PBT/E2E…)の選定。カバレッジやテストの強さ(mutation)の点検。
 - **使わない**: 自明な1行や設定値のテスト、手法が自明で迷いがない小変更(YAGNI)。
 
 ## 工程(各工程は専用スキルへ委譲)
@@ -34,9 +34,9 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 
 ## superpowers ワークフロー上の位置
 
-- **spec 承認後、superpowers:writing-plans の前(または並走)**に test-extract → test-catalog を回す。plan の各 Task の「Step 1: Write the failing test」は T-ID 台帳と `.feature` シナリオ**から**書く。Bounded パス(spec も plan も無い)では設計承認直後に同じ 0段→手法選定を回し、実装する本人のテストリストにする。
+- **spec 承認後、superpowers:writing-plans の前(または並走)**に test-extract → test-catalog を実行する。plan の各 Task の「Step 1: Write the failing test」は T-ID 台帳と `.feature` シナリオ**から**書く。Bounded パス(spec も plan も無い)では設計承認直後に同じ 0段→手法選定を実行し、実装する本人のテストリストにする。
 - **トレーサビリティは台帳の「テスト」列だけが持つ。** 列には plan に書いたテスト名(`it`/`test` 名)を入れる。plan・コード・コミットに `T-xxx` や手法名は書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。台帳は作業 worktree の `tasks/test-design/` に置き(worktree 作成前に作った台帳は SDD Setup 直後に worktree へコピー)、ブランチ完了後は残さない。
-- **実行は superpowers:executing-plans(既定)か superpowers:subagent-driven-development。** 実装する本人(本体か implementer)が Task ごとに superpowers:test-driven-development で消化する。SDD の implementer は台帳を編集しない。`test-design-extract-gate` hook は implementer のテストファイル Write/Edit にも効く: 台帳が閉じていなければ機械的にブロックされ implementer は BLOCKED を返すので、コントローラが台帳を閉じてから再 dispatch する(意図した安全網)。
+- **実行は superpowers:executing-plans(既定)か superpowers:subagent-driven-development。** 実装する本人(本体か implementer)が Task ごとに superpowers:test-driven-development で実行する。SDD の implementer は台帳を編集しない。`test-design-extract-gate` hook は implementer のテストファイル Write/Edit にも働く: 台帳が閉じていなければ機械的にブロックされ implementer は BLOCKED を返すので、コントローラが台帳を閉じてから再 dispatch する(意図した検査)。
 - **`hymme:verification-reviewer`(対象 `test-design`) は本体(SDD ならコントローラ)が dispatch する**: 0段を閉じた直後(plan にテストを書く前)と、最終 whole-branch レビューの前。
 
 ## 完了前の必須ゲート(コンプライアンスレビュー)
@@ -52,4 +52,4 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 
 - 0段の飛ばし・reference の全読み・「緑」報告のみでの完了・台帳の後付け・スコープの自己縮小・異常系の実質スキップをしない(詳細は各工程スキルの「やらないこと」)。
 - 自明な1行や設定値にテストを先行させない(YAGNI)。
-- 台帳は `tasks/test-design/` 配下・git 管理外。`T-xxx` を本体へ漏らさない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
+- 台帳は `tasks/test-design/` 配下・git 管理外。`T-xxx` を本体に書かない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。

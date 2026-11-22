@@ -3,7 +3,7 @@ name: loopeng-formalize
 disable-model-invocation: true
 description: >
   loop-engineering の外ループ(要求形式化)。抽出済みの要件を EARS 記法 + 状態/ドメインモデルへ構造化し、
-  TLA+ spec(<Name>.tla / <Name>.cfg)と Gherkin の骨格(<Name>.feature)に落とす。
+  TLA+ spec(<Name>.tla / <Name>.cfg)と Gherkin の骨格(<Name>.feature)を書く。
   「EARS に落として」「状態モデルを作って」「TLA+ spec を書いて」「要求を形式化」と言われたとき、
   または loop-engineering ルーターから外ループとして委譲されたときに使用する。
   前提: loopeng-extract の抽出台帳(tasks/loopeng/<Name>.extract.md)が完成(全 ID `[x]`・欠番なし・閉じる前のチェックが全項目埋まっている)していること。
@@ -14,7 +14,7 @@ description: >
 
 抽出した要件(または最初から自然言語の要求)を2つに構造化する。曖昧な点はモデル化前にユーザーへ確認。
 **前提**: `tasks/loopeng/<Name>.extract.md` の台帳が閉じていること。無い/未完なら **loopeng-extract** へ戻る。`tasks/verifiability/<Name>.md` の検証容易性の台帳が通っていること([`../verifiability/SKILL.md`](../verifiability/SKILL.md) の「強制のしくみ」)。
-EARS とモデルを書いたら、spec に落とす前に確認の一覧をユーザーに承認してもらう(下の「ユーザーの確認」)。
+EARS とモデルを書いたら、spec を書く前に確認の一覧をユーザーに承認してもらう(下の「ユーザーの確認」)。
 
 ## EARS 記法
 
@@ -26,7 +26,7 @@ EARS とモデルを書いたら、spec に落とす前に確認の一覧をユ�
 - unwanted: 「IF <condition> THEN the <system> SHALL <response>.」(異常系)
 - optional: 「WHERE <feature> the <system> SHALL <response>.」
 
-基本5パターンで書けない(多条件・ロール別分岐・優先順位・定量化 NFR)、または変換前の弱点洗い出しや
+基本5パターンで書けない(多条件・ロール別分岐・優先順位・定量化 NFR)、または変換前の弱点の確認や
 書き上げ後のセルフレビューが要るときは [`references/ears-patterns.md`](references/ears-patterns.md) を使う。
 
 ### EARS 本体の行数
@@ -44,20 +44,20 @@ EARS 本体の行数制約(1 文あたりソース行で1〜2行)と、補足を
 個々のフィールドの妥当性)を捨てるのは正しい設計判断だが、**捨てた領域は TLC の検査範囲に原理的に入らない**。
 モデル化の際、「この変数・このフィールドは状態機械の外側で別途検証する」と決めた箇所を 0 段の台帳に
 一言残す(トレーサビリティ・マトリクスの備考、または台帳の該当行)。書き残さないと、その領域は
-どの層でも検証されないまま消える([`../loopeng-extract/references/lessons.md`](../loopeng-extract/references/lessons.md) の抽象化の死角)。
+どの層でも検証されないままになる([`../loopeng-extract/references/lessons.md`](../loopeng-extract/references/lessons.md) の抽象化の死角)。
 
 **安全性に関わる unwanted 要件(「IF 対象要素が X に分類されるとき拒否する」等)を値域だけの抽象定数
-(`X \subseteq Elements` 等)に丸めた場合は「一言」では足りない**。`Inv`(`visited ∩ X = {}` 等)が検査するのは
-「ガードが効くこと」だけで、「ある要素が実際に X に分類されるべきか」という判定ロジック自体の正しさは
+(`X \subseteq Elements` 等)で表した場合は「一言」では足りない**。`Inv`(`visited ∩ X = {}` 等)が検査するのは
+「ガードが働くこと」だけで、「ある要素が実際に X に分類されるべきか」という判定ロジック自体の正しさは
 検査していない。この種の抽象定数については、上記と同じ記録先(0段台帳のトレーサビリティ・マトリクス備考、
 または台帳の該当行)に、それぞれ (a) 実装時にどう判定するか(キーワード/役割/URL パターン等の判定軸)、
 (b) その判定ロジック自体をどう検証するか(ゴールデンテスト・ファジング・差分テスト等、TLC 以外の手段)の
-2点を明記する(「一言」で済む通常の捨てた領域より詳しく書く必要がある、という違いだけで記録先は同じ)。
-TLC が "No error" を返しても、それは「抽象化した集合の中でガードが効く」ことしか保証しない。
+2点を明記する。
+TLC が "No error" を返しても、それは「抽象化した集合の中でガードが働く」ことしか保証しない。
 
 ## ユーザーの確認(EARS を書いた直後、spec を書く前)
 
-EARS を書き、モデルの値域と捨てる領域を決めたら、spec に落とす前に**確認の一覧**を作ってユーザーの承認を取る。検証で何を示し、何を示さないかを、検証の前にユーザーが判断するための一覧。承認が無いと `loop-outer` を含む検証の入口はすべて hook に止められる。
+EARS を書き、モデルの値域と捨てる領域を決めたら、spec を書く前に**確認の一覧**を作ってユーザーの承認を取る。検証で何を示し、何を示さないかを、検証の前にユーザーが判断するための一覧。承認が無いと `loop-outer` を含む検証の入口はすべて hook に止められる。
 
 1. [`assets/claims-template.md`](assets/claims-template.md) を `tasks/loopeng/<Name>.claims.md` にコピーする。
 2. 「## 実証する項目」に、EARS の1行ごとに表の1行を書く。「要件」は EARS を平文に直した1文、「示すこと」は検証が示すこと、「示さないこと」は検証が示さないこと、「破れたときの害」は破れると誰がどう困るかを、それぞれ1文で書く。
@@ -73,7 +73,7 @@ EARS を書き、モデルの値域と捨てる領域を決めたら、spec に�
 
 ## TLA+ spec への落とし込み
 
-`loop-outer SPEC=<Name>` でテンプレから `<Name>.tla`/`<Name>.feature` を scaffold(既存は壊さない。駆動装置は [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md))。EARS とモデルから埋める。
+`loop-outer SPEC=<Name>` でテンプレから `<Name>.tla`/`<Name>.feature` を scaffold(既存は壊さない。実行するツールは [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md))。EARS とモデルから埋める。
 
 - `VARIABLES` = 状態変数。`TypeOK` = 各変数の型(値域)を `\in` で(網羅性のアンカー)。`Init` = 初期状態。
 - `Next` = **EARS の各 event/state/unwanted 節を 1 disjunct** に。`\/ Action1 \/ Action2 ...`。1節1アクション。
@@ -94,4 +94,4 @@ EARS を書き、モデルの値域と捨てる領域を決めたら、spec に�
 
 ## 次の工程
 
-spec が書けたら **loopeng-modelcheck** スキルで TLC のモデル検査と mutation oracle を回す。
+spec が書けたら **loopeng-modelcheck** スキルで TLC のモデル検査と mutation oracle を実行する。

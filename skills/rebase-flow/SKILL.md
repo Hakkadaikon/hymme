@@ -19,7 +19,7 @@ rebase は日常操作の中で唯一、確定済みの履歴を破壊できる�
 4. **WARNING は承認対象** — `WARNING:` は全て計画に転記する。ユーザーが読まずに承認できる形に隠さない。
 5. **force-push の制限** — 生の `git push --force`/`-f` は git-guard hook が拒否する。force push は検証済み tip を明示した **`--force-with-lease=<branch>:<sha>` のみ**。§7 の手順で検証完了後、push 単独の承認を得てから。対象は作業ブランチのみで、保護ブランチ（main/master/trunk/release/リモート既定ブランチ等）への force は不可。
 6. **予測外コンフリクトは即 abort** — 計画のコンフリクト予測に無い衝突が出たら `git rebase --abort` して報告。粘らない。
-7. **エディタを開かない** — todo は `GIT_SEQUENCE_EDITOR` で流し込み、メッセージ変更は `exec git commit --amend -m`（references/todo-patterns.md）。エディタ起動はセッションをハングさせる。
+7. **エディタを開かない** — todo は `GIT_SEQUENCE_EDITOR` で渡し、メッセージ変更は `exec git commit --amend -m`（references/todo-patterns.md）。エディタ起動はセッションをハングさせる。
 8. **backup の削除はユーザー承認制** — 検証が通っても勝手に消さない。reflog・gc には触れない。
 9. **承認済みコマンドを一字一句そのまま実行** — 実行時にフラグを足さない・変えない。変更が必要になったら計画からやり直す。
 10. **巻き戻しは reset-flow スキル経由** — rebase 完了後に取り消す場合の `git reset --hard <backup>` は本スキルでは実行せず、reset-flow スキルのワークフローに委ねる。
@@ -33,7 +33,7 @@ rebase は日常操作の中で唯一、確定済みの履歴を破壊できる�
 
 追従と整理を両方やる場合は**必ず 2 回に分け、それぞれ承認を取る**（先に整理 → tree 同一性で検証 → 次に追従）。整理を先にすると追従時に replay するコミットが減りコンフリクトも減る。1 回に混ぜると検証基準が曖昧になる。
 
-そもそも rebase が必要かも最初に問う。ユーザーが rebase を明示していないなら、履歴を書き換えない代替（merge での追従など）を先に提示してよい。書き換えない選択が最強のガードレール。
+そもそも rebase が必要かも最初に問う。ユーザーが rebase を明示していないなら、履歴を書き換えない代替（merge での追従など）を先に提示してよい。書き換えない選択が最も安全。
 
 ## ワークフロー
 
@@ -72,7 +72,7 @@ base-ref: onto 型 → rebase 先（fetch 済みの `origin/main` を優先）�
 3. コンフリクトで停止したら:
    - **予測済み** → 解消案（該当ファイルの diff）を提示 → 承認 → `git add <files>` → `GIT_EDITOR=true git rebase --continue`
    - **予測外** → 即 `git rebase --abort` → 状況報告（制約 6）
-4. 完走を確認する（`git status` に rebase 進行表示が無いこと）。
+4. 完了を確認する（`git status` に rebase 進行表示が無いこと）。
 
 ### 5. 検証
 
@@ -101,7 +101,7 @@ PUSH STATUS が force-push 必要を示していた場合:
    ```bash
    git push <remote> <branch> --force-with-lease=<branch>:$tip
    ```
-   lease に手順 2 の検証済み tip を明示することで、確認時点から他者 push が挟まったら確実に拒否される。生の `git push --force`/`-f`・値なしの `--force-with-lease` は git-guard hook に弾かれるので使わない。
+   lease に手順 2 の検証済み tip を明示することで、確認時点から他者 push が挟まったら確実に拒否される。生の `git push --force`/`-f`・値なしの `--force-with-lease` は git-guard hook に拒否されるので使わない。
 5. lease 拒否（stale info）= 確認後に他者 push があった。自動リトライせず手順 1 からやり直す。
 
 書き換え対象が全て未 push なら通常 push（これも承認後）。

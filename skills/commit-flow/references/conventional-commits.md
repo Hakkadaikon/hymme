@@ -1,6 +1,6 @@
 # Conventional Commits 詳細仕様
 
-`SKILL.md` §5 から参照。フォーマットの詳細・type 一覧・例・アンチパターンを記載。
+`SKILL.md` §5 から参照。
 
 仕様の正典: [Conventional Commits 1.0.0](https://www.conventionalcommits.org/)
 

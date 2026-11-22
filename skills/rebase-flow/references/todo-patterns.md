@@ -1,7 +1,7 @@
 # interactive rebase の非対話 todo レシピ
 
 エディタが開くと Claude Code セッションはハングする。todo とコミットメッセージは
-すべてファイル・コマンドライン経由で与える。ここに無いパターンをアドリブで組まず、
+すべてファイル・コマンドライン経由で与える。ここに無いパターンをその場で作らず、
 計画テンプレに todo 全文を載せて承認を得たものだけを実行する。
 
 ## 基本形
@@ -20,7 +20,7 @@ GIT_SEQUENCE_EDITOR="cp <scratchpad>/rebase-todo" git rebase -i <base-ref>
 ## メッセージ変更は exec + `--amend -m` で行う
 
 `reword` / `squash` はメッセージ編集のためにエディタを開く。`GIT_EDITOR=true` で
-握りつぶすと意図しないメッセージが確定する。**メッセージを変えないコマンド
+エディタを無効にすると意図しないメッセージが確定する。**メッセージを変えないコマンド
 （pick / fixup / drop）+ exec だけ**で todo を構成する:
 
 ### reword（メッセージだけ変更）
@@ -51,7 +51,7 @@ drop abc1234 消すコミット
 ```
 
 行の削除でも同じだが、明示的に `drop` と書く（承認時に意図が見える）。
-drop すると §5 の tree 同一性は不一致になる — 計画にその旨を書く。
+drop すると §5 の tree 同一性は不一致になる。計画にその旨を書く。
 
 ### 並べ替え
 
@@ -61,8 +61,8 @@ pick 行の順序を入れ替える。**並べ替えはコンフリクトを生�
 
 ### autosquash（commit-flow の fixup! コミット運用と併用する場合）
 
-`--autosquash` に todo 生成を任せると、承認した todo と実際に走る todo がズレ得る。
-`git rebase -i --autosquash` は使わず、fixup! コミットも上記の明示 todo で畳む。
+`--autosquash` に todo 生成を任せると、承認した todo と実際に実行される todo がずれ得る。
+`git rebase -i --autosquash` は使わず、fixup! コミットも上記の明示 todo でまとめる。
 
 ## 注意
 
