@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# collect-diff.sh manifest の回帰テスト。未追跡のエントリがディレクトリを指すシンボリックリンクでも落ちないこと。
+# collect-diff.sh manifest の回帰テスト。未追跡のエントリがディレクトリを指すシンボリックリンクでも失敗しないこと。
 # あわせて diff-reviewer の Bash の許可リスト(validate-readonly-bash.sh)と、コピーの中での実行(run-in-copy.sh)を見る。
 # 要: git, jq
 set -euo pipefail

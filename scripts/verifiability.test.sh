@@ -401,7 +401,7 @@ gate 2 'make -f x/Makefile.loopeng loop-middle'
 gate 2 'make -Ctasks/loopeng -f x/Makefile.loopeng loop-middle SPEC=Fold'
 gate 2 'make --directory=tasks/loopeng -f x/Makefile.loopeng loop-middle SPEC=Fold'
 gate 2 'lake --dir=tasks/fv/Fold build'
-# $(…) の中の cd は外に漏れない
+# $(…) の中の cd は外に影響しない
 gate 2 'echo $(cd / && ls) && loop-middle SPEC=Ccn'
 # シングルクォートの中のバッククォートは文字列。変数の SPEC は決まらないので止める
 gate 0 "git commit -m 'docs: run \`loop-middle SPEC=Ccn\` first'"
@@ -463,7 +463,7 @@ gate 0 'echo loop-middle SPEC=Ccn'
 gate 0 'grep smt_oracle.py README.md'
 gate 2 'loop-middle' # SPEC 省略は Makefile.loopeng の既定 Spec
 
-# 指標のツールが無い環境では止める(検証の入口を素通りさせない)
+# 指標のツールが無い環境では止める(検証の入口を、検査せずには通さない)
 mkdir -p "$tmp/nobin"
 for c in bash cat grep awk sed head cut dirname basename python3; do ln -s "$(command -v "$c")" "$tmp/nobin/$c"; done
 got=0

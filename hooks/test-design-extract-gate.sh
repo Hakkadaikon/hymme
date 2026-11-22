@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # test-design 0段ゲート: テストファイルへの Write/Edit の前に、
 # tasks/test-design/<対象>.md の T-ID 台帳が完成しているか検査する。
-# 台帳が無いプロジェクト/タスクは素通り(誤爆ゼロを優先)。
+# 台帳が無いプロジェクト/タスクは検査せずに通す(誤って止めないことを優先)。
 # 台帳が1つでもあれば、未チェック(- [ ] T-...)や T-NNN 欠番が残っていないか検査し、
 # 残っていれば exit 2 でブロックする。
 # 加えて tasks/loopeng/ に .feature があるのに台帳へ1件も転記されていなければブロックする
-# (loopeng-gherkin の成果物が test-design 側で握りつぶされるのを防ぐ)。
+# (loopeng-gherkin の成果物が test-design 側で無視されるのを防ぐ)。
 # 台帳は、書こうとしているファイルが属する git リポジトリの tasks/ から探す(無ければ cwd)。
-# 台帳に「テスト対象: <glob> ...」の行があれば、その台帳は一致するテストファイルにだけ効く。
-# この行が無い台帳は、すべてのテストファイルに効く。
+# 台帳に「テスト対象: <glob> ...」の行があれば、その台帳は一致するテストファイルだけを対象にする。
+# この行が無い台帳は、すべてのテストファイルを対象にする。
 # PreToolUse(matcher: Write|Edit)。stdin に hook の JSON。
 set -euo pipefail
 
@@ -21,7 +21,7 @@ payload="$(cat)"
 file_path="$(printf '%s' "$payload" | python3 -I -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null || true)"
 [ -n "$file_path" ] || exit 0
 
-# テストファイルでなければ対象外(実装ファイル・ドキュメント編集まで縛らない)
+# テストファイルでなければ対象外(実装ファイル・ドキュメント編集までは止めない)
 case "$file_path" in
   *.test.* | *.spec.* | *test_* | *_test.*) ;;
   *) exit 0 ;;
@@ -65,7 +65,7 @@ block() { # block <code> [args...]: メッセージを stderr に出して exit 
 
 for ledger in $ledgers; do
   in_scope "$ledger" || continue
-  # 「## 台帳」以降だけを対象にする(テンプレ見出しの例を拾わないため)
+  # 「## 台帳」以降だけを対象にする(テンプレ見出しの例を数えないため)
   body="$(awk '/^## 台帳/{f=1;next} /^## /{if(f)exit} f' "$ledger")"
   [ -n "$body" ] || continue
 

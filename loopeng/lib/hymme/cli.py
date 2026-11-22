@@ -26,7 +26,7 @@ MESSAGES = {
     "escape_created": "欠陥の記録を作りました: {path}\n欄を埋めたら `hymme escape verify {id}` を実行します。",
     "escape_missing": "欠陥の記録 {path} が無い。",
     "escape_invalid": "欠陥の記録 {path} はまだ閉じられません:\n{why}",
-    "red_expected": "足したテストが修正前のコード({base})で失敗しません(終了コード 0)。このテストは欠陥を拾えていません。\nコマンド: {command}",
+    "red_expected": "足したテストが修正前のコード({base})で失敗しません(終了コード 0)。このテストは欠陥を検出できていません。\nコマンド: {command}",
     "green_expected": "足したテストが今のコードで通りません(終了コード {code})。\nコマンド: {command}\n{tail}",
     "repro_red": "再現のコマンドが修正前のコード({base})で失敗しません。再現になっていません。\nコマンド: {command}",
     "repro_green": "再現のコマンドが今のコードで通りません(終了コード {code})。直っていません。\nコマンド: {command}\n{tail}",

@@ -95,7 +95,7 @@ gate 0 '絶対パスで対象外なら通す' "$tmp/w/scripts/a_test.py"
 
 fresh
 ledger product 'テスト対象: <この台帳が受け持つテストファイルの glob。例: crates/*>' '## 台帳' '- [ ] T-001 x'
-gate 2 'テンプレートのままの対象行は、未記入として全テストに効かせる' 'scripts/x_test.py'
+gate 2 'テンプレートのままの対象行は、未記入として全テストを対象にする' 'scripts/x_test.py'
 
 fresh
 ledger product 'テスト対象：crates/*' '## 台帳' '- [ ] T-001 x'

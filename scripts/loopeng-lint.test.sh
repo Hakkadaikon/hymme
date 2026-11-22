@@ -54,7 +54,7 @@ mkdir -p "$tmp/sub" && cp "$tmp/Undef.tla" "$tmp/sub/"
 # sany も java も無い PATH(lint が使うコマンドだけを置く)
 mkdir -p "$tmp/nosany"
 for c in bash cat grep dirname basename tail mktemp rm python3; do ln -s "$(command -v "$c")" "$tmp/nosany/$c"; done
-# 型検査の前に落ちる偽の apalache-mc
+# 型検査の前に失敗する偽の apalache-mc
 mkdir -p "$tmp/stub"
 printf '#!/bin/sh\necho "launcher exploded" >&2\nexit 1\n' >"$tmp/stub/apalache-mc"
 chmod +x "$tmp/stub/apalache-mc"
@@ -100,7 +100,7 @@ gate 0 'tlc "Undef.tla' # 引用符が閉じていない: 判定できないの�
 gate 0 'broken json' "$PATH" '{not json'
 nosany_payload="$(python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":"tlc Undef.tla"},"cwd":sys.argv[1]}))' "$tmp")"
 gate 0 'tlc Undef.tla (no sany)' "$tmp/nosany" "$nosany_payload"
-# 通したのが「lint を実行できなかった」分岐であること(spec を特定できずに素通りしたのではないこと)
+# 通したのが「lint を実行できなかった」分岐であること(spec を特定できずに、検査せず通したのではないこと)
 if printf '%s' "$nosany_payload" | PATH="$tmp/nosany" bash hooks/loopeng-lint-gate.sh 2>&1 >/dev/null | grep -q '静的検査を実行できなかった'; then
   ok "$(msg gate_warns)"
 else
@@ -127,7 +127,7 @@ oracle 3 Exc 'invalid: [1-9]'
 # ベースラインが通らない spec では mutation を回さない
 oracle 2 Undef ''
 
-# 並列に回しても、変異ごとの結果と集計は1本ずつ回したときと同じ
+# 並列に実行しても、変異ごとの結果と集計は1本ずつ実行したときと同じ
 results() { # results <spec> <jobs>: 変異ごとの判定行(並び順込み)と集計行
   (cd "$tmp" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" "$1.tla" --jobs "$2" --mut-timeout 20 2>&1) |
     grep -E '^  (killed|SURVIVOR|invalid|UNVERIFIED) |^mutants:' || true
@@ -190,7 +190,7 @@ if grep -qE '^mutants: 5 ' <<<"$out"; then ok "$(msg untracked_ok)"; else
   ng "$(msg untracked_ng "$got")"
   grep -E '^mutants:' <<<"$out" || true
 fi
-# リビジョンが無い、git の外: ベースラインを回す前に、専用の終了コード 4 で止める
+# リビジョンが無い、git の外: ベースラインを実行する前に、専用の終了コード 4 で止める
 bad() { # bad <説明> <dir> <rev>
   local got=0
   (cd "$2" && python3 "$root/loopeng/bin/tla_mutate_oracle.py" Good.tla --since "$3" --mut-timeout 20 >/dev/null 2>&1) || got=$?

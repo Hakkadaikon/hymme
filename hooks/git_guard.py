@@ -38,10 +38,10 @@ MESSAGES = {
     "lease": "期待 tip なしの --force-with-lease は弱い(remote-tracking 依存)。"
     "--force-with-lease=<branch>:<sha> の形で検証済み sha を明示する。",
     "refspec": "+refspec による force push は禁止。--force-with-lease=<branch>:<sha> を使う。",
-    "semicolon": "`;` で直前コマンドと連結された git commit は禁止(直前の失敗を無視して走る)。"
+    "semicolon": "`;` で直前コマンドと連結された git commit は禁止(直前が失敗しても実行される)。"
     "`&&` か if で失敗時に止まる形にする。",
     "tail_head": "`| tail`/`| head` を経た行での git commit は禁止(パイプの exit がフィルタ側になり、"
-    "検証の赤が握り潰される)。検証は `grep -q` など exit に判定が乗る形にするか、コミットを別コマンドに分ける。",
+    "検証の失敗が exit に出ない)。検証は `grep -q` など判定が exit に出る形にするか、コミットを別コマンドに分ける。",
 }
 
 
@@ -61,7 +61,7 @@ SHELLS = {"sh", "bash", "zsh", "dash", "ksh"}
 
 
 def split_segments(text):
-    # 行継続を潰してから行で切る(改行はセグメント境界)。; && || | & ( ) も境界
+    # 行継続を1行につないでから行で切る(改行はセグメント境界)。; && || | & ( ) も境界
     text = text.replace("\\\n", " ")
     segments = []
     for line in text.split("\n"):
@@ -153,8 +153,8 @@ def git_sub(seg):
 
 
 def check_commit_chain(text):
-    # ゲート素通しコミットの2パターンを同一行内で検出する。
-    # if 文の then 節(`if 検証; then git commit; fi`)はセグメント先頭が then になるので誤爆しない。
+    # 検証が失敗してもコミットが実行される2パターンを同一行内で検出する。
+    # if 文の then 節(`if 検証; then git commit; fi`)はセグメント先頭が then になるので、誤って止めない。
     for line in text.replace("\\\n", " ").split("\n"):
         parts = line_parts(line)
         for idx, (conn, seg) in enumerate(parts):

@@ -32,7 +32,7 @@ model good '    clamp = If(x < 0, 0, If(x > 100, 100, x))
                  claim=And(0 <= clamp, clamp <= 100), broken=And(0 <= x, x <= 100))]'
 # 期待は HOLDS だが実際は破れる: x=-1 のような反例が出る
 model wrong '    return [dict(name="NonNegative", expect="HOLDS", claim=x >= 0, broken=x >= 1)]'
-# 壊した版でも成り立つ = この検査は何も縛っていない
+# 壊した版でも成り立つ = この性質は何も制限していない
 model unguarded '    return [dict(name="Tautology", expect="HOLDS", claim=Or(x > 0, x <= 0), broken=Or(x >= 0, x < 0))]'
 model nobroken '    return [dict(name="Tautology", expect="HOLDS", claim=Or(x > 0, x <= 0))]'
 # 設定が死んでいないこと: Not(条件) が VIOLATED = 条件を満たす入力がある(witness が出る)
@@ -73,10 +73,10 @@ run() { # run <want-exit> <model> [want-substring]
 }
 
 run 0 good "ClampInRange: HOLDS"
-run 0 good "壊した版は捕まった"
+run 0 good "壊した版は検出された"
 run 1 wrong "x = -"
 run 1 wrong "期待は HOLDS"
-run 1 unguarded "効いていない"
+run 1 unguarded "性質が何も制限していない"
 run 1 nobroken "壊した版が無い"
 run 0 alive "x = 19"
 run 1 dead "HOLDS"
@@ -102,7 +102,7 @@ run_t() { # run_t <want-exit> <model> <want-substring>  (Z3 を 200ms で打ち�
 }
 run_t 3 unknown "UNKNOWN"
 run_t 1 unknownmixed "Bad: VIOLATED"
-run_t 1 brokenunknown "効いていない"
+run_t 1 brokenunknown "性質が何も制限していない"
 
 if python3 loopeng/bin/smt_oracle.py --selfcheck >/dev/null; then ok "--selfcheck"; else ng "--selfcheck"; fi
 

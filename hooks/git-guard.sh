@@ -6,11 +6,11 @@
 # - git push: --force/-f(結合短フラグ含む)・値なし/sha なしの --force-with-lease・+refspec を常時ブロック。
 #   検証済み tip を明示した --force-with-lease=<ref>:<sha> のみ許可。
 # - git commit: 同一行で (a) `;` の直前連結、(b) 先行セグメントに `| tail`/`| head` があるとブロック。
-#   どちらも「検証ゲートの赤が exit に反映されないままコミットが走る」再発事例のパターン。
+#   どちらも「検証の失敗が exit に反映されないままコミットが実行される」再発事例のパターン。
 #   `検証 && git commit` と `検証 | grep -q ... && git commit`(exit が判定を反映する形)は許可。
 # PreToolUse(matcher: Bash)。stdin に hook の JSON。ブロックは exit 2。
 # ponytail: 既知の上限 — xargs 経由・シェル 3 段以上のネスト・`git -C <別リポ>` の marker 照合は
-# cwd リポジトリ基準のまま。クォート内の実改行は行分割で別コマンド扱いになる(fail-closed の誤爆側)。
+# cwd リポジトリ基準のまま。クォート内の実改行は行分割で別コマンド扱いになる(fail-closed で、誤って止める側)。
 set -euo pipefail
 
 # 途中で cd しても切り出した .py を見失わないよう、hook の置き場所を先に絶対パスにする

@@ -22,7 +22,7 @@ MESSAGES = {
     "extract_open": "0段ゲート: {path} が閉じていない: {why}",
     "review_missing": "検証容易性ゲート: {name} の reviewer の合格が記録されていない(台帳か対象のコードを合格のあとに変えた場合も同じ)。"
     "hymme:verification-reviewer(対象 verifiability)を dispatch し、最後の行に「判定: 合格 対象=verifiability 名前={name}」が返るまで往復する。",
-    "premise": "前提の確認ゲート: {name} は修正を挟んでも同じ規則({rule})で2回続けて落ちた。次の修正の前に、"
+    "premise": "前提の確認ゲート: {name} は修正を挟んでも同じ規則({rule})で2回続けて失敗した。次の修正の前に、"
     "失敗した修正が共通して置いていた前提を {path} に1文で書き、その前提が偽なら結果が変わる観測を1つ行って結果を書く。",
     "no_review": "統合ゲート: この変更に対する diff-review の記録が無い。diff-review スキルを実行する(レビュー担当の最後の行の must と lenses を hook が記録する)。",
     "must_left": "統合ゲート: diff-review の must 指摘が {n} 件残っている(レンズ: {lenses})。直して再レビューする。",

@@ -34,7 +34,7 @@ import z3
 VERDICTS = ("HOLDS", "VIOLATED")
 
 MESSAGES = {
-    "description": "SMT オラクル: 名前付きの性質が全入力で成り立つかを Z3 で検査し、検査が効いているかも確かめる",
+    "description": "SMT オラクル: 名前付きの性質が全入力で成り立つかを Z3 で検査し、壊した版を検出できるかも確かめる",
     "help_model": "properties() を定義したモデルファイル(.py)",
     "help_timeout": "性質1件あたりの Z3 のタイムアウト(ミリ秒)",
     "load_failed": "{path}: {kind}: {err}",
@@ -44,11 +44,11 @@ MESSAGES = {
     "not_bool": "{name}: {key} は z3 の Bool 式にする({got} は不可)",
     "verdict": "{name}: {verdict}",
     "witness": "  witness(破る入力): {w}",
-    "gave_up": "  <- Z3 が判定を諦めた。性質を書き直す",
+    "gave_up": "  <- Z3 が判定できなかった。性質を書き直す",
     "mismatch": "  <- 期待は {expect}",
-    "no_broken": "  <- 壊した版が無い。性質が何かを縛っていると示すために足す",
-    "broken_caught": "  (壊した版は捕まった: {w})",
-    "not_load_bearing": "  <- 効いていない: 壊した版も {verdict}",
+    "no_broken": "  <- 壊した版が無い。性質が何かを制限していると示すために足す",
+    "broken_caught": "  (壊した版は検出された: {w})",
+    "not_load_bearing": "  <- 性質が何も制限していない: 壊した版も {verdict}",
     "error": "エラー: {err}",
     "selfcheck_ok": "自己検査 合格",
 }

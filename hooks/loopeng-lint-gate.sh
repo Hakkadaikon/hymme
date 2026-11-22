@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# loop-engineering 静的検査ゲート: `tlc` / `java ... tlc2.TLC` を直接叩く前に、
+# loop-engineering 静的検査ゲート: `tlc` / `java ... tlc2.TLC` を直接実行する前に、
 # 対象 spec を loopeng/bin/tla_lint.sh(SANY + 型注釈があれば Apalache typecheck)に通す。
-# spec にエラーがあれば(lint の exit 1)exit 2 でブロックし、エラー内容を返す(直してから TLC を回させる)。
+# spec にエラーがあれば(lint の exit 1)exit 2 でブロックし、エラー内容を返す(直してから TLC を実行させる)。
 # ツール不在など spec の誤りでない失敗(lint の exit 2)はブロックせず、警告だけ出して通す。
 # `make ... loop-middle` 等は Makefile 側の lint ターゲットが同じ検査をするので対象外。
 # PreToolUse(matcher: Bash)。stdin に hook の JSON。
@@ -13,7 +13,7 @@ set -euo pipefail
 
 msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
-    lint_failed) printf 'loopeng 静的検査ゲート: %s が静的検査を通らない。直してから TLC を回せ。\n' "$2" ;;
+    lint_failed) printf 'loopeng 静的検査ゲート: %s が静的検査を通らない。直してから TLC を実行せよ。\n' "$2" ;;
     lint_unavailable) printf 'loopeng 静的検査ゲート: 静的検査を実行できなかった(spec の誤りではない)。TLC はそのまま通す。\n' ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac

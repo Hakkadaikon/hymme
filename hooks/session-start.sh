@@ -6,7 +6,7 @@ set -euo pipefail
 root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 skill="${root}/skills/using-hymme/SKILL.md"
 
-# 2 つ目の `---` 以降だけを出す(frontmatter を落とす)
+# 2 つ目の `---` 以降だけを出す(frontmatter を除く)
 body="$(awk 'f; /^---$/ { if (++c == 2) f = 1 }' "$skill")"
 msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in

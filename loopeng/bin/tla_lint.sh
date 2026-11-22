@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# TLC の前段の静的検査。TLC(モデル検査・mutation oracle)を回す前に必ず通す。
+# TLC の前段の静的検査。TLC(モデル検査・mutation oracle)を実行する前に必ず通す。
 #
 #   tla_lint.sh <spec.tla>
 #
 # 1. SANY で構文・意味解析(未定義の名前、引数の数、レベルの誤り)。
 #    SANY はエラーがあっても exit 0 を返すので、出力の "*** Errors" / "***Parse Error***" / "Fatal errors" で判定する。
 # 2. spec に Apalache の型注釈(@type:)があれば `apalache-mc typecheck` で型検査。
-#    注釈が無い spec はスキップする(注釈なしの spec では typecheck が必ず落ちるため)。
+#    注釈が無い spec はスキップする(注釈なしの spec では typecheck が必ず失敗するため)。
 #
 # exit: 0 = 通過、1 = spec にエラー(直してから TLC へ)、2 = 使い方・ツール不在。
 set -uo pipefail
@@ -16,10 +16,10 @@ msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
     no_spec) printf 'tla_lint: spec が無い: %s\n' "$2" ;;
     no_cmd) printf "tla_lint: \`%s\` が PATH に無い\n" "$2" ;;
     no_sany) printf "tla_lint: PATH に \`sany\` が無く、java + TLA_JAR の代替も無い\n" ;;
-    sany_error) printf '== SANY: %s に構文/意味エラー。直してから TLC を回す ==\n' "$2" ;;
+    sany_error) printf '== SANY: %s に構文/意味エラー。直してから TLC を実行する ==\n' "$2" ;;
     sany_ok) printf 'SANY 適合: %s\n' "$2" ;;
     no_apalache) printf 'tla_lint: @type 注釈があるが apalache-mc が無い\n' ;;
-    type_error) printf '== Apalache typecheck: %s に型エラー。直してから TLC を回す ==\n' "$2" ;;
+    type_error) printf '== Apalache typecheck: %s に型エラー。直してから TLC を実行する ==\n' "$2" ;;
     apalache_broken) printf 'tla_lint: apalache-mc が型検査の前に失敗した(spec の誤りではない)\n' ;;
     type_ok) printf 'Apalache typecheck 適合: %s\n' "$2" ;;
     type_skipped) printf 'Apalache typecheck: 省略(%s に @type 注釈が無い)\n' "$2" ;;

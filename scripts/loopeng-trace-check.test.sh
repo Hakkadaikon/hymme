@@ -56,7 +56,7 @@ jsonl lost '{"count":0,"served":0,"log":[]}' \
   '{"count":1,"served":2,"log":[{"who":"a","ok":true},{"who":"b","ok":true}]}'
 # 観測できるのは count だけ(served と log は spec に選ばせる)
 jsonl partial '{"count":0}' '{"count":1}' '{"count":2}' '{"count":3}'
-# Limit=3 を超える: cfg の CONSTANT が効いていれば 5 行目で止まる
+# Limit=3 を超える: cfg の CONSTANT が使われていれば 5 行目で止まる
 jsonl over '{"count":0}' '{"count":1}' '{"count":2}' '{"count":3}' '{"count":4}'
 jsonl badinit '{"count":5,"served":0,"log":[]}' '{"count":6,"served":1,"log":[{"who":"a","ok":true}]}'
 jsonl unknown '{"count":0,"nosuch":1}'

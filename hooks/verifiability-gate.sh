@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 検証容易性ゲート: 形式検証の入口(loop-outer/middle/inner、smt_oracle.py、trace_check.py、
-# tasks/fv/<Name> での lake build)を叩く前に、tasks/verifiability/<Name>.md の台帳があり、
+# tasks/fv/<Name> での lake build)を実行する前に、tasks/verifiability/<Name>.md の台帳があり、
 # verifiability.py の指標が全対象で通る(または理由付きの例外)ことを検査する。満たさなければ exit 2 でブロックする。
 # reviewer の合格は hymme_hook.py が署名つきの記録で検査する。
 # PreToolUse(matcher: Bash)。stdin に hook の JSON。
@@ -27,13 +27,13 @@ payload="$(cat)"
 # 入口の探し方は loopeng/lib/hymme/cmdparse.py(OK<TAB>台帳のルート<TAB>名前<TAB>種類 か BLOCK<TAB>理由 を出す)。
 # -I: 作業中のリポジトリに json.py などがあっても読み込まない
 if ! targets="$(printf '%s' "$payload" | python3 -I "$(dirname "$0")/../loopeng/lib/hymme/cmdparse.py" 2>/dev/null)"; then
-  # 解析できないときは、入口らしき語があれば止める(lake build は python が無くても動くので素通りさせない)
+  # 解析できないときは、入口らしき語があれば止める(lake build は python が無くても動くので、検査せずには通さない)
   printf '%s' "$payload" | grep -qE 'loop-(outer|middle|inner)|smt_oracle\.py|trace_check\.py|lake[^"]*build' || exit 0
   block "$(msg unparsed)"
 fi
 [ -n "$targets" ] || exit 0
 
-# 台帳のルートへ cd してから PATH を引き直すと、PATH の空要素や . でルートの偽物を拾うので、先に絶対パスにする
+# 台帳のルートへ cd してから PATH を引き直すと、PATH の空要素や . でルートにある同名の別ファイルが選ばれるので、先に絶対パスにする
 tool="$(command -v verifiability.py 2>/dev/null || true)"
 
 while IFS=$'\t' read -r kind root name entry; do

@@ -47,7 +47,7 @@ import tempfile
 # テストと skills/loopeng-modelcheck/references/mutation-oracle.md が目印として読むので訳さない。
 MESSAGES = {
     "description": (
-        "TLA+ spec の mutation oracle。spec に小さな変異を入れて TLC を回し、"
+        "TLA+ spec の mutation oracle。spec に小さな変異を入れて TLC を実行し、"
         "spec が変異を検出(killed)できるかを調べる。"
         "終了コード: 0 = survivor も unverified も無い(--since で変えた行に変異箇所が無いときも 0)、"
         "1 = survivor あり、2 = 変異前の spec が通らない、"
@@ -55,9 +55,9 @@ MESSAGES = {
     ),
     "help_spec": ".tla spec のパス",
     "help_cfg": "TLC の設定ファイル(省略時は <spec>.cfg があれば使う)",
-    "help_workers": "1 回の TLC のワーカー数(既定は auto。--jobs 1 のときだけ効く)",
+    "help_workers": "1 回の TLC のワーカー数(既定は auto。--jobs 1 のときだけ使う)",
     "help_mut_timeout": "変異 1 つあたりの TLC のタイムアウト秒(既定 60)",
-    "help_jobs": "同時に回す変異の数(既定: このプロセスが使える CPU の数)",
+    "help_jobs": "同時に検査する変異の数(既定: このプロセスが使える CPU の数)",
     "help_since": "この git リビジョンから変えた行だけに変異を入れる",
     "no_tlc": "エラー: PATH に `tlc` が無く、java + TLA_JAR の代替も無い",
     "timeout": "TLC が {timeout} 秒でタイムアウトした(killed として扱う)",
@@ -71,7 +71,7 @@ MESSAGES = {
     "mutant": "  {kind:<9} {label}",
     "timeouts": (
         "警告: --jobs {jobs} で {n} 個の変異がタイムアウトした。タイムアウトは killed に数える。"
-        "--jobs を下げるか --mut-timeout を延ばして回し直してから、その killed を信じる。"
+        "--jobs を下げるか --mut-timeout を延ばして実行し直してから、その killed を信じる。"
     ),
     "summary": (
         "\nmutants: {total}  killed: {killed}  survivors: {survivors}  unverified: {unverified}  invalid: {invalid}"
