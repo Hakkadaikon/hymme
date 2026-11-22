@@ -25,7 +25,7 @@ msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
 BODY="$body" ROOT="$root" python3 -I -c '
 import json, os
 ctx = ("<hymme-routing>\n"
-       "hymme は superpowers 前提の拡張。以下は using-hymme(skills/using-hymme/SKILL.md)の全文(superpowers の工程のどこで hymme を呼ぶかの地図)。"
+       "hymme は superpowers 前提の拡張。以下は using-hymme(skills/using-hymme/SKILL.md)の全文(superpowers の工程のどこで hymme を呼ぶかの地図と、委任先、応答・文章の方針)。"
        "他の hymme / superpowers スキルは Skill ツールで呼ぶ。一覧に出さないスキル(loopeng-*、test-extract / test-catalog / test-verify、tdd-cycle、flakiness-* など)は、ルーターや下の地図の指示で SKILL.md を Read して使う。\n\n"
        + os.environ["BODY"].replace("${CLAUDE_PLUGIN_ROOT}", os.environ["ROOT"]) + "\n</hymme-routing>")
 print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": ctx}}, ensure_ascii=False))
