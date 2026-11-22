@@ -85,7 +85,7 @@ flowchart TD
 
 ## 前提ツールと成果物の置き場
 
-- 実行に使うツール(tlc / agentloop-* / `hymme` コマンド / 検証の入口を見る hook): [`../_shared/agentloop-toolchain.md`](../_shared/agentloop-toolchain.md)。未導入なら導入を促し、勝手に大規模インストールしない。
+- 実行に使うツール(tlc / `agentloop-outer`・`agentloop-middle`・`agentloop-inner` / `hymme` コマンド / 検証の入口を見る hook): [`../_shared/agentloop-toolchain.md`](../_shared/agentloop-toolchain.md)。未導入なら導入を促し、勝手に大規模インストールしない。
 - 生成物はすべて `tasks/loopeng/` 配下・git 管理外。管理番号・手法用語を本体に書かない: [`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md)。
 - 実装への橋渡し(Lean / test-design との分担、結線チェック): [`references/bridging.md`](references/bridging.md)。
 - 抽出/検査を subagent へ並列委譲するとき(基本は superpowers:dispatching-parallel-agents、hymme の差分): [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md)。

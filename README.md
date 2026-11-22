@@ -212,7 +212,7 @@ flowchart LR
 
 検証の入口。
 
-- `agentloop-*`、`smt_oracle.py`、`trace_check.py`
+- `agentloop-outer`、`agentloop-middle`、`agentloop-inner`、`smt_oracle.py`、`trace_check.py`
 - `tasks/fv` での `lake build`
 - `tlc` と `apalache-mc` の直接の実行
 
@@ -335,6 +335,16 @@ nix profile install .#skill-tools
 | 検証のツール | `tlc`、`sany`、`apalache-mc`、`lake`、`lean` |
 | `agentloop/bin` のスクリプト | `agentloop-outer`、`agentloop-middle`、`agentloop-inner`、`smt_oracle.py`、`trace_check.py`、`verifiability.py` など |
 | `hymme` コマンド | 承認の申請、欠陥の記録、状態遷移図、ログの採取 |
+
+0.15.0 で名前を変えた。古い名前を呼ぶスクリプトは書き換える。
+
+| 0.14 まで | 0.15 から |
+| --- | --- |
+| スキル `loop-engineering`、`loopeng-*` | `agent-loop`、`agentloop-*` |
+| コマンド `loop-outer`、`loop-middle`、`loop-inner` | `agentloop-outer`、`agentloop-middle`、`agentloop-inner` |
+| `loopeng/`、`Makefile.loopeng`、`LOOPENG_HOME` | `agentloop/`、`Makefile.agentloop`、`AGENTLOOP_HOME` |
+
+台帳の置き場 `tasks/loopeng/` は変えていない。古いコマンド名で残った実行の記録は、新しい名前として読む。
 
 注意が2つある。
 

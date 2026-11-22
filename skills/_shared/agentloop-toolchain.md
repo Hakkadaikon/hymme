@@ -28,7 +28,7 @@ agentloop-* 各スキルが呼ぶ外部コマンドと、ループを実行す�
   | `hymme exception request <検査> --until <日付> --reason <理由>` | 検査の例外を申請する(期限は最長90日)。`<検査>` に書けるのは `review` / `stages` / `surface` / `trace` / `stale` / `weaken` / `fix_without_escape` / `pr_body`。ユーザーの確認(確認の一覧、状態遷移図)と閉じていない欠陥の記録は例外で外せない |
   | `hymme escape open` / `verify` / `unreachable` / `list` / `stats` | 後段で見つかった欠陥の記録を扱う |
 
-- 検証の入口を見る hook(`hooks/hymme_hook.py`)はこのプラグインの `hooks/hooks.json` で配布される。0 段の抽出台帳、確認の一覧の承認、reviewer の合格の記録、前提の記録を、検証の入口(`agentloop-*`、`smt_oracle.py`、`trace_check.py`、`tasks/fv/<Name>` での `lake build`、`tlc`・`apalache-mc` の直接の実行)の直前に検査する。
+- 検証の入口を見る hook(`hooks/hymme_hook.py`)はこのプラグインの `hooks/hooks.json` で配布される。0 段の抽出台帳、確認の一覧の承認、reviewer の合格の記録、前提の記録を、検証の入口(`agentloop-outer`、`agentloop-middle`、`agentloop-inner`、`smt_oracle.py`、`trace_check.py`、`tasks/fv/<Name>` での `lake build`、`tlc`・`apalache-mc` の直接の実行)の直前に検査する。
   プラグインを有効化していれば追加設定なしで有効になり、subagent(hymme:modeler)の Bash にも適用される。検証の入口の検査は、コマンドを実行したディレクトリの `tasks/` を見る(実行した場所か引数のパスが `tasks/loopeng/`・`tasks/fv/` の中なら、その `tasks/` の手前)。`hymme` コマンドと統合の入口の検査はリポジトリ直下の `tasks/` を見る。両方が同じ台帳を指すように、台帳はリポジトリ直下の `tasks/` に置き、入口はリポジトリ直下から実行する。worktree 内で実行するなら台帳もその worktree に置く。hook が書く記録は git の共通ディレクトリにあり、worktree をまたいで共有される([`stealth-artifacts.md`](stealth-artifacts.md) の「hook の記録」)。
   スクリプトや Makefile の中から呼んだ検証の入口は hook から見えず、記録が残らない。記録が要る実行(実ログの突き合わせ、突き合わせのコマンドなど)は Bash から直接実行する。
 - Gherkin ランナー(`cucumber-js` / `godog` 等)と要求トレーサビリティのツールは同梱しない。必要になったプロジェクトで個別にインストールする。
