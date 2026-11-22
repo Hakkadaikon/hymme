@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 
 SCHEMA = 1
-VERSION = "0.14.3"
+VERSION = "0.14.4"
 KEY_ENV = "CLAUDE_PLUGIN_DATA"
 KEY_NAME = "notary.key"
 
