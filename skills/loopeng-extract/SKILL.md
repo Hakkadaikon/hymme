@@ -114,7 +114,7 @@ description: >
 - **内ループ(loopeng-gherkin の正シナリオ追加)**: TLC 反例由来は機械変換で消し込み不要(1反例=1 feature)。手作業は正常系の受け入れシナリオで、「テスト」列が空の event/state 系 EARS 正常系=内ループの漏れ。
 - **中ループ(loopeng-modelcheck)は新規チェックリスト不要**(YAGNI)。TLC の全到達状態探索と survivor 列挙が機械的に行う。例外は3段目の文面の往復確認で、EARS 行ごとの判定表 `<Name>.faithfulness.md` を1枚作る(読み手とコントローラが判定する。手順は [`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md))。
 
-## 抽出の網羅を高める手段(脅威観点だけは必須、他は任意だが効果がある)
+## 抽出の網羅を高める手段(必須の3つと、任意だが効果がある手段)
 
 - **unwanted の系統生成**: 各 event 要件(正常系)に「この入力が不正なら?」を必ず問い、unwanted(IF-THEN)を立てる。
 - **多視点の独立抽出 + 突き合わせ**: 違う観点(状態機械/バイト/セキュリティ/相互運用)で独立抽出し union を取る。`adaptive-explore` workflow や複数 subagent で観点を分ける(並列化の基底は superpowers:dispatching-parallel-agents、注意点は [`../_shared/parallel-delegation.md`](../_shared/parallel-delegation.md))。**同じ観点を N 回より違う観点を1回ずつ**。

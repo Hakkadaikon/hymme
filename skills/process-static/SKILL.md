@@ -17,7 +17,7 @@ disable-model-invocation: true
 機能の正しさより外側にある観点のうち、開発プロセスに組み込むテスト戦術(左(設計)へ寄せるか右(本番)へ寄せるか)、コードを読んで実行せずに欠陥を見つける静的テスト、冪等性や並行性といった現場頻出の、分類に収まりにくいその他の観点を扱う。
 項目が多いため大半は概要と目的だけを簡潔に記し、欠けやすい代表的な観点(BDD、冪等性)にだけ TypeScript の最小例を添える。
 
-品質特性(ISO/IEC 25010)に沿う非機能テストは、測定系(性能、負荷、ストレス、スパイク、ソーク、スケーラビリティ、キャパシティ)を [`nonfunctional-perf.md`](../nonfunctional-perf/SKILL.md) に、品質保証系(セキュリティ、a11y、互換性、信頼性、コントラクト)を [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md) に、耐障害性とデータ品質マイグレーションを [`nonfunctional-resilience.md`](../nonfunctional-resilience/SKILL.md) にまとめた。
+品質特性(ISO/IEC 25010)に沿う非機能テストは、測定系(性能、負荷、ストレス、スパイク、ソーク、スケーラビリティ、キャパシティ)を [`nonfunctional-perf.md`](../nonfunctional-perf/SKILL.md) に、品質保証系(セキュリティ、a11y、互換、i18n、信頼性、可用性、カオス、コントラクト)を [`nonfunctional-attributes.md`](../nonfunctional-attributes/SKILL.md) に、耐障害性とデータ品質マイグレーションを [`nonfunctional-resilience.md`](../nonfunctional-resilience/SKILL.md) にまとめた。
 
 ## 目次
 

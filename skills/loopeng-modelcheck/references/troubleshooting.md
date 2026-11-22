@@ -36,8 +36,8 @@ java ... tlc2.TLC -config ReliableQueueProp.cfg ReliableQueue.tla
 
 ## TLC がスクラッチを残す
 
-TLC は作業ディレクトリに `states/` などのスクラッチを出力する。
-spec ディレクトリに出力されるので、コミット前に消す/`.gitignore` する。
+TLC は `states/` などのスクラッチを spec のディレクトリに出力する。
+コミット前に消すか、`.gitignore` に入れる。
 生成物(`.tla`/`.feature`)と混同しない。
 
 ## TLC のトレース形式(`trace_to_gherkin.py` 絡み)
