@@ -5,7 +5,7 @@
 # 台帳が1つでもあれば、未チェック(- [ ] T-...)や T-NNN 欠番が残っていないか検査し、
 # 残っていれば exit 2 でブロックする。
 # 加えて tasks/loopeng/ に .feature があるのに台帳へ1件も転記されていなければブロックする
-# (loopeng-gherkin の成果物が test-design 側で無視されるのを防ぐ)。
+# (agentloop-gherkin の成果物が test-design 側で無視されるのを防ぐ)。
 # 台帳は、書こうとしているファイルが属する git リポジトリの tasks/ から探す(無ければ cwd)。
 # 台帳に「テスト対象: <glob> ...」の行があれば、その台帳は一致するテストファイルだけを対象にする。
 # この行が無い台帳は、すべてのテストファイルを対象にする。
@@ -53,7 +53,7 @@ msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   case "$1" in
     unchecked) printf 'test-design 0段ゲート: %s に未チェック(- [ ] T-...)が残っている。手法割り当てとテスト名を埋めて [x] にしてから実装へ進め。\n' "$2" ;;
     gap) printf 'test-design 0段ゲート: %s の T-ID 連番に欠番がある(T-%s..T-%s のうち %s 件)。抜けを埋めるか採番し直せ。\n' "$2" "$3" "$4" "$5" ;;
-    no_feature) printf 'test-design 0段ゲート: tasks/loopeng/ に .feature があるが、どの台帳にも出典として転記されていない。loopeng-gherkin の正常系シナリオを T-ID として台帳に転記してから実装へ進め。\n' ;;
+    no_feature) printf 'test-design 0段ゲート: tasks/loopeng/ に .feature があるが、どの台帳にも出典として転記されていない。agentloop-gherkin の正常系シナリオを T-ID として台帳に転記してから実装へ進め。\n' ;;
     *) printf '未知のメッセージコード: %s\n' "$1" >&2 ;;
   esac
 }
@@ -86,8 +86,8 @@ for ledger in $ledgers; do
   }
 done
 
-# loopeng-gherkin の成果物(.feature)があるのに、どの台帳にも1件も転記されていなければブロック。
-# 出典欄に "<対象>.feature" と書く規約(loopeng-gherkin/SKILL.md・test-extract/SKILL.md 参照)。
+# agentloop-gherkin の成果物(.feature)があるのに、どの台帳にも1件も転記されていなければブロック。
+# 出典欄に "<対象>.feature" と書く規約(agentloop-gherkin/SKILL.md・test-extract/SKILL.md 参照)。
 features="$(find tasks/loopeng -maxdepth 1 -name '*.feature' 2>/dev/null || true)"
 if [ -n "$features" ]; then
   transcribed=0

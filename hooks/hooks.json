@@ -30,7 +30,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/loopeng-lint-gate.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/agentloop-lint-gate.sh\""
           },
           {
             "type": "command",

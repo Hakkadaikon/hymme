@@ -20,7 +20,7 @@ hymme の台帳を持つリポジトリ(`tasks/` に loopeng、fv、verifiabilit
 
 `tasks/surface.md` を置いたリポジトリも、台帳を持つリポジトリとして扱われる。それまで台帳が無かったリポジトリでは、置いたときから統合の入口で段の宣言 `tasks/stages.md`(escape-flow スキル)と PR の本文の見出し(pr-create スキル)も確かめられる。
 
-`tasks/` は git 管理外に置く([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。`hymme` コマンドは skill-tools に入っている([`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md))。
+`tasks/` は git 管理外に置く([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。`hymme` コマンドは skill-tools に入っている([`../_shared/agentloop-toolchain.md`](../_shared/agentloop-toolchain.md))。
 
 ## 定義の形
 
@@ -113,7 +113,7 @@ hymme capture <ログのパス> -- <実システムを動かすコマンド>
 - `--` のあとの引数は空白でつなぎ直してシェルに渡される。空白を含む引数を引用符でくくっても、引用符は残らない。手順が複数あるときや引用符が要るときは、スクリプト1本にまとめて渡す
 - 手で書いたログ、採ったあとに編集したログは、統合の入口で「`hymme capture` で採ったものではない」として止まる。採り直す
 - コマンドの中で `PATH` を変えていると、hook は記録しない
-- 正常系、高負荷、障害注入、わざと壊した実装の4本を採る手順と、ログの名前は [`../loopeng-tracecheck/SKILL.md`](../loopeng-tracecheck/SKILL.md) に従う
+- 正常系、高負荷、障害注入、わざと壊した実装の4本を採る手順と、ログの名前は [`../agentloop-tracecheck/SKILL.md`](../agentloop-tracecheck/SKILL.md) に従う
 
 ## 5. 定義がコードの変更に追いついているかを確かめ直す
 

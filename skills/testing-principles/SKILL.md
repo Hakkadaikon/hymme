@@ -59,7 +59,7 @@ JSTQB/ISTQB が定めるテストの7原則。個々の技法(同値分割、mut
 
 正しいテストの手法・厳密さは、対象のドメイン、リスク、契約、法規制によって変わる。すべての対象に同じ厳密さを適用しない。
 
-- 対応先: [`test-design`](../test-design/SKILL.md) の役割分担(通常は TDD、状態遷移や並行があれば loop-engineering、critical なら formal-verification)は、
+- 対応先: [`test-design`](../test-design/SKILL.md) の役割分担(通常は TDD、状態遷移や並行があれば agent-loop、critical なら formal-verification)は、
   この原則の具体化。[`nonfunctional-*.md`](../nonfunctional-attributes/SKILL.md) の非機能テストも対象の性質に応じて選択的に適用する。
 
 ## 7. 「バグゼロ」の落とし穴

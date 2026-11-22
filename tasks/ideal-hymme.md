@@ -21,7 +21,7 @@
 3. 検証には鮮度を持たせます。検証が写したコードが変わったら、その検証を失効させます。
 4. 後段のテストで見つかった欠陥は、拾えたはずの最も前の段へ戻します。
 5. 検査は壊した対象で失敗することを示してから信じます。
-6. loop-engineering を使わない通常の作業にも、最小の確認が効くようにします。
+6. agent-loop を使わない通常の作業にも、最小の確認が効くようにします。
 7. 検査は hook だけに頼りません。hook が見ない経路でも、道具自身が必要な記録を確かめます。
 
 ## 進め方
@@ -43,7 +43,7 @@
 - [x] D-1 superpowers への依存を残すか。フェーズ1の前に決める(仮: 残す。残さない場合は、superpowers を参照する41ファイルの書き直しをフェーズ6に加える) → 決定: 残す(仮の方針のまま)。作業者が /goal で自律の実行を指示したため、仮の方針で進めた
 - [x] D-2 通常の作業にどこまで効かせるか。フェーズ3の前に決める(仮: 完了の検証と、後段の欠陥を前段へ戻す流れの2つだけ) → 決定: 仮の方針のまま。hymme の台帳を持たないリポジトリには、レビューの記録と欠陥の記録だけを求める(checks.py の managed)
 - [x] D-3 誤って止まる回数が増えることをどこまで許すか。フェーズ1の前に決める(仮: 作業者が承認した期限つきの例外で通す) → 決定: 仮の方針のまま。例外は作業者の承認つき、最長90日(hook.py の MAX_EXCEPTION_DAYS)
-- [x] D-4 状態図に pstack の statechart を使うか、hymme で作るか。フェーズ2の前に決める(仮: 0-07 の結果で決める) → 決定: hymme で作る(tasks/ideal-hymme/phase0.md の 0-07。loopeng/lib/hymme/chart.py)
+- [x] D-4 状態図に pstack の statechart を使うか、hymme で作るか。フェーズ2の前に決める(仮: 0-07 の結果で決める) → 決定: hymme で作る(tasks/ideal-hymme/phase0.md の 0-07。agentloop/lib/hymme/chart.py)
 - [x] D-5 SMT 経路で実物をどう確かめるか。フェーズ4の前に決める(仮: 実関数とモデルの出力を突き合わせるテスト) → 決定: 仮の方針のまま。検証容易性の台帳の「突き合わせ:」の行のコマンドを記録する
 
 ## フェーズ0 事前の確かめ
@@ -58,8 +58,8 @@ hook の仕様と、hymme と pstack の未読部分を確かめます。結果�
 - [x] 0-06 0-03、0-04、0-05 のそれぞれについて、使えなかったときの代わりの方法を決める。候補は、hymme が配る実行用のスクリプトが終了コードを記録する方法、書き込みを止める代わりに作業ツリーの外の保存とハッシュで改ざんを見つける方法、判定用のスクリプトがレビューの結果を記録する方法 → tasks/ideal-hymme/phase0.md の「0-06 代わりの方法」
 - [x] 0-07 pstack の statechart のスクリプト一式を取得し、`example-counter.md` の spec で動かして報告の形を確かめる(取得済みなのは markdown だけ) → tasks/ideal-hymme/phase0.md の「0-07 状態図」。pstack 版が Counter で動くことを確認し、hymme で作ると決めた
 - [x] 0-08 サブエージェントと、別の worktree での作業に、hook と `tasks/` の記録がどう見えるか試す → 実際のセッションで確かめた。サブエージェントに検証の入口を1回実行させると、0段の検査と作業者の確認の検査が止めた。記録が worktree をまたぐことはテストで確認(test_records_are_shared_with_a_second_worktree)
-- [x] 0-09 `loop-*` と `trace_check.py` と `smt_oracle.py` が失敗をファイルに残しているか調べる → tasks/ideal-hymme/existing-survey.md の B(記録は残していない)
-- [x] 0-10 loopeng-modelcheck の references、formal-verification、test-extract、nonfunctional-perf、levels-operational を通読し、この台帳の「今は無い」の判定を見直す → tasks/ideal-hymme/existing-survey.md の A(無い 38、一部在る 45、既に在る 2)
+- [x] 0-09 `agentloop-*` と `trace_check.py` と `smt_oracle.py` が失敗をファイルに残しているか調べる → tasks/ideal-hymme/existing-survey.md の B(記録は残していない)
+- [x] 0-10 agentloop-modelcheck の references、formal-verification、test-extract、nonfunctional-perf、levels-operational を通読し、この台帳の「今は無い」の判定を見直す → tasks/ideal-hymme/existing-survey.md の A(無い 38、一部在る 45、既に在る 2)
 - [x] 0-11 pstack の全スキルと全 playbook について、取り込む、取り込まない、既に在る、の採否の表を作る。未読の playbook 8本と原則の残りもここで読む → tasks/ideal-hymme/pstack-adoption.md(取り込む 27、既に在る 8、取り込まない 46)
 - [x] 0-12 hook 1本あたりの実行時間を測り、本数を増やせる上限を決める → tasks/ideal-hymme/phase0.md の「0-12」。新しい入口は1事象につき Python の起動1回
 - [x] 0-13 pstack の文面や script を取り込む箇所に、MIT ライセンスの表示を付ける方法を決める → README.md の「謝辞」。文面とスクリプトは取り込まず、考え方の出どころを書いた
@@ -68,13 +68,13 @@ hook の仕様と、hymme と pstack の未読部分を確かめます。結果�
 
 本人の申告を、道具が書く記録へ置き換えます。pstack の「同期コミット」と patch-id の考え方をここに入れます。
 
-- [x] 1-01 今ある検査のうちテストの無い3つ(pr-review-gate、git-guard、loopeng-extract-gate)に、通す例と止める例のテストを足す → scripts/git-guard.test.sh(18例)。pr-review-gate と loopeng-extract-gate は新しい入口に置き換え、その検査は IntegrationTest と ClaimsGateTest が持つ
+- [x] 1-01 今ある検査のうちテストの無い3つ(pr-review-gate、git-guard、agentloop-extract-gate)に、通す例と止める例のテストを足す → scripts/git-guard.test.sh(18例)。pr-review-gate と agentloop-extract-gate は新しい入口に置き換え、その検査は IntegrationTest と ClaimsGateTest が持つ
 - [x] 1-02 CI を用意し、ローカルと同じ checks を回す → .github/workflows/check.yml。main への push で実行され、成功した(run 44886、コミット 56cc7b4)。1回目と2回目は、上流が差し替えた TLA+ の jar のハッシュ不一致で落ち、公開のダイジェストと照合して直した
-- [~] 1-03 コマンドの解析を1つにまとめる。`cd` のあとに連結した呼び出し、`SPEC=` の無い呼び出し、`tlc` と `apalache-mc` と `lean` の直接の実行を、検証の入口として見つける 機械 → loopeng/lib/hymme/cmdparse.py を新しい入口と verifiability-gate.sh が共有。直接の実行も入口として見つける(ParseTest)。残り: loopeng-lint-gate.sh と git_guard.py は自前の解析のまま
+- [~] 1-03 コマンドの解析を1つにまとめる。`cd` のあとに連結した呼び出し、`SPEC=` の無い呼び出し、`tlc` と `apalache-mc` と `lean` の直接の実行を、検証の入口として見つける 機械 → agentloop/lib/hymme/cmdparse.py を新しい入口と verifiability-gate.sh が共有。直接の実行も入口として見つける(ParseTest)。残り: agentloop-lint-gate.sh と git_guard.py は自前の解析のまま
 - [~] 1-04 解析できない入力、道具が無い環境、作業者と対話できない実行のそれぞれで、止めるか通すかを1つの表に定義し、全検査をそれに合わせる 機械 → 新しい入口は、鍵が無いと検証の入口と統合の入口を止め、ほかは通す(test_without_a_key_…)。壊れた入力は通す。残り: 既存の3本の sh は元の方針のままで、1つの表にはしていない
-- [x] 1-05 証跡の共通の形を1か所で定義する(コマンド、終了コード、コミット、patch-id、対象ファイルのハッシュ、書いた道具のバージョン) → loopeng/lib/hymme/store.py の append(kind、ts、version、変更の ID、署名)。入力のハッシュは hook.py の input_hashes
+- [x] 1-05 証跡の共通の形を1か所で定義する(コマンド、終了コード、コミット、patch-id、対象ファイルのハッシュ、書いた道具のバージョン) → agentloop/lib/hymme/store.py の append(kind、ts、version、変更の ID、署名)。入力のハッシュは hook.py の input_hashes
 - [x] 1-06 証跡、承認、欠陥の記録の置き場を決める。別の worktree やサブエージェントからも同じ記録が読める場所にし、`stealth-artifacts.md` の表と ledger-flow を直す → 記録は git の共通ディレクトリの hymme/(store.root)。skills/_shared/stealth-artifacts.md の「hook の記録」節
-- [x] 1-07 `loop-*`、`smt_oracle.py`、`trace_check.py`、`verifiability.py` が、実行のたびに 1-05 の形で記録を書く 機械 → 方法を変更: 道具は書かず、hook が PostToolUse と PostToolUseFailure で記録する(hook.py の post_tool、ReviewAndPremiseTest と ManagedRepoTest)
+- [x] 1-07 `agentloop-*`、`smt_oracle.py`、`trace_check.py`、`verifiability.py` が、実行のたびに 1-05 の形で記録を書く 機械 → 方法を変更: 道具は書かず、hook が PostToolUse と PostToolUseFailure で記録する(hook.py の post_tool、ReviewAndPremiseTest と ManagedRepoTest)
 - [x] 1-09 diff-review の証跡をスクリプトが書く形に改める。must の件数は、レビュー担当の報告からスクリプトが数える 機械 → 方法を変更: reviewer の最後の3行を hook が記録する(IntegrationTest)。skills/diff-review/SKILL.md の「4. 判定の記録」
 - [x] 1-10 レビュー合格の `[x]` を、0-03 か 0-06 の方法による記録に置き換える。2本の `reviewer.md`、`check-reviewer-checklist.sh`、`verifiability.test.sh`、verifiability の台帳のひな形を合わせて直す 機械 → hook.py の subagent_stop と checks.py の review(test_verifiability_review_is_a_record_tied_to_the_ledger_and_the_code)。ひな形、reviewer.md、verifiability-gate.sh を直した(db4139b、b7f5da1)
 - [x] 1-11 証跡のファイルへの本人の書き込みを、0-04 か 0-06 の方法で止めるか見つける 機械 → checks.py の protected(ProtectedTest)。署名の合わない行は読まない(StoreTest)。限界は design.md の「限界」
@@ -85,7 +85,7 @@ hook の仕様と、hymme と pstack の未読部分を確かめます。結果�
 - [x] 1-16 ブランチの差分が触れる spec の名前を、1-15 の対象の一覧から出すコマンドを作る 機械 → `hymme specs`(test_specs_command_lists_what_the_change_touches)
 - [x] 1-17 対象が変わったときの再検査の手順を書く。変更を「影響なし」「記述がコードと合わなくなった」「約束を意図して変えた」「約束が破れたおそれ」の4つに分ける 申告 → skills/verifiability/SKILL.md の「対象のコードが変わったとき」
 - [x] 1-18 「約束を意図して変えた」と分けるときは、根拠(テスト、変更履歴、コミットの説明)の引用を必須にする 申告 → 同上と skills/verifiability/reviewer.md の「対象の変更の分類」
-- [x] 1-19 新しい hook の事象を `hooks.json` に登録し、新しいスクリプトを flake の配布の一覧と `loopeng-tools.test.sh` に加える → hooks/hooks.json、flake.nix(loopengTools に hymme と lib、checks に hymme-core と git-guard)。nix flake check が exit 0
+- [x] 1-19 新しい hook の事象を `hooks.json` に登録し、新しいスクリプトを flake の配布の一覧と `agentloop-tools.test.sh` に加える → hooks/hooks.json、flake.nix(agentloopTools に hymme と lib、checks に hymme-core と git-guard)。nix flake check が exit 0
 - [~] 1-20 古い形式の証跡(今の `evidence.md`、手書きの合格の行、承認の無い進行中の `tasks/loopeng`)を読んだら、作り直しを求めて止める 機械 → 古い形式の証跡と手書きの合格の行は、もう読まない。記録が無いので、新しい手順を示す文言で止まる。残り: 古い形式を見つけて知らせる専用の文言は無い
 - [x] 1-21 hook と道具のバージョンが食い違うときに、それを知らせて止める 機械 → 申請に道具のバージョンを入れ、hook が比べる(test_request_from_a_tool_of_another_version_is_refused、test_the_library_and_the_plugin_carry_one_version)
 
@@ -93,21 +93,21 @@ hook の仕様と、hymme と pstack の未読部分を確かめます。結果�
 
 EARS にした要件について、形式検証で何を実証するかを、検証の前に必ず作業者へ確かめます。
 
-- [x] 2-01 確認用の一覧の形を決める。EARS の1行ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書く → ledgers.py の claims_problems、skills/loopeng-formalize/assets/claims-template.md
+- [x] 2-01 確認用の一覧の形を決める。EARS の1行ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書く → ledgers.py の claims_problems、skills/agentloop-formalize/assets/claims-template.md
 - [x] 2-02 一覧に、有限にした値の範囲と、モデルから捨てた領域を載せる → 同上(「有限にした範囲」「扱わない領域」が空だと形の検査で落ちる)
 - [x] 2-03 一覧には手法の用語と管理番号を書かない(作業者が検証の言語を知らなくても判断できる形にする) → ledgers.py の METHOD_WORDS(test_claims_list_with_an_empty_cell_a_missing_section_and_a_method_word)
-- [x] 2-04 loopeng-formalize の EARS を書いた直後に、2-01 の一覧を作る手順を入れる → skills/loopeng-formalize/SKILL.md の「作業者の確認」。位置は「EARS とモデルを決めた直後、spec を書く前」に変えた(有限にした範囲がモデルで決まるため)
+- [x] 2-04 agentloop-formalize の EARS を書いた直後に、2-01 の一覧を作る手順を入れる → skills/agentloop-formalize/SKILL.md の「作業者の確認」。位置は「EARS とモデルを決めた直後、spec を書く前」に変えた(有限にした範囲がモデルで決まるため)
 - [x] 2-05 作業者に見せる文面を、スクリプトが一覧のファイルからそのまま出す(作業する本人が要約や別の質問に差し替えられないようにする) 機械 → hook.py の hymme_results が、ファイルの中身を systemMessage で作業者に出す(test_the_worker_sees_the_list_itself)
 - [x] 2-06 どの一覧が承認待ちかの状態を記録し、承認の入力がどの一覧に対するものかを取り違えないようにする 機械 → 申請は符号ごとのファイル。表示する申請はコマンドの引数から決める(hook.py の requested_code、test_the_chart_must_match_…)
 - [x] 2-07 作業者の承認を 0-01 か 0-02 の方法で hook が記録する。記録には一覧のハッシュを含める 人 → hook.py の user_prompt(ClaimsGateTest)。実際のセッションでも確認
 - [x] 2-08 承認の記録が無いか、一覧が承認後に変わっていたら、1-03 で見つけた検証の入口をすべて止める 人 → checks.py の claims(test_passes_after_the_worker_approves_and_stops_again_when_the_list_changes)
 - [x] 2-10 SMT 経路と Lean の性質の一覧にも、同じ確認と同じ検査を入れる 人 → 一覧は tasks/loopeng と tasks/fv の両方で探す(test_proof_work_under_tasks_fv_needs_the_list_but_no_extraction_ledger)。SMT は同じ入口の検査
 - [x] 2-11 作業者と対話できない実行(サブエージェント、無人の実行)では承認を取らずに止める。modeler と prover は BLOCKED で返す。`parallel-delegation.md` を合わせて直す → agents/modeler.md、agents/prover.md、skills/_shared/parallel-delegation.md。hook の文言にも BLOCKED で返す指示がある
-- [x] 2-12 D-4 の結論に沿って、状態図を作る道具を用意する。pstack のものを使うなら実行環境を flake に加え、hymme で作るなら実装する → loopeng/lib/hymme/chart.py と `hymme chart draw`(ChartRunTest、実際の TLC で実行)
-- [x] 2-13 モデル検査のあとに2回目の確認を置く。状態図と、違反に至る最短の経路と、文面の往復確認の結果を作業者へ示す 人 → `hymme chart request` と checks.py の chart_problem。文面は skills/loopeng-modelcheck/SKILL.md の手順4
+- [x] 2-12 D-4 の結論に沿って、状態図を作る道具を用意する。pstack のものを使うなら実行環境を flake に加え、hymme で作るなら実装する → agentloop/lib/hymme/chart.py と `hymme chart draw`(ChartRunTest、実際の TLC で実行)
+- [x] 2-13 モデル検査のあとに2回目の確認を置く。状態図と、違反に至る最短の経路と、文面の往復確認の結果を作業者へ示す 人 → `hymme chart request` と checks.py の chart_problem。文面は skills/agentloop-modelcheck/SKILL.md の手順4
 - [x] 2-14 状態図が今の spec から作られたこと(ハッシュの一致)と、検査されなかった規則が0件であることを検査する 機械 → checks.py の chart_problem(test_the_chart_must_match_the_spec_leave_nothing_open_and_be_approved)
-- [x] 2-15 作業者が項目を直したときの手順を書く。EARS、モデル、一覧の順に作り直し、2-07 の承認を取り直す → skills/loopeng-formalize/SKILL.md の「作業者の確認」(直すときの順)
-- [x] 2-16 verification-reviewer の検査項目に、承認の記録と一覧の対応を加える → agents/verification-reviewer.md、skills/loop-engineering/reviewer.md の「確認の一覧と承認」
+- [x] 2-15 作業者が項目を直したときの手順を書く。EARS、モデル、一覧の順に作り直し、2-07 の承認を取り直す → skills/agentloop-formalize/SKILL.md の「作業者の確認」(直すときの順)
+- [x] 2-16 verification-reviewer の検査項目に、承認の記録と一覧の対応を加える → agents/verification-reviewer.md、skills/agent-loop/reviewer.md の「確認の一覧と承認」
 
 ## フェーズ3 後段の欠陥を前段へ戻す
 
@@ -125,7 +125,7 @@ EARS にした要件について、形式検証で何を実証するかを、検
 - [x] 3-10 抜けた理由の分類を決める。要件の抜け、モデルで捨てた領域、手法の選び違い、テストの書き漏れ、検証の弱いテスト、前段では原理的に拾えない、の6つとする → ledgers.py の ESCAPE_CAUSES。review-feedback の4分類との関係は skills/review-feedback/SKILL.md に書いた
 - [x] 3-11 前段に足したテストが、修正前のコミットで失敗し、修正後に通ることをスクリプトが実行して記録する 機械 → cli.py の red_then_green(test_closing_needs_a_test_in_an_earlier_stage_that_was_red_before_the_fix)。限界: 修正前に落ちた理由は見ない
 - [x] 3-12 足したテストのパスが、3-02 の宣言で、見つかった段より前の段に当たることを検査する 機械 → ledgers.py の escape_problems(同じテスト、test_escape_record_fields_are_validated)
-- [x] 3-13 抜けた理由が要件かモデルにあるときは、loopeng-extract か loopeng-formalize へ戻す。承認済みの一覧が変わり、2-07 の承認を取り直したことを、閉じる条件にする 人 → hook.py の hymme_results(test_a_requirement_gap_closes_only_after_the_list_is_approved_again)
+- [x] 3-13 抜けた理由が要件かモデルにあるときは、agentloop-extract か agentloop-formalize へ戻す。承認済みの一覧が変わり、2-07 の承認を取り直したことを、閉じる条件にする 人 → hook.py の hymme_results(test_a_requirement_gap_closes_only_after_the_list_is_approved_again)
 - [x] 3-14 開いたままの欠陥の記録があるあいだ、1-14 の入口をすべて止める 機械 → checks.py の integration(escape_open。例外で外せない)
 - [x] 3-15 ブランチに `fix` 型のコミットがあるのに欠陥の記録が無いとき、1-14 の入口を止める(種別は本人が付けるので、3-04 を主、これを補助とする) 申告 → checks.py の integration(test_fix_commit_needs_an_escape_record、test_a_fix_commit_is_covered_by_a_record_opened_on_this_branch_even_after_more_commits)
 - [x] 3-16 「前段では原理的に拾えない」で閉じるときは、理由と 2-07 の方法による作業者の承認を必須にする 人 → `hymme escape unreachable` と承認(test_unreachable_needs_the_worker)
@@ -164,8 +164,8 @@ EARS にした要件について、形式検証で何を実証するかを、検
 - [x] 5-04 段階が「主張のみ」の must 指摘と主張が0件であることを、1-14 の入口で検査する 申告 → checks.py の integration(claim_only。test_must_or_unproven_claims_stop_it_per_lens_set)
 - [x] 5-05 変更が安全だと言える根拠の事実を1つ書き、実行で確かめる手順をレンズに入れる(pstack の blast-radius) → skills/diff-review/references/design.md(安全の根拠を1つ書いて確かめる)
 - [x] 5-06 design レンズに6つの観点を加える。先に削る、読み手の負荷を減らす、境界で検証する、領域をデータ構造に写す、型で不正な状態を防ぐ、起きてはならない状態を隠すだけの修正を通さない → skills/diff-review/references/design.md
-- [x] 5-07 loopeng-extract の「閉じる前のチェック」に、2回実行したとき、途中で止まったあと、複数の書き手が同じ対象に書くとき、の3行を加える → skills/loopeng-extract/assets/extract-template.md
-- [x] 5-08 `loopeng-extract-gate.sh` が「閉じる前のチェック」の節まで検査するようにする 機械 → 方法を変更: 古い sh は消し、新しい入口が「閉じる前のチェック」まで読む(ledgers.py の extract_problems、test_extract_ledger_closed_and_open)
+- [x] 5-07 agentloop-extract の「閉じる前のチェック」に、2回実行したとき、途中で止まったあと、複数の書き手が同じ対象に書くとき、の3行を加える → skills/agentloop-extract/assets/extract-template.md
+- [x] 5-08 `agentloop-extract-gate.sh` が「閉じる前のチェック」の節まで検査するようにする 機械 → 方法を変更: 古い sh は消し、新しい入口が「閉じる前のチェック」まで読む(ledgers.py の extract_problems、test_extract_ledger_closed_and_open)
 - [x] 5-09 規則と、それを強制する手段の対応表を README に置く。強制する手段の無い規則が一覧で見えるようにする → README.md の「強制のしくみ」の表
 - [x] 5-10 3-19 で同じ分類が2回出た抜けと、強制の無いまま2回破られた規則について、構造で防ぐ手段(型、lint、検査)を作る手順を review-feedback に加える → skills/review-feedback/SKILL.md の 3.5(既存の「1回目で埋め込む」は変えていない)
 - [x] 5-11 PR の本文に、影響の範囲と検証の結果の欄を必須にする。pr-create のひな形を直す 申告 → checks.py の pr_body と skills/pr-create/SKILL.md。英語の見出しも認め、PR のテンプレートがあるリポジトリでは見ない
@@ -177,7 +177,7 @@ EARS にした要件について、形式検証で何を実証するかを、検
 - [x] 6-02 hook の実行時間を測り、0-12 の上限に収まっていることを確かめる → 通常の呼び出しで約110ミリ秒、統合の入口で約1秒(scratchpad の timing.py で計測)
 - [x] 6-03 すべての検査のテストが flake の checks と README の一覧に載っているかを点検する → nix flake check が 13 種で exit 0。README の一覧に hymme-core と git-guard を追加
 - [ ] 6-04 Counter の例で、0段から PR 作成までを全検査つきで通す
-- [~] 6-05 loop-engineering を使わない通常の作業で、e2e の失敗から、単体テストの追加、PR 作成までを全検査つきで通す → 最小アプリで、作業者のバグ報告から、欠陥の記録を開く、実物で再現、単体テストの追加、`hymme escape verify`、記録を閉じる、までを実際のセッションで通した(記録 E20261121-185223、アプリ側のコミット 86aac34)。残り: 統合(main への merge)まで通していない。e2e の失敗から自動で記録が開く経路は、実際のセッションでは動かしていない
+- [~] 6-05 agent-loop を使わない通常の作業で、e2e の失敗から、単体テストの追加、PR 作成までを全検査つきで通す → 最小アプリで、作業者のバグ報告から、欠陥の記録を開く、実物で再現、単体テストの追加、`hymme escape verify`、記録を閉じる、までを実際のセッションで通した(記録 E20261121-185223、アプリ側のコミット 86aac34)。残り: 統合(main への merge)まで通していない。e2e の失敗から自動で記録が開く経路は、実際のセッションでは動かしていない
 - [ ] 6-06 hymme 自身の開発に1か月適用し、誤って止まった回数を検査ごとに数える。同じ検査が3回以上誤って止めたら、その条件を見直す
 - [x] 6-07 README、各スキルの「強制のしくみ」、`plugin.json` と `marketplace.json` の説明を更新し、バージョンを上げる → 3fda6af(README、plugin.json 0.14.0、marketplace.json)
 

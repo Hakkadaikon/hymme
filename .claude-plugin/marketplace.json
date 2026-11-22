@@ -19,7 +19,7 @@
     },
     {
       "name": "hymme",
-      "description": "superpowers 前提の拡張。検証 3 系統(loop-engineering: NL→EARS→TLA+→Gherkin / test-design: 振る舞い抽出→手法選定→実装橋渡し / formal-verification: Lean 4)、git・レビュー運用スキル(diff-review / commit-flow / micro-commit / pr-create / review-feedback / ledger-flow / rebase-flow / reset-flow / gh-ci-investigate / test-targeted / escape-flow / real-surface)、agents(diff-reviewer / modeler / prover / verification-reviewer)と、toolchain(TLA+/Apalache/Lean)をインストールする Nix flake。セッション開始時に、差し込み地図と個人の方針(委任先、応答・文章)を注入する。",
+      "description": "superpowers 前提の拡張。検証 3 系統(agent-loop: NL→EARS→TLA+→Gherkin / test-design: 振る舞い抽出→手法選定→実装橋渡し / formal-verification: Lean 4)、git・レビュー運用スキル(diff-review / commit-flow / micro-commit / pr-create / review-feedback / ledger-flow / rebase-flow / reset-flow / gh-ci-investigate / test-targeted / escape-flow / real-surface)、agents(diff-reviewer / modeler / prover / verification-reviewer)と、toolchain(TLA+/Apalache/Lean)をインストールする Nix flake。セッション開始時に、差し込み地図と個人の方針(委任先、応答・文章)を注入する。",
       "category": "development",
       "source": "./",
       "homepage": "https://github.com/Hakkadaikon/hymme"

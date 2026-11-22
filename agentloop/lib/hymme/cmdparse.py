@@ -1,0 +1,355 @@
+#!/usr/bin/env python3
+"""Find the commands a Bash command line would run, and which of them are formal-verification entry points.
+
+Every gate reads the same parse (Gate.commands, Gate.entries, Gate.blocks). Run as a script it reads
+the PreToolUse hook JSON on stdin (verifiability-gate.sh does) and prints one line per entry point:
+    OK<TAB><ledger root><TAB><Name><TAB><entry kind>
+    BLOCK<TAB><reason>
+The command is split on operators, newlines and shell keywords; env/timeout/nice/sudo/nix develop -c/
+python3/bash -c prefixes are peeled off, cd/pushd/env -C/make -C/lake -d are followed, and $(…)/`…`
+are parsed as commands of their own. A heredoc body is text, unless a shell reads it (bash <<EOF,
+cat <<EOF | sh), then it is parsed too. An entry point hidden where it cannot be read (eval, xargs,
+python3 -c) is a BLOCK, not a pass.
+"""
+
+import json
+import os
+import re
+import shlex
+import sys
+
+# BLOCK の理由文(verifiability-gate.sh がそのまま表示する)。hook は python3 -I で動くので表はこのファイルに置く
+MESSAGES = {
+    "var_name": "名前 {name!r} は変数で、実行前には決まらない。名前を直接書く",
+    "bad_name": "名前 {name!r} に使えない文字がある(英数字と _ だけにする)",
+    "bad_quote": "コマンドのクォートを読めない",
+    "python_heredoc": "python に流した heredoc の中の検証の入口は読めない。入口のコマンドを直接実行する",
+    "python_c": "python3 -c の中から検証の入口を呼んでいる。入口のコマンドを直接実行する",
+    "python_stdin": "python の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する",
+    "shell_stdin": "{base} の標準入力に流した検証の入口は読めない。入口のコマンドを直接実行する",
+    "hidden": "{base} の中の検証の入口は読めない。入口のコマンドを直接実行する",
+    "var_cd": "変数を含む cd の先は決まらないので、lake build の台帳を特定できない。パスを直接書く",
+}
+
+
+def msg(code, **kw):
+    """端末に出すメッセージをコードから引く(メッセージをこの表1か所に集める)。"""
+    return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
+
+
+LOOP = re.compile(r"agentloop-(outer|middle|inner)")
+# an entry point as it would be run, not merely mentioned (git commit -m "... lake ..." is text)
+RUNS_ENTRY = re.compile(
+    r"(^|[\s;&|(`])(agentloop-(outer|middle|inner)\b|\S*(smt_oracle|trace_check)\.py\b|lake\b[^;&|]*\bbuild\b)"
+)
+OPS = {";", "&", "&&", "|", "||", "|&", "(", ")", ";;"}
+RESERVED = {"if", "then", "do", "else", "elif", "while", "until", "!", "{", "}", "fi", "done"}
+# prefixes that run the rest of the words as a command; value-taking options per prefix
+WRAPPERS = {
+    "export": (),
+    "nice": ("-n", "--adjustment"),
+    "command": (),
+    "exec": ("-a",),
+    "nohup": (),
+    "builtin": (),
+    "time": ("-f", "-o"),
+    "stdbuf": ("-i", "-o", "-e"),
+    "sudo": ("-u", "-g", "-C", "-D", "-h", "-p", "-r", "-t", "-U"),
+    "caffeinate": ("-t", "-w"),
+}
+SHELLS = ("bash", "sh", "zsh", "dash", "fish")
+REDIRECTS = {">", ">>", "<", ">&", "<&", ">|", "<>"}
+# rest: the rest of the opening line (kept); body: dropped unless a shell reads it
+HEREDOC = re.compile(
+    r"<<-?\s*(?P<q>['\"]?)(?P<tag>\w+)(?P=q)(?P<rest>[^\n]*)\n(?P<body>.*?)\n[ \t]*(?P=tag)[ \t]*(?=\n|$)", re.S
+)
+FEEDS_SHELL = re.compile(r"(^|[\s|;&(])(bash|sh|zsh|dash|fish)\b")
+FEEDS_PYTHON = re.compile(r"(^|[\s|;&(])python3?(\.\d+)?\b(?!(\s+-\w+)*\s+-m\b)")
+
+
+def root_of(path, cwd):
+    m = re.match(r"(.*?)/tasks/(loopeng|fv|verifiability)(/|$)", path)
+    return m.group(1) if m else cwd
+
+
+def substitutions(text, quotes=True):
+    """Bodies of $(…) and `…`, outermost first. Single quotes keep them literal; inside double quotes a
+    ' is a plain character and \\ escapes $ ` " \\ as in bash. quotes=False reads a heredoc body,
+    where quotes are plain characters and only \\ escapes.
+    shortcut: no quoting model inside $(…) itself (a ) in a string there can fool the depth count)."""
+    out, i, dq = [], 0, False
+    while i < len(text):
+        if text[i] == "\\":
+            i += 2
+        elif text[i] == '"' and quotes:
+            dq, i = not dq, i + 1
+        elif text[i] == "'" and quotes and not dq:
+            j = text.find("'", i + 1)
+            i = len(text) if j < 0 else j + 1
+        elif text.startswith("$(", i):
+            depth, j = 1, i + 2
+            while j < len(text) and depth:
+                depth += {"(": 1, ")": -1}.get(text[j], 0)
+                j += 1
+            out.append((i, j, text[i + 2 : j - 1]))
+            i = j
+        elif text[i] == "`":
+            j = text.find("`", i + 1)
+            if j < 0:
+                break
+            out.append((i, j + 1, text[i + 1 : j]))
+            i = j + 1
+        else:
+            i += 1
+    return out
+
+
+class Gate:
+    def __init__(self):
+        self.lines = []
+        # every simple command the text would run, wrappers peeled: (verb, args, cwd, env)
+        self.commands = []
+
+    def entries(self):
+        """(root, name, kind) of each verification entry point found."""
+        return [tuple(line.split("\t")[1:4]) for line in self.lines if line.startswith("OK\t")]
+
+    def blocks(self):
+        return [line.split("\t", 1)[1] for line in self.lines if line.startswith("BLOCK\t")]
+
+    def ok(self, root, name, entry="other"):
+        if re.fullmatch(r"[A-Za-z0-9_]+", name):
+            self.lines.append(f"OK\t{root}\t{name}\t{entry}")
+        elif "$" in name:
+            self.block(msg("var_name", name=name))
+        else:
+            self.block(msg("bad_name", name=name))
+
+    def block(self, why):
+        self.lines.append(f"BLOCK\t{why}")
+
+    def segments(self, text):
+        lex = shlex.shlex(text.replace("\n", " ; "), posix=True, punctuation_chars=True)
+        lex.whitespace_split = True
+        seg = []
+        op = None
+        try:
+            for tok in lex:
+                if tok in OPS:
+                    if seg:
+                        yield op, seg
+                    seg, op = [], tok
+                else:
+                    seg.append(tok)
+        except ValueError:
+            if RUNS_ENTRY.search(text):
+                self.block(msg("bad_quote"))
+            return
+        if seg:
+            yield op, seg
+
+    @staticmethod
+    def skip_opts(toks, with_value=()):
+        while toks and toks[0].startswith("-") and toks[0] != "-":
+            opt, toks = toks[0], toks[1:]
+            if opt in with_value and toks:
+                toks = toks[1:]
+        return toks
+
+    def parse(self, text, cwd, env, depth=0):
+        """env: variables exported so far in this command (SPEC= reaches make through the environment)."""
+
+        def heredoc(m):
+            opening = text[text.rfind("\n", 0, m.start()) + 1 : m.start()] + m.group("rest")
+            body = m.group("body")
+            if FEEDS_SHELL.search(opening) and depth < 4:
+                self.parse(body, cwd, dict(env), depth + 1)
+            elif FEEDS_PYTHON.search(opening) and (RUNS_ENTRY.search(body) or LOOP.search(body)):
+                self.block(msg("python_heredoc"))
+            elif not m.group("q") and depth < 4:  # an unquoted heredoc still expands $(…) and `…`
+                for _, _, sub in substitutions(body, quotes=False):
+                    self.parse(sub, cwd, dict(env), depth + 1)
+            return m.group("rest")
+
+        text = HEREDOC.sub(heredoc, text)
+        if depth < 4:
+            # parse each substitution on its own (a cd inside it stays inside), then blank it out
+            for start, end, body in reversed(substitutions(text)):
+                self.parse(body, cwd, dict(env), depth + 1)
+                text = text[:start] + "SUBST" + text[end:]
+        piped = ""  # every earlier segment of the pipeline this one reads from (a | tee x | bash)
+        for op, toks in self.segments(text):
+            raw = " ".join(toks)
+            feed = piped if op in ("|", "|&") else ""
+            piped = f"{feed} {raw}" if op in ("|", "|&") else raw
+            local = {}
+            while toks:
+                t, base = toks[0], os.path.basename(toks[0])
+                if t.isdigit() and toks[1:2] and toks[1] in REDIRECTS:
+                    toks = toks[1:]
+                elif t in REDIRECTS:
+                    toks = toks[2:]
+                elif re.match(r"^[A-Za-z_]\w*=", t):
+                    k, v = t.split("=", 1)
+                    local[k] = v
+                    toks = toks[1:]
+                elif t in RESERVED:
+                    toks = toks[1:]
+                elif t in WRAPPERS:
+                    if t == "export":
+                        for a in toks[1:]:
+                            if "=" in a and not a.startswith("-"):
+                                k, v = a.split("=", 1)
+                                env[k] = v
+                        toks = []
+                    else:
+                        toks = self.skip_opts(toks[1:], WRAPPERS[t])
+                elif t == "env":
+                    toks = toks[1:]
+                    while toks and (toks[0].startswith("-") or "=" in toks[0]):
+                        opt, toks = toks[0], toks[1:]
+                        if "=" in opt and not opt.startswith("-"):
+                            k, v = opt.split("=", 1)
+                            local[k] = v
+                        elif opt in ("-C", "--chdir") and toks:
+                            cwd, toks = os.path.normpath(os.path.join(cwd, toks[0])), toks[1:]
+                        elif opt in ("-u", "--unset", "-S") and toks:
+                            toks = toks[1:]
+                elif t == "timeout":
+                    toks = self.skip_opts(toks[1:], ("-k", "--kill-after", "-s", "--signal"))[1:]
+                elif t == "nix" and ("-c" in toks or "--command" in toks):
+                    i = min(toks.index(x) for x in ("-c", "--command") if x in toks)
+                    toks = toks[i + 1 :]
+                elif re.match(r"^python3?(\.\d+)?$", base):
+                    rest, toks, inline = toks[1:], [], False
+                    while rest and rest[0].startswith("-") and rest[0] != "-":
+                        opt, rest = rest[0], rest[1:]
+                        if opt == "-c":
+                            if RUNS_ENTRY.search(" ".join(rest[:1])) or LOOP.search(" ".join(rest[:1])):
+                                self.block(msg("python_c"))
+                            rest, inline = [], True
+                            break
+                        if opt == "-m":
+                            rest, inline = [], True
+                            break
+                        if opt in ("-W", "-X") and rest:
+                            rest = rest[1:]
+                    # python reading its stdin (… | python3, python3 -): the script is not visible here
+                    if not inline and rest[:1] in ([], ["-"]) and (RUNS_ENTRY.search(feed) or LOOP.search(feed)):
+                        self.block(msg("python_stdin"))
+                    toks = rest
+                elif base in SHELLS:
+                    rest = toks[1:]
+                    while rest and rest[0].startswith("-") and not re.fullmatch(r"-\w*c\w*", rest[0]):
+                        # -o NAME / -euo NAME / +O NAME take a value
+                        rest = rest[2:] if re.fullmatch(r"[-+]\w*[oO]", rest[0]) else rest[1:]
+                    if rest and re.fullmatch(r"-\w*c\w*", rest[0]) and len(rest) > 1 and depth < 4:
+                        self.parse(rest[1], cwd, {**env, **local}, depth + 1)
+                    elif "<<<" in rest and rest.index("<<<") + 1 < len(rest) and depth < 4:
+                        self.parse(rest[rest.index("<<<") + 1], cwd, {**env, **local}, depth + 1)
+                    elif not [a for a in rest if a not in ("-", "-s")] and (
+                        RUNS_ENTRY.search(feed) or LOOP.search(feed)
+                    ):
+                        # a shell reading its stdin (echo … | bash): the script is not visible here
+                        self.block(msg("shell_stdin", base=base))
+                    toks = []
+                elif base in ("eval", "xargs", "parallel", "watch"):
+                    if RUNS_ENTRY.search(raw) or LOOP.search(raw):
+                        self.block(msg("hidden", base=base))
+                    toks = []
+                else:
+                    break
+            if not toks:
+                continue
+            self.commands.append((os.path.basename(toks[0]), toks[1:], cwd, {**env, **local}))
+            self.entry(os.path.basename(toks[0]), toks[1:], cwd, {**env, **local})
+            if os.path.basename(toks[0]) in ("cd", "pushd"):
+                target = next((a for a in toks[1:] if not a.startswith("-")), "~")
+                cwd = os.path.normpath(os.path.join(cwd, os.path.expanduser(target)))
+
+    def entry(self, verb, args, cwd, env):
+        if verb in ("agentloop-outer", "agentloop-middle", "agentloop-inner") or (
+            verb == "make" and any(LOOP.fullmatch(a) for a in args)
+        ):
+            here = cwd
+            for i, a in enumerate(args if verb == "make" else []):
+                d = (
+                    args[i + 1]
+                    if a in ("-C", "--directory") and i + 1 < len(args)
+                    else (
+                        a[2:]
+                        if a.startswith("-C") and len(a) > 2
+                        else a.split("=", 1)[1]
+                        if a.startswith("--directory=")
+                        else None
+                    )
+                )
+                if d:
+                    here = os.path.normpath(os.path.join(here, d))
+            specs = [m.group(1) for a in args for m in [re.fullmatch(r"SPEC=(.*)", a)] if m]
+            if not specs:
+                specs = [env.get("SPEC", "Spec")]  # Makefile.agentloop: SPEC ?= Spec
+            target = verb if verb != "make" else next(a for a in args if LOOP.fullmatch(a))
+            for name in specs:
+                self.ok(root_of(here, here), name, target)
+        elif verb in ("smt_oracle.py", "trace_check.py"):
+            rest = self.skip_opts(args, ("--cfg", "--timeout"))
+            while rest:  # options may also follow the positional arguments
+                if not rest[0].startswith("-"):
+                    path = os.path.normpath(os.path.join(cwd, rest[0]))
+                    self.ok(
+                        root_of(path, cwd),
+                        re.sub(r"(\.smt)?\.py$|\.tla$", "", os.path.basename(path)),
+                        "trace_check" if verb == "trace_check.py" else "smt_oracle",
+                    )
+                    break
+                rest = self.skip_opts(rest, ("--cfg", "--timeout"))
+        elif verb in ("tlc", "apalache-mc") or (verb == "java" and "tlc2.TLC" in args):
+            # the checker run directly, past the Makefile: the spec is the last *.tla (TLC takes it without .tla too)
+            rest = args[args.index("tlc2.TLC") + 1 :] if verb == "java" else args
+            specs = [a for a in rest if a.endswith(".tla")] or [a for a in rest[-1:] if not a.startswith("-")]
+            for spec in specs[-1:]:
+                path = os.path.normpath(os.path.join(cwd, spec))
+                name = re.sub(r"\.tla$", "", os.path.basename(path))
+                # MC<Name>.tla is a throwaway module that EXTENDS <Name> (the reachability check of a premise)
+                if name.startswith("MC") and os.path.exists(os.path.join(os.path.dirname(path), name[2:] + ".tla")):
+                    name = name[2:]
+                self.ok(root_of(path, cwd), name, "direct")
+        elif verb == "lake" and "build" in args:
+            if "$" in cwd and "/tasks/fv/" in cwd.split("$", 1)[1] + "/":
+                self.block(msg("var_cd"))
+                return
+            if "$" in cwd:
+                known = cwd.split("$")[0].rstrip("/") or "/"
+                while known != "/" and not os.path.isdir(os.path.join(known, "tasks", "fv")):
+                    known = os.path.dirname(known)
+                if os.path.isdir(os.path.join(known, "tasks", "fv")):  # this repository verifies under tasks/fv
+                    self.block(msg("var_cd"))
+                return
+            here = cwd
+            for i, a in enumerate(args):
+                d = (
+                    args[i + 1]
+                    if a in ("-d", "--dir") and i + 1 < len(args)
+                    else (a.split("=", 1)[1] if a.startswith("--dir=") else None)
+                )
+                if d:
+                    here = os.path.normpath(os.path.join(cwd, d))
+            m = re.match(r"(.*)/tasks/fv/([^/]+)", here)
+            if m:
+                self.ok(m.group(1), m.group(2), "lake")
+
+
+def main():
+    try:
+        payload = json.load(sys.stdin)
+    except ValueError:
+        return 0
+    gate = Gate()
+    gate.parse(payload.get("tool_input", {}).get("command", ""), payload.get("cwd") or os.getcwd(), {})
+    print("\n".join(gate.lines))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

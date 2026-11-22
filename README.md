@@ -17,7 +17,7 @@
 flowchart TD
     subgraph S1["設計"]
         direction LR
-        A["brainstorming"] -.- A1["設計を機械で検査する<br>loop-engineering / formal-verification"]
+        A["brainstorming"] -.- A1["設計を機械で検査する<br>agent-loop / formal-verification"]
     end
     subgraph S2["計画"]
         direction LR
@@ -46,7 +46,7 @@ flowchart TD
 
 | 局面 | superpowers | hymme が足すもの |
 | --- | --- | --- |
-| 設計 | brainstorming | loop-engineering(設計の検査)、formal-verification の性質カタログ(証明する性質の一覧) |
+| 設計 | brainstorming | agent-loop(設計の検査)、formal-verification の性質カタログ(証明する性質の一覧) |
 | 設計の確認 | brainstorming の承認 | 検証の前に、何を実証するかの一覧をユーザーが承認する |
 | 計画 | writing-plans | test-design の T-ID 台帳(テストする振る舞いの一覧)。設計書の承認後に作り、Task に落とす |
 | 実装 | executing-plans / subagent-driven-development、test-driven-development | 既定は executing-plans(subagent に任せず、本体のセッションで実装)。証明は prover、spec の全状態の検査(モデル検査)は modeler に任せられる |
@@ -97,13 +97,13 @@ hymme は次の2つのコマンドで更新する。自動更新は無効。反�
 
 | 系統 | スキル | すること | ツール |
 | --- | --- | --- | --- |
-| loop-engineering | **loop-engineering** | 要求を、機械で検査できる設計にする(TLA+) | |
-| | loopeng-extract | 要件を出し切る | |
-| | loopeng-formalize | 要件を、要求を書く定型文(EARS)と状態モデルに整理し、TLA+ の spec にする | `loop-outer` |
-| | loopeng-modelcheck | spec が取りうる状態をすべて検査する(TLC のモデル検査) | `loop-middle` |
-| | loopeng-gherkin | 反例を受け入れ仕様の書式(Gherkin)で書く | `loop-inner` |
-| | loopeng-smt | 状態を持たない判定が、どんな入力でも成り立つかを検査する(Z3) | `smt_oracle.py` |
-| | loopeng-tracecheck | 実装後に、実システムのログを spec と突き合わせる | `trace_check.py` |
+| agent-loop | **agent-loop** | 要求を、機械で検査できる設計にする(TLA+) | |
+| | agentloop-extract | 要件を出し切る | |
+| | agentloop-formalize | 要件を、要求を書く定型文(EARS)と状態モデルに整理し、TLA+ の spec にする | `agentloop-outer` |
+| | agentloop-modelcheck | spec が取りうる状態をすべて検査する(TLC のモデル検査) | `agentloop-middle` |
+| | agentloop-gherkin | 反例を受け入れ仕様の書式(Gherkin)で書く | `agentloop-inner` |
+| | agentloop-smt | 状態を持たない判定が、どんな入力でも成り立つかを検査する(Z3) | `smt_oracle.py` |
+| | agentloop-tracecheck | 実装後に、実システムのログを spec と突き合わせる | `trace_check.py` |
 | 検証の前 | **verifiability** | 検証する判定を小さな純粋関数に切り出す | `verifiability.py` |
 | test-design | **test-design** | テスト設計と既存テストのレビュー | |
 | | test-extract | テストする振る舞いを出し切り、台帳にする | |
@@ -113,11 +113,11 @@ hymme は次の2つのコマンドで更新する。自動更新は無効。反�
 
 補足。
 
-- loopeng-extract は信頼境界ごとに、脅威の6観点(STRIDE)で異常系を確かめる。入力のパースや長さの計算があれば、脆弱性の分類(CWE Top 25)も見る。
-- loopeng-extract は依存先や先行研究の原文を集めるのに [imozuru](https://github.com/MaryCache/imozuru) を使う(入っていれば。任意)。
-- loopeng-modelcheck と loopeng-smt は、わざと壊した版も検査する。検査が誤りを検出できることを確かめるため。
-- loopeng-modelcheck と formal-verification は、最後に別の読み手が spec や定理を平文に戻す。それを要件と比べる。
-- loopeng-tracecheck は、spec の許さない遷移を見つける。
+- agentloop-extract は信頼境界ごとに、脅威の6観点(STRIDE)で異常系を確かめる。入力のパースや長さの計算があれば、脆弱性の分類(CWE Top 25)も見る。
+- agentloop-extract は依存先や先行研究の原文を集めるのに [imozuru](https://github.com/MaryCache/imozuru) を使う(入っていれば。任意)。
+- agentloop-modelcheck と agentloop-smt は、わざと壊した版も検査する。検査が誤りを検出できることを確かめるため。
+- agentloop-modelcheck と formal-verification は、最後に別の読み手が spec や定理を平文に戻す。それを要件と比べる。
+- agentloop-tracecheck は、spec の許さない遷移を見つける。
 - verifiability は、指標(複雑度・行数・引数・副作用など)を閾値まで直す。
 
 ### 開発の運用
@@ -203,8 +203,8 @@ flowchart LR
 | 記録 | git の共通ディレクトリ(`.git/hymme/`)。別の worktree からも同じものが見える |
 | 署名の鍵 | `CLAUDE_PLUGIN_DATA`。hook だけが使う |
 | hook のエントリポイント | `hooks/hymme_hook.py` |
-| hook の本体 | `loopeng/lib/hymme/` |
-| 個別の検査の hook | `hooks/` の `verifiability-gate.sh`、`loopeng-lint-gate.sh`、`git-guard.sh`、`test-design-extract-gate.sh` |
+| hook の本体 | `agentloop/lib/hymme/` |
+| 個別の検査の hook | `hooks/` の `verifiability-gate.sh`、`agentloop-lint-gate.sh`、`git-guard.sh`、`test-design-extract-gate.sh` |
 
 ### 入口
 
@@ -212,7 +212,7 @@ flowchart LR
 
 検証の入口。
 
-- `loop-*`、`smt_oracle.py`、`trace_check.py`
+- `agentloop-*`、`smt_oracle.py`、`trace_check.py`
 - `tasks/fv` での `lake build`
 - `tlc` と `apalache-mc` の直接の実行
 
@@ -333,7 +333,7 @@ nix profile install .#skill-tools
 | 種類 | コマンド |
 | --- | --- |
 | 検証のツール | `tlc`、`sany`、`apalache-mc`、`lake`、`lean` |
-| `loopeng/bin` のスクリプト | `loop-outer`、`loop-middle`、`loop-inner`、`smt_oracle.py`、`trace_check.py`、`verifiability.py` など |
+| `agentloop/bin` のスクリプト | `agentloop-outer`、`agentloop-middle`、`agentloop-inner`、`smt_oracle.py`、`trace_check.py`、`verifiability.py` など |
 | `hymme` コマンド | 承認の申請、欠陥の記録、状態遷移図、ログの採取 |
 
 注意が2つある。
@@ -343,14 +343,14 @@ nix profile install .#skill-tools
 
 ### TLC の前の静的検査
 
-`loopeng/bin/tla_lint.sh` が次の2つを実行する。
+`agentloop/bin/tla_lint.sh` が次の2つを実行する。
 
 - SANY の構文・意味解析
 - `@type:` 注釈がある spec の、Apalache の型検査
 
-`loop-middle` と `loop-inner` はこれを自動で実行する。
+`agentloop-middle` と `agentloop-inner` はこれを自動で実行する。
 
-`tlc` を直接実行して spec のエラーが表示されたら、hook(`hooks/loopeng-lint-gate.sh`)が止めている。エラーを直して、やり直す。
+`tlc` を直接実行して spec のエラーが表示されたら、hook(`hooks/agentloop-lint-gate.sh`)が止めている。エラーを直して、やり直す。
 
 ### TLA+ と Apalache のバージョン
 
@@ -381,7 +381,7 @@ v1.8.0 の `tla2tools.jar` には注意が要る。
 | 回帰テスト | `nix flake check` | 下の一覧と、静的検査 |
 | 実システムでの確かめ | `bash scripts/real-session.sh` | 実際の Claude Code のセッションで、hook が止めること |
 
-- 静的検査の対象は `hooks/`・`loopeng/`・`scripts/`・`skills/` 以下の `*.py` と `*.sh`。設定は `ruff.toml` と `.editorconfig`。
+- 静的検査の対象は `hooks/`・`agentloop/`・`scripts/`・`skills/` 以下の `*.py` と `*.sh`。設定は `ruff.toml` と `.editorconfig`。
 - 静的検査のツールは `nix develop` に入っている(`skill-tools` には無い)。
 - 実システムでの確かめは Claude Code が要り、トークンを少し使う。そのため `nix flake check` には入れていない。
 - `nix flake check` は GitHub Actions(`.github/workflows/check.yml`)でも実行する。
@@ -390,13 +390,13 @@ v1.8.0 の `tla2tools.jar` には注意が要る。
 
 | テスト | 見るもの |
 | --- | --- |
-| `scripts/loopeng-lint.test.sh` | TLC の前の静的検査と、spec を壊す検査の分類 |
-| `scripts/loopeng-smt-oracle.test.sh` | SMT の判定 |
-| `scripts/loopeng-trace-check.test.sh` | 実ログの突き合わせ |
-| `scripts/loopeng-tools.test.sh` | loop のツール |
+| `scripts/agentloop-lint.test.sh` | TLC の前の静的検査と、spec を壊す検査の分類 |
+| `scripts/agentloop-smt-oracle.test.sh` | SMT の判定 |
+| `scripts/agentloop-trace-check.test.sh` | 実ログの突き合わせ |
+| `scripts/agentloop-tools.test.sh` | loop のツール |
 | `scripts/test-design-extract-gate.test.sh` | test-design の抽出の検査 |
 | `scripts/verifiability.test.sh` | 検証容易性の指標と検査 |
-| `scripts/hymme-core.test.sh` | hook と検査、`hymme` コマンド。`loopeng/lib/tests` の単体テストも実行する |
+| `scripts/hymme-core.test.sh` | hook と検査、`hymme` コマンド。`agentloop/lib/tests` の単体テストも実行する |
 | `scripts/git-guard.test.sh` | git-guard |
 | `scripts/check-doc-refs.test.sh` | 文書の参照(`hymme:<name>`、相対リンク、`${CLAUDE_PLUGIN_ROOT}/...`)が実在すること |
 | `scripts/check-reviewer-checklist.test.sh` | `skills/*/reviewer.md` の見出しとチェックリストの対応 |
@@ -410,7 +410,7 @@ v1.8.0 の `tla2tools.jar` には注意が要る。
 | 対象 | 決まり |
 | --- | --- |
 | 端末に出すメッセージ | 日本語で書く。各スクリプトの先頭近くの対応表から引く(Python は `MESSAGES` と `msg()`、シェルは `msg()` の case) |
-| `loopeng/Makefile.loopeng` | 対応表を置かず、日本語の echo を直接書く。make のレシピなので、静的検査の対象外 |
+| `agentloop/Makefile.agentloop` | 対応表を置かず、日本語の echo を直接書く。make のレシピなので、静的検査の対象外 |
 | 訳さないもの | 判定の値(HOLDS、VIOLATED)と、他のプログラムやスキルが目印として読むトークン |
 | hook の中の Python | `python3 -I` で動かす。作業中のリポジトリにある `json.py` などを読み込まないため |
 | `skills/*/reviewer.md` | 編集したら `nix flake check` を通す |

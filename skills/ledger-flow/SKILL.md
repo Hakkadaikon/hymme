@@ -42,7 +42,7 @@ description: 進捗台帳と計画・引き継ぎ文書(todo・テストリス�
 
 ## 6. 機械検査にできるものは機械検査にする
 
-未チェック残・欠番・凡例違反の検査は決定論で書ける。loopeng-extract / test-design の採番台帳ゲート(hooks/hymme_hook.py の抽出の台帳の検査、hooks/test-design-extract-gate.sh)が同型の実装例で、`- [ ]` の残存と ID の欠番を PreToolUse で機械ブロックしている。恒常運用する台帳には同型の検査を用意し、目視で数える代わりにする。
+未チェック残・欠番・凡例違反の検査は決定論で書ける。agentloop-extract / test-design の採番台帳ゲート(hooks/hymme_hook.py の抽出の台帳の検査、hooks/test-design-extract-gate.sh)が同型の実装例で、`- [ ]` の残存と ID の欠番を PreToolUse で機械ブロックしている。恒常運用する台帳には同型の検査を用意し、目視で数える代わりにする。
 
 ## 7. SDD 台帳(superpowers)との分担
 

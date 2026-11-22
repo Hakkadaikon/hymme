@@ -60,7 +60,7 @@ EOF
 
 # 承認の無い一覧のまま、検証の入口を1回実行させる。hook が働いていれば「ユーザーの確認ゲート」で止まる。
 prompt='Run exactly this one bash command and report the literal output or error, then stop: cd tasks/loopeng && tlc -deadlock Probe.tla'
-out="$(cd "$work" && PATH="$root/loopeng/bin:$PATH" "$claude" -p "$prompt" --plugin-dir "$root" \
+out="$(cd "$work" && PATH="$root/agentloop/bin:$PATH" "$claude" -p "$prompt" --plugin-dir "$root" \
   --settings '{"enabledPlugins":{"hymme@hymme":false}}' --model haiku --allowedTools Bash </dev/null 2>&1 || true)"
 
 mkdir -p "$root/tasks/evidence"

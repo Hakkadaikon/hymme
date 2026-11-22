@@ -1,13 +1,13 @@
 # 成果物の置き場と痕跡の規範(痕跡を残さない)
 
-loop-engineering 系(loopeng-*)・formal-verification・test-design 系(test-*)に共通の規範。
+agent-loop 系(agentloop-*)・formal-verification・test-design 系(test-*)に共通の規範。
 ユーザーが明示しない限り、これらの手法は**痕跡を残さない**で実行する。生成物をリポジトリの git 管理に持ち込まず、手法の痕跡を本体に残さない。
 
 ## 作業場所(git 管理外)
 
 | 手法 | 置き場 | 中間生成物 |
 | --- | --- | --- |
-| loop-engineering 系 | `tasks/loopeng/` | 抽出台帳、EARS/モデル、`.tla`/`.cfg`/`.feature`、トレーサビリティ表、TLC スクラッチ、確認の一覧(`.claims.md`)、状態遷移図(`.chart.md`)、前提の記録(`.premise.md`)、実ログ(`.jsonl`) |
+| agent-loop 系 | `tasks/loopeng/` | 抽出台帳、EARS/モデル、`.tla`/`.cfg`/`.feature`、トレーサビリティ表、TLC スクラッチ、確認の一覧(`.claims.md`)、状態遷移図(`.chart.md`)、前提の記録(`.premise.md`)、実ログ(`.jsonl`) |
 | formal-verification | `tasks/fv/` | Lean の `.lean`/`lakefile`、生成 spec、確認の一覧(`.claims.md`) |
 | verifiability | `tasks/verifiability/` | 検証容易性の台帳(`<Name>.md`。hook が検査する場所なので固定) |
 | test-design 系 | `tasks/test-design/` | T-ID 台帳(`<対象名>.md`。hook が検査する場所なので固定) |
@@ -29,11 +29,11 @@ hymme の4行はいずれも `tasks/todo.md` と同じエリアで作り、`git 
 
 superpowers は実装を worktree で行う(superpowers:using-git-worktrees)。`tasks/` は git 管理外なので worktree 間を移動しない。規則: **台帳は作業が起きる worktree の `tasks/` に置く**(検証の入口の検査はコマンドを実行したディレクトリの `tasks/` を、`hymme` コマンドと統合の入口の検査はリポジトリ直下の `tasks/` を見る。入口はリポジトリ直下から実行する)。worktree をまたぐのは上の hook の記録だけで、台帳はまたがない。brainstorming / writing-plans 段(worktree 作成前)で作った台帳は、plan 実行(executing-plans / SDD)の Setup で worktree を作った直後に、本体(SDD ならコントローラ)が `tasks/` ごと worktree へコピーする(`cp -r`、git 外)。承認と reviewer の判定は台帳の中身に結び付くので、中身を変えずにコピーした一覧や台帳はコピー先でも承認済みとして扱われる。コピーしないと worktree 内に台帳が無く、検証の入口は台帳や確認の一覧が無いとして止まる。test-design の hook は「台帳なし」として検査せずに通すので、implementer への検査が働かない。worktree の担当へ渡す指示が参照する設計文書も、worktree の中から読めるもの(コミット済みか、`tasks/` ごとコピーしたもの)に限る。ブランチを終えて worktree を消すとき、台帳はマージも移動もしない。トレーサビリティは表に出た結果(テスト名・spec の受け入れ条件)に引き継がれて残る。次の作業で台帳が要れば、その worktree で作り直す。
 
-## git 管理下ドキュメントに手法の存在を書かない(loop-engineering 系 / formal-verification)
+## git 管理下ドキュメントに手法の存在を書かない(agent-loop 系 / formal-verification)
 
 README・設計文書・コミットメッセージ・PR に「TLA+ でモデル検査した」「Lean で証明した」等を記載しない。
 表に出す成果は通常の実装とテストだけ。
-superpowers の spec(`docs/superpowers/specs/`)と plan(`docs/superpowers/plans/`)も git 管理下ドキュメントであり同じ。loop-engineering / formal-verification の成果は「手法名の無い要件・受け入れ条件」として spec に入れ、plan の Task には管理番号なしのテスト名・テストコードとして書く。
+superpowers の spec(`docs/superpowers/specs/`)と plan(`docs/superpowers/plans/`)も git 管理下ドキュメントであり同じ。agent-loop / formal-verification の成果は「手法名の無い要件・受け入れ条件」として spec に入れ、plan の Task には管理番号なしのテスト名・テストコードとして書く。
 **test-design 系はこの節の対象外**: テストは表に出す成果物そのもので、「境界値テストを追加」等をコミットや PR に書いてよい。test-design 系が従うのは置き場(`tasks/test-design/`)と管理番号(`T-xxx`)を漏らさない規範だけ。
 
 ## 管理番号・手法用語を本体に漏らさない

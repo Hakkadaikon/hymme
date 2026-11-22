@@ -100,7 +100,7 @@ describe("sortAsc: metamorphic relations", () => {
 設計や数学的性質を形式手法で確立した後、その性質が実装でも成り立つことを継続的に確かめたいときに使う。
 このリポジトリの次のスキルと組み合わせる:
 
-- [`loop-engineering`](../loop-engineering/SKILL.md)(TLA+ で状態遷移、並行、プロトコルの設計を網羅検査し、反例を Gherkin の受け入れ仕様にする)。
+- [`agent-loop`](../agent-loop/SKILL.md)(TLA+ で状態遷移、並行、プロトコルの設計を網羅検査し、反例を Gherkin の受け入れ仕様にする)。
   TLA+ の安全性不変条件(例: 「同時にロックを保持するのは高々1者」)を、実装の操作列に対する property として再表現する。
   反例から生まれた Gherkin シナリオは、そのまま具体例のテストになる。
 - [`formal-verification`](../formal-verification/SKILL.md)(Lean 4 でアルゴリズムやセキュリティ性質を証明)。
@@ -140,7 +140,7 @@ describe("codec: bridges the proven invariant", () => {
 
 1. **証明済み述語を列挙する**:
    - **Lean 側**([`formal-verification`](../formal-verification/SKILL.md)):証明した `theorem` を全て書き出す(例: `decode (encode x) = x`、`validate x → safe x`、分類の網羅性)。`sorry` の残る定理は「保証済み」に数えない(未証明を合格の根拠にしない)。
-   - **TLA+ 側**([`loop-engineering`](../loop-engineering/SKILL.md)):TLC が検査した安全性不変条件(例: 「ロック保持者は高々1」)と、反例から作った Gherkin シナリオを書き出す。
+   - **TLA+ 側**([`agent-loop`](../agent-loop/SKILL.md)):TLC が検査した安全性不変条件(例: 「ロック保持者は高々1」)と、反例から作った Gherkin シナリオを書き出す。
 2. **述語を実装の語彙へ1対1で写す**:各述語について、形式モデルの型・粒度と実装の型・粒度の対応表を作る。`∀ x` の `x` が実装のどの入力に当たるか、状態が実装のどのオブジェクトに当たるかを明記する。**対応が曖昧なまま名前だけ同じにすると別性質を検査する**ので、ここを1行ずつ明確にする。
 3. **property として実行する**:
    - Lean の `∀` 定理 → PBT の `fc.property`(入力を広く生成して述語を assert)([`generative-property.md`](../generative-property/SKILL.md))。

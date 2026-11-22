@@ -29,7 +29,7 @@ flaky テストがあると赤を信用できなくなり、本物の退行が�
 
 - 原因究明は superpowers:systematic-debugging に従う(Phase 1: 再現・証拠収集、原因確定前に直さない)。この文書の検出法(`--repeat`・shuffle・高並列)はその Phase 1 のツール。
 - 後始末の忘れでテスト間に状態が残る問題の構成パターンは [`test-structure-lifecycle.md`](../test-structure-lifecycle/SKILL.md) の Four-Phase Test(teardown)を参照。
-- 並行・状態遷移・順序の設計そのものをテスト前に確定させるなら、設計が取りうる状態をすべて調べて矛盾を探し(`loop-engineering` の TLA+ のモデル検査)、反例を回帰テストにする。
+- 並行・状態遷移・順序の設計そのものをテスト前に確定させるなら、設計が取りうる状態をすべて調べて矛盾を探し(`agent-loop` の TLA+ のモデル検査)、反例を回帰テストにする。
 - 外部ネットワーク・タイマー sleep は [`flakiness-external.md`](../flakiness-external/SKILL.md)、値の非決定性(時刻・乱数・浮動小数)は [`flakiness-value.md`](../flakiness-value/SKILL.md)。
 
 ## 目次
@@ -55,7 +55,7 @@ flaky テストがあると赤を信用できなくなり、本物の退行が�
 2. **反復してレースを起こす**:`vitest run path/to.test.ts --repeats=100` で同一テストを多数回実行する。1回の緑では競合は見えない。
 3. **負荷を掛けて窓を広げる**:CI の並列ワーカー数を上げる(`vitest --pool=threads --poolOptions.threads.maxThreads=N`)、マシンに別負荷を掛けた状態で実行する。
 4. **再現コマンド**:`vitest run path/to.test.ts --repeats=200 --no-isolate` で1つでも赤が出れば競合が残っている。
-5. **設計の網羅は別手段**:テストは有限回の interleaving しか実行できない。全 interleaving の安全性・活性は `loop-engineering`(TLA+)のモデル検査で網羅する。
+5. **設計の網羅は別手段**:テストは有限回の interleaving しか実行できない。全 interleaving の安全性・活性は `agent-loop`(TLA+)のモデル検査で網羅する。
 
 ### 封じ込め
 
@@ -63,7 +63,7 @@ flaky テストがあると赤を信用できなくなり、本物の退行が�
 
 1. **競合区間を1つに絞る**:排他(ロック、キュー、原子的操作)で read→write を不可分にする。
 2. **完了を確定させてから次へ**:`await` で前段の完了を待ってから次の操作へ進み、順序を明示する。
-3. **設計の正しさはモデル検査で確かめる**:並行・状態遷移・順序の設計は `loop-engineering`(TLA+)で安全性・活性を検査し、反例トレースを回帰テストにする。テストはその反例の再現に使う。
+3. **設計の正しさはモデル検査で確かめる**:並行・状態遷移・順序の設計は `agent-loop`(TLA+)で安全性・活性を検査し、反例トレースを回帰テストにする。テストはその反例の再現に使う。
 
 ### TypeScript example
 
@@ -108,7 +108,7 @@ describe("increment: 並列度を上げても取りこぼさない", () => {
 
 - **競合区間が直列化されているか**:共有状態への read→write が、ロック/キュー/原子的操作/`await` 連鎖のいずれかで不可分になっているか。排他の無い read→`await`→write が残れば未封じ込め。
 - **並列度を上げて全緑か**:`vitest run path/to.test.ts --repeats=200 --no-isolate` を高並列ワーカーで実行して全緑。並列発行のテストは N=1000 でも期待値ちょうどか。
-- **設計をモデル検査したか**:状態遷移・順序を含むなら `loop-engineering`(TLA+)で安全性・活性を検査し、反例が回帰テストになっているか(テストだけで全 interleaving は実行できない)。
+- **設計をモデル検査したか**:状態遷移・順序を含むなら `agent-loop`(TLA+)で安全性・活性を検査し、反例が回帰テストになっているか(テストだけで全 interleaving は実行できない)。
 - **封じ込め完了の判定**:`--repeats=200` 高並列が連続全緑、N=1000 並列発行で失われた更新が無く、設計のモデル検査で反例が出なくなったとき封じ込め完了とみなす。
 
 ---

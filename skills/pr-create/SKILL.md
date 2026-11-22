@@ -84,7 +84,7 @@ bash <skill-dir>/scripts/pr-context.sh [base-branch]
 | 確かめること | 満たし方 | 外せる例外 |
 |---|---|---|
 | 検証容易性の台帳の対象のコードがこの変更で変わっているなら、その名前の検証をこの変更の ID で実行し直して通っている | `hymme specs` で名前を出し、検証を実行し直す | stale |
-| spec のある名前は、正常系、高負荷、障害注入の実ログが通り、わざと壊した実装のログが不一致になっている。ログは `hymme capture` で採ったもの | loop-engineering スキルの実ログの突き合わせ | trace |
+| spec のある名前は、正常系、高負荷、障害注入の実ログが通り、わざと壊した実装のログが不一致になっている。ログは `hymme capture` で採ったもの | agent-loop スキルの実ログの突き合わせ | trace |
 | spec のある名前は、状態遷移図が今の spec から作られ、ユーザーが承認している | `hymme chart draw <名前>` と `hymme chart request <名前>` | 外せない |
 | 判定のモデル（`.smt.py`）のある名前は、突き合わせのコマンドが通っている | verifiability スキルの台帳の「突き合わせ:」のコマンド | stale |
 | `tasks/stages.md` に段のコマンドの宣言が在る | escape-flow スキル | stages |

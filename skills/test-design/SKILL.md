@@ -13,7 +13,7 @@ argument-hint: "[テスト設計/レビューの対象(機能・ファイル・P
 役割分担(無理に連携させない、YAGNI):
 - **テスト項目の抽出と手法選定**: このスキル系(test-extract / test-catalog / test-verify)
 - **TDD サイクル(Red→Green→Refactor)**: superpowers:test-driven-development(実装する本人が実行。既定は本体、SDD なら implementer)。hymme は「何をテストするか」(抽出・選定・検証)だけを担う
-- **設計の網羅検査(状態遷移、並行、プロトコル)**: `loop-engineering`(TLA+)
+- **設計の網羅検査(状態遷移、並行、プロトコル)**: `agent-loop`(TLA+)
 - **実装の数学的証明(critical なアルゴリズムや性質)**: `formal-verification`(Lean 4)
 
 ## 使うとき / 使わないとき

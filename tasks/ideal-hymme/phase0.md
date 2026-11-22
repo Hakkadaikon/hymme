@@ -41,7 +41,7 @@ D-4 は「hymme で作る」に決めます。理由は3つです。pstack 版�
 
 ## 0-09 道具の記録
 
-`Makefile.loopeng`、`trace_check.py`、`smt_oracle.py` は、実行や失敗の記録をファイルに残していません。詳しい表は `existing-survey.md` にあります。
+`Makefile.agentloop`、`trace_check.py`、`smt_oracle.py` は、実行や失敗の記録をファイルに残していません。詳しい表は `existing-survey.md` にあります。
 
 ## 0-12 hook の実行時間
 

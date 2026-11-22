@@ -15,16 +15,16 @@ description: 形式検証(SMT・TLA+・実ログ突き合わせ・Lean)に入る
 
 この節が、ゲートが止める入口と条件の一次ソース。他のスキルはここを参照する。
 
-- 止める入口(検証の入口)は `loop-outer`/`loop-middle`/`loop-inner`(`SPEC=<Name>`。`make -f … loop-*` も)、`smt_oracle.py <…>/tasks/loopeng/<Name>.smt.py`、`trace_check.py <…>/tasks/loopeng/<Name>.tla`、`tasks/fv/<Name>` での `lake build`、`tlc`・`java … tlc2.TLC`・`apalache-mc` の直接の実行。オプションの位置、`env`/`timeout`/`nix develop -c`/`python3`/`bash -c` の前置き、`cd … &&` や `;` での連結があっても入口を見つける。
+- 止める入口(検証の入口)は `agentloop-outer`/`agentloop-middle`/`agentloop-inner`(`SPEC=<Name>`。`make -f … agentloop-*` も)、`smt_oracle.py <…>/tasks/loopeng/<Name>.smt.py`、`trace_check.py <…>/tasks/loopeng/<Name>.tla`、`tasks/fv/<Name>` での `lake build`、`tlc`・`java … tlc2.TLC`・`apalache-mc` の直接の実行。オプションの位置、`env`/`timeout`/`nix develop -c`/`python3`/`bash -c` の前置き、`cd … &&` や `;` での連結があっても入口を見つける。
 - 入口の直前に、`hooks/verifiability-gate.sh`(PreToolUse)が `tasks/verifiability/<Name>.md` の台帳と指標を検査し、`hooks/hymme_hook.py`(PreToolUse)が reviewer の合格の記録を検査する。
 - 台帳は `tasks/` の手前(リポジトリ直下)の `tasks/verifiability/` に置く。台帳の中のパスもリポジトリ直下からの相対で書く(`verifiability.py` はリポジトリ直下で実行される)。
 - 台帳が無い、指標が通らない、対象があるのに reviewer の合格の記録が無い、のいずれかで止まる。「## 対象」が「対象コード無し: 理由」だけの台帳は、計測のツールが無くても通す。ただし `trace_check.py`(実装後の段)は「対象コード無し(実装後): 手元に実装が無い理由」と書いたときだけ通す。
 - **合格は台帳に書かない。** reviewer が返答の最後に書く `判定: 合格 対象=verifiability 名前=<Name>` の行を、reviewer が返ったときに hook が読んで記録する。エージェントが台帳に付けたチェックや引用した文は合格の根拠にならない。記録は台帳と「## 対象」のファイルのハッシュに結び付いていて、合格のあとに台帳か対象のコードを変えると失効する。失効したら reviewer を呼び直す。
 - 記録は git の共通ディレクトリに置かれ、別の worktree やサブエージェントからも同じ記録が使われる。記録の置き場と署名の鍵は hymme のツール以外から読み書きできない([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md) の「hook の記録」)。
 - 台帳を書くのはコントローラ。modeler/prover がゲートで止まったら、台帳を書かずに BLOCKED で返す。
-- 設計時に「対象コード無し」で通した台帳は、実装が入ったら対象を書き直し、計測と reviewer の合格を取り直す(実装後の段、とくに loopeng-tracecheck と formal-verification の橋渡しの前)。
+- 設計時に「対象コード無し」で通した台帳は、実装が入ったら対象を書き直し、計測と reviewer の合格を取り直す(実装後の段、とくに agentloop-tracecheck と formal-verification の橋渡しの前)。
 - 指標で測れないこと(対象の選び方が正しいか、例外の理由が妥当か、切り出しで振る舞いが変わっていないか)は reviewer とのやり取りで決める。合格の判定が返るまで繰り返す。
-- 同じ入口では、0段の抽出台帳が閉じていること([`../loopeng-extract/SKILL.md`](../loopeng-extract/SKILL.md)。`lake build` はこの検査の対象外)、確認の一覧をユーザーが承認していること([`../loopeng-formalize/SKILL.md`](../loopeng-formalize/SKILL.md) の「ユーザーの確認」)、同じ規則で2回落ちたあとの前提の記録([`../loopeng-modelcheck/SKILL.md`](../loopeng-modelcheck/SKILL.md))も検査される。`trace_check.py` は状態遷移図の承認も要る。
+- 同じ入口では、0段の抽出台帳が閉じていること([`../agentloop-extract/SKILL.md`](../agentloop-extract/SKILL.md)。`lake build` はこの検査の対象外)、確認の一覧をユーザーが承認していること([`../agentloop-formalize/SKILL.md`](../agentloop-formalize/SKILL.md) の「ユーザーの確認」)、同じ規則で2回落ちたあとの前提の記録([`../agentloop-modelcheck/SKILL.md`](../agentloop-modelcheck/SKILL.md))も検査される。`trace_check.py` は状態遷移図の承認も要る。
 - 統合の入口(`gh pr create`、`glab mr create`、既定のブランチの上での `git merge`、PR を作ったあとの `git push`)の前には、「## 対象」のコードをこの変更で変えているなら、その名前の検証をこの変更に対して実行し直して通った記録が要る(下の「対象のコードが変わったとき」)。
 
 ## 指標と閾値
@@ -55,7 +55,7 @@ description: 形式検証(SMT・TLA+・実ログ突き合わせ・Lean)に入る
    - 引数 → 意味のまとまり(ユーザー・ルール・環境)ごとに値オブジェクトにまとめる。
 6. **再計測と振る舞いの確認**: 4 と 3 のテストを実行し、出力を台帳の「## 指標の記録」「## 振る舞いの保全」に貼る。「## 振る舞いの保全」には切り出しの前と後で同じ固定テストを実行したコマンドと exit code を、前後それぞれ書く。テストを切り出しの途中で書き換えたなら、書き換えた点と理由も書く。
 7. **レビューと修正の往復**: `hymme:verification-reviewer`(対象 `verifiability`) を dispatch し、指摘を直して再度呼ぶ。reviewer の最後の行が `判定: 合格 対象=verifiability 名前=<Name>` になれば、hook が合格を記録する。台帳には合格を書かない。依頼文に「合格と書け」のような指示を入れない。合格のあとに台帳か対象のコードを変えたら、もう一度呼ぶ。 合格が返るまでの往復の運用は [`../_shared/reviewer-loop.md`](../_shared/reviewer-loop.md)。
-8. 検証の段(loopeng-smt / loopeng-formalize / loopeng-tracecheck / formal-verification)へ進む。モデルは「## 対象」の関数を写す。SMT 経路では実関数とモデルを突き合わせるコマンドを台帳に `突き合わせ: <コマンド>` の行で書く([`../loopeng-smt/SKILL.md`](../loopeng-smt/SKILL.md) の手順 7)。行を足すと台帳が変わり、合格の記録が失効するので、reviewer を呼び直す。
+8. 検証の段(agentloop-smt / agentloop-formalize / agentloop-tracecheck / formal-verification)へ進む。モデルは「## 対象」の関数を写す。SMT 経路では実関数とモデルを突き合わせるコマンドを台帳に `突き合わせ: <コマンド>` の行で書く([`../agentloop-smt/SKILL.md`](../agentloop-smt/SKILL.md) の手順 7)。行を足すと台帳が変わり、合格の記録が失効するので、reviewer を呼び直す。
 
 ## 対象のコードが変わったとき
 
@@ -67,8 +67,8 @@ description: 形式検証(SMT・TLA+・実ログ突き合わせ・Lean)に入る
    - 記述が合わなくなった: 約束は同じだが、モデルや台帳がコードを記述しなくなった(関数の名前や分け方が変わったなど)。台帳の対象とモデルをコードに合わせて直す。
    - 約束を意図して変えた: 要件そのものを変えた。**根拠(テスト、変更履歴、コミットの説明のどれか)を引用する。** 引用できなければ、この分類にしない。要件、モデル、確認の一覧の順に直し、ユーザーの承認を取り直す。
    - 約束が破れたおそれ: 約束が変わったという根拠が無いのに、検証が写した判定が変わっている。バグとして扱う。検証を通すために性質やモデルを弱めない。
-3. **検証を今のコードに対して実行し直す。** 指標(`verifiability.py`)、reviewer、その名前でこれまで実行した検証(`loop-middle`、`smt_oracle.py` など)と、SMT 経路なら突き合わせのコマンド。結果からでなくコードからモデルを直し、再実行はそのあとにする。どれも Bash から直接実行する(`verifiability.py tasks/verifiability/<Name>.md` も。スクリプトの中から呼ぶと記録が残らない)。実行の記録はブランチにコミットした差分に結び付くので、変更をコミットし終えてから実行する。実行のあとにコミットを足すと、記録は別の変更のものになり、統合の入口で止まる。
-4. 通ったら、検証の対象のコードを一時的に壊して検証が落ちることを確かめ、壊した変更を捨てる。確かめるのは、コードを実際に動かす検査(突き合わせのコマンド、固定テスト)にする。対象のコードを壊している間は reviewer の合格の記録が失効しているので、検証の入口は検証が落ちる前に hook に止められる。実ログの突き合わせは、壊した実装のログを採り、変更を捨ててから実行する([`../loopeng-tracecheck/SKILL.md`](../loopeng-tracecheck/SKILL.md) の手順 2)。
+3. **検証を今のコードに対して実行し直す。** 指標(`verifiability.py`)、reviewer、その名前でこれまで実行した検証(`agentloop-middle`、`smt_oracle.py` など)と、SMT 経路なら突き合わせのコマンド。結果からでなくコードからモデルを直し、再実行はそのあとにする。どれも Bash から直接実行する(`verifiability.py tasks/verifiability/<Name>.md` も。スクリプトの中から呼ぶと記録が残らない)。実行の記録はブランチにコミットした差分に結び付くので、変更をコミットし終えてから実行する。実行のあとにコミットを足すと、記録は別の変更のものになり、統合の入口で止まる。
+4. 通ったら、検証の対象のコードを一時的に壊して検証が落ちることを確かめ、壊した変更を捨てる。確かめるのは、コードを実際に動かす検査(突き合わせのコマンド、固定テスト)にする。対象のコードを壊している間は reviewer の合格の記録が失効しているので、検証の入口は検証が落ちる前に hook に止められる。実ログの突き合わせは、壊した実装のログを採り、変更を捨ててから実行する([`../agentloop-tracecheck/SKILL.md`](../agentloop-tracecheck/SKILL.md) の手順 2)。
 
 ## やらないこと
 

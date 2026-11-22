@@ -1,6 +1,6 @@
 # コード・テスト・コミット・コメントの役割分担(全スキル共通)
 
-test-design・loop-engineering・formal-verification のいずれでも、成果物を書くときに
+test-design・agent-loop・formal-verification のいずれでも、成果物を書くときに
 「どこに何を書くか」が混ざると、同じ情報が重複したり、読み手が探す場所を間違えたりする。
 4箇所それぞれの役割を1つに絞る。
 
@@ -17,7 +17,7 @@ test-design・loop-engineering・formal-verification のいずれでも、成果
   この `T-ID` の振る舞いを説明し、実装の内部手順(呼び出し順序、変数名)をなぞらない。
   superpowers:writing-plans の Task に書くテスト名も同じ規範に従う(plan は git 管理下)。
   [`good-test-principles`](../good-test-principles/SKILL.md) の「観察可能な振る舞い」もこの原則の実装面での具体化。
-- **loop-engineering**: TLA+ の `Inv`/disjunct 名や EARS の管理番号(`S-001` 等)を本体コード・テスト名・
+- **agent-loop**: TLA+ の `Inv`/disjunct 名や EARS の管理番号(`S-001` 等)を本体コード・テスト名・
   コミットに書かない(既存規範)のは、これらが「Why not のための内部識別子」であって、コードが
   表現すべき How やテストが表現すべき What ではないため。証明の都合で等価変形したら、その理由
   (Why not: なぜ元の形のまま証明できなかったか)をコメントに1行残す。

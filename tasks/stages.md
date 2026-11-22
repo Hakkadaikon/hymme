@@ -2,8 +2,8 @@
 
 hymme 自身の開発で使う段です。コマンドは先頭一致で照合されます。
 
-- unit コマンド: `python3 -m unittest discover -s loopeng/lib/tests`
-- unit パス: loopeng/lib/tests/*
+- unit コマンド: `python3 -m unittest discover -s agentloop/lib/tests`
+- unit パス: agentloop/lib/tests/*
 - integration コマンド: `nix flake check`
 - integration パス: scripts/*.test.sh
 - e2e コマンド: `bash scripts/real-session.sh`

@@ -1,4 +1,4 @@
-# hymme の Python スクリプト(hooks, loopeng, scripts, skills の *.py)の静的解析とフォーマット。scripts/lint.sh が使う。
+# hymme の Python スクリプト(hooks, agentloop, scripts, skills の *.py)の静的解析とフォーマット。scripts/lint.sh が使う。
 line-length = 120
 target-version = "py312"
 
@@ -7,4 +7,4 @@ select = ["E", "F", "W", "B", "I", "UP"]
 
 [lint.per-file-ignores]
 # メッセージの表とテストの文面は、1文を1行で書く(grep でメッセージを引けるようにする)
-"loopeng/lib/**" = ["E501"]
+"agentloop/lib/**" = ["E501"]

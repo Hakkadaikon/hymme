@@ -1,0 +1,39 @@
+---
+name: agentloop-gherkin
+disable-model-invocation: true
+description: >
+  agent-loop の内ループ(受け入れ仕様化)。TLC の反例トレースを Gherkin の Scenario へ機械変換し、
+  設計が固まったら正常系の受け入れシナリオを足して実装のテストへ渡す。
+  「反例を Gherkin に」「受け入れ仕様に落として」「feature ファイルにして」と言われたとき、
+  または agent-loop ルーターから内ループとして委譲されたときに使う。
+  前提: agentloop-modelcheck の TLC 実行結果(反例トレース、または No error)があること。
+  無ければ先に agentloop-modelcheck へ戻る。通常は agent-loop ルーターの判断を通ってから使う。
+---
+
+# agentloop-gherkin (内ループ: TLC の反例を Gherkin の受け入れ仕様へ)
+
+`Inv` を破る反例は、設計レベルのバグであり**実行可能な反例**でもある。
+`agentloop-inner SPEC=<Name>` で TLC のエラートレースを `<Name>.feature` の Gherkin Scenario に変換する(`trace_to_gherkin.py`。ループを実行するコマンドは [`../_shared/agentloop-toolchain.md`](../_shared/agentloop-toolchain.md))。
+**前提**: agentloop-modelcheck の実行結果があること。無ければ **agentloop-modelcheck** へ戻る。
+
+- 初期状態 = `Given`、各アクション = `When`、変化した変数 = `Then becomes ...`。
+- この feature は「起きてはならない」失敗例。設計を直して反例が消えるまで外(**agentloop-formalize**)/中(**agentloop-modelcheck**)ループへ戻す。
+- 設計が固まったら(反例が消え、文面の往復確認が [`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md) の終了条件を満たしたら)、正の受け入れシナリオ(EARS 正常系)を `.feature` に足し、実装の受け入れテストにする。
+  トレーサビリティ・マトリクスの「テスト」列へ消し込む。TLC 反例由来は機械変換で消し込み不要(1反例=1 feature)。「テスト」列が空の event/state 系 EARS 正常系=このループでの抜け。
+
+> 生成 `.feature` を実行可能テストにする方法(言語別 OSS ランナー、C の例外、テストが実装を呼んでいることの緑/赤での実証)は [`references/gherkin-runners.md`](references/gherkin-runners.md)。
+
+## やらないこと
+
+- 生成 `.feature` を手編集しない。生成元(spec / EARS)を直して再生成する。
+- 反例由来のテストへ「TLA+ 反例由来」等の痕跡を書かない。振る舞いそのものを説明する([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
+- 機能レベルのテスト展開(同値分割・境界値・property-based の選定)まではしない。test-design スキル系の担当。
+
+## 次の工程
+
+反例が無くなり、正常系シナリオまで足せたら agent-loop ルーターへ戻り、完了前ゲート(コントローラが `hymme:verification-reviewer`(対象 `agent-loop`) を dispatch)と実装への受け渡し([`../agent-loop/references/bridging.md`](../agent-loop/references/bridging.md))へ進む。
+
+**テスト設計への転記は任意でなく出口条件**: 実装のテストを書く前に必ず **test-extract** へこの `.feature` を渡し、
+シナリオ1件=T-ID 1行として台帳(`tasks/test-design/<対象名>.md`)に転記させる(出典欄に `<Name>.feature` と書く)。
+転記せず実装テストを書き始めると `test-design-extract-gate` hook が止める。
+superpowers の下では、転記した T-ID が superpowers:writing-plans の Task の失敗テストになる。spec には正常系シナリオを受け入れ条件として**手法名なしで**書き、`.feature` 自体は `tasks/loopeng/` から出さない。

@@ -18,8 +18,8 @@ msg() { # msg <code> [args...]: 端末に出すメッセージはここで引く
   esac
 }
 
-mapfile -t py < <(find hooks loopeng scripts skills -name '*.py' -type f | sort)
-mapfile -t sh < <(find hooks loopeng scripts skills -name '*.sh' -type f | sort)
+mapfile -t py < <(find hooks agentloop scripts skills -name '*.py' -type f | sort)
+mapfile -t sh < <(find hooks agentloop scripts skills -name '*.sh' -type f | sort)
 failed=()
 
 if [ "$fix" -eq 1 ]; then

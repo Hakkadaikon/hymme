@@ -6,7 +6,7 @@ hymme の実システムは、このリポジトリをプラグインとして�
 
 - 触る面: Claude Code のセッションの中で動く hook(`hooks/hymme_hook.py` と、既存の3本の検査)
 - 起動のコマンド: `claude -p "<入力>" --plugin-dir <このリポジトリ> --settings '{"enabledPlugins":{"hymme@hymme":false}}'`
-- 前提: Claude Code(`claude`)が入っていること。インストール済みの hymme は設定で切り、作業ツリーのバージョンだけを読ませる。`loopeng/bin` を PATH の先頭に足す
+- 前提: Claude Code(`claude`)が入っていること。インストール済みの hymme は設定で切り、作業ツリーのバージョンだけを読ませる。`agentloop/bin` を PATH の先頭に足す
 - 準備ができた合図: セッションが入力に返答する(待つ対象のサーバーは無い)
 - 並べて動かせるか: できる。確かめに使うリポジトリは一時ディレクトリに作るので、互いに干渉しない
 

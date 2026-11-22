@@ -4,7 +4,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 check=scripts/check-reviewer-checklist.sh
-src=skills/loop-engineering/reviewer.md
+src=skills/agent-loop/reviewer.md
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 fail=0

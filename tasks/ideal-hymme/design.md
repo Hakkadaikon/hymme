@@ -1,6 +1,6 @@
 # 新しい強制の仕組み(実装済みの中核の説明)
 
-スキルの文面を書き直す人のための説明です。実装は `loopeng/lib/hymme/` にあり、テストは `loopeng/lib/tests/test_hymme.py` です。ここに書いた動作は、すべてテストで確かめてあります。
+スキルの文面を書き直す人のための説明です。実装は `agentloop/lib/hymme/` にあり、テストは `agentloop/lib/tests/test_hymme.py` です。ここに書いた動作は、すべてテストで確かめてあります。
 
 ## 考え方
 
@@ -9,13 +9,13 @@
 - 署名の鍵は `CLAUDE_PLUGIN_DATA` にあり、hook だけが使えます。鍵と記録の置き場を名指しするコマンドや道具の呼び出しは止まります。
 - 作業者の承認は、作業者の入力の全文が `承認 <8桁の符号>` の1行に一致したときだけ記録されます。符号は申請の内容のハッシュから決まります。
 - hook の入口は `hooks/hymme_hook.py` の1つです。PreToolUse(すべての道具)、PostToolUse と PostToolUseFailure(Bash)、SubagentStop、UserPromptSubmit から呼ばれます。
-- 既存の `verifiability-gate.sh`(指標)、`loopeng-lint-gate.sh`、`git-guard.sh`、`test-design-extract-gate.sh` は残っています。`pr-review-gate` と `loopeng-extract-gate.sh` は新しい入口に置き換えました。
+- 既存の `verifiability-gate.sh`(指標)、`agentloop-lint-gate.sh`、`git-guard.sh`、`test-design-extract-gate.sh` は残っています。`pr-review-gate` と `agentloop-extract-gate.sh` は新しい入口に置き換えました。
 
 ## 検証の入口
 
 次のコマンドを「検証の入口」と呼びます。`cd` の連結、`env`、`timeout`、`nix develop -c`、`bash -c` の中も見つけます。
 
-- `loop-outer` / `loop-middle` / `loop-inner`(`make -f … loop-*` も)
+- `agentloop-outer` / `agentloop-middle` / `agentloop-inner`(`make -f … agentloop-*` も)
 - `smt_oracle.py <…>.smt.py`
 - `trace_check.py <…>.tla <ログ>.jsonl`
 - `tasks/fv/<名前>` での `lake build`
@@ -81,7 +81,7 @@ Bash のコマンドが終わると、hook が終了コードつきで記録を�
 
 reviewer が返ったときに、hook が最後のメッセージから判定を読み、記録します。reviewer は最後に次の行を必ず書きます。
 
-- `hymme:verification-reviewer`: `判定: 合格 対象=<系統> 名前=<名前>` か `判定: 不合格 対象=<系統> 名前=<名前>`。系統は verifiability、loop-engineering、test-design、formal-verification のどれか。
+- `hymme:verification-reviewer`: `判定: 合格 対象=<系統> 名前=<名前>` か `判定: 不合格 対象=<系統> 名前=<名前>`。系統は verifiability、agent-loop、test-design、formal-verification のどれか。
 - `hymme:diff-reviewer`: `must: <件数>`、`lenses: <レンズをカンマ区切り>`、`claim_only: <件数>` の3行。`claim_only` は、確かさの段階が「主張のみ」の must 指摘と「全経路で守られる」という主張の件数。
 
 台帳の「- [x] レビュー合格」の行と `tasks/diff-review/evidence.md` は、もう検査に使いません。
@@ -108,7 +108,7 @@ reviewer が返ったときに、hook が最後のメッセージから判定を
 
 | 確かめること | 例外で外せるか |
 |---|---|
-| その名前の `verifiability.py` と、その名前でこれまでに実行した検証の入口の種類(`loop-middle`、`smt_oracle.py`、`lake build`、`tlc` の直接の実行など。`trace_check.py`、`loop-inner`、`loop-outer` は除く)を、この変更の ID で実行し直して通っている | stale |
+| その名前の `verifiability.py` と、その名前でこれまでに実行した検証の入口の種類(`agentloop-middle`、`smt_oracle.py`、`lake build`、`tlc` の直接の実行など。`trace_check.py`、`agentloop-inner`、`agentloop-outer` は除く)を、この変更の ID で実行し直して通っている | stale |
 | spec(`.tla`)のある名前は、`<名前>.normal.jsonl`、`.load.jsonl`、`.fault.jsonl` のログが通り、`.broken.jsonl`(わざと壊した実装のログ)が不一致(終了コード 1)になっている。ログは `hymme capture` で採ったもの。| trace |
 | spec(`.tla`)のある名前は、状態の図が今の spec から作られ、破れた規則と検査されなかった規則が無く、作業者が承認している | 外せない |
 | `.smt.py` のある名前は、突き合わせのコマンドがこの変更の ID で通っている | stale |

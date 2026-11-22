@@ -15,7 +15,7 @@ argument-hint: "[欠陥の症状、または欠陥の記録の id(例: E20261121
 
 **REQUIRED BACKGROUND:** 原因の調査は superpowers:systematic-debugging に従う(原因を確かめる前に直さない)。本スキルが足すのは、欠陥の記録、実システムでの再現、前の段へのテストの追加、閉じる手順である。
 
-`hymme` コマンドは skill-tools に入っている(導入は [`../_shared/loopeng-toolchain.md`](../_shared/loopeng-toolchain.md))。`tasks/` は git 管理外に置く([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
+`hymme` コマンドは skill-tools に入っている(導入は [`../_shared/agentloop-toolchain.md`](../_shared/agentloop-toolchain.md))。`tasks/` は git 管理外に置く([`../_shared/stealth-artifacts.md`](../_shared/stealth-artifacts.md))。
 
 ## 1. 段を宣言する(リポジトリごとに1回)
 
@@ -76,7 +76,7 @@ hymme escape open --stage <段> --symptom "<症状を1文>"
 欠陥が spec(`tasks/loopeng/<名前>.tla`)を持つ設計に関わるとき。
 
 1. 実システムで欠陥の起きる操作を行い、ログを採る。`hymme capture <ログ> -- <実システムを動かすコマンド>`(動かし方は real-surface スキルの `tasks/surface.md`)
-2. 採ったログを spec と突き合わせる(手順は [`../loopeng-tracecheck/SKILL.md`](../loopeng-tracecheck/SKILL.md))
+2. 採ったログを spec と突き合わせる(手順は [`../agentloop-tracecheck/SKILL.md`](../agentloop-tracecheck/SKILL.md))
 3. 結果で分ける
    - **不一致**: 実装が spec を破っている。実装の欠陥である。抜けた理由はテストの側(手法の選び違い、テストの書き漏れ、検証の弱いテスト)から選ぶ
    - **適合**: spec がその振る舞いを許している。spec の書き漏れである。抜けた理由は「要件の抜け」か「モデルで捨てた領域」になる
@@ -157,8 +157,8 @@ hook が開いた記録には「準備のコマンド」の行が無い。要る
 
 ### 要件と確認の一覧を直す(要件の抜け、モデルで捨てた領域)
 
-1. 要件へ戻る。抜けていた振る舞いを要件に足すか、捨てた領域を扱う対象に入れ直す(loop-engineering スキルの抽出と形式化の段)
-2. 確認の一覧 `tasks/loopeng/<名前>.claims.md` を直し、`hymme claims request <名前>` でユーザーの承認を取り直す。一覧を変えると、前の承認は失効している。確認の一覧がまだ無い領域では、ひな形([`../loopeng-formalize/assets/claims-template.md`](../loopeng-formalize/assets/claims-template.md))から新しく作る
+1. 要件へ戻る。抜けていた振る舞いを要件に足すか、捨てた領域を扱う対象に入れ直す(agent-loop スキルの抽出と形式化の段)
+2. 確認の一覧 `tasks/loopeng/<名前>.claims.md` を直し、`hymme claims request <名前>` でユーザーの承認を取り直す。一覧を変えると、前の承認は失効している。確認の一覧がまだ無い領域では、ひな形([`../agentloop-formalize/assets/claims-template.md`](../agentloop-formalize/assets/claims-template.md))から新しく作る
 3. 直した要件で検証をやり直す
 4. `hymme escape verify <id>` を実行する。記録を開いたあとの一覧の承認が無ければ閉じない
 

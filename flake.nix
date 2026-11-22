@@ -1,5 +1,5 @@
 {
-  description = "hymme: toolchain for the loop-engineering and test-design skills";
+  description = "hymme: toolchain for the agent-loop and test-design skills";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-26.05-darwin";
@@ -17,7 +17,7 @@
     let
       pkgs = import nixpkgs { inherit system; };
 
-      # Loop engineering: TLA+ (TLC/SANY) and Apalache. nixpkgs has no official
+      # Agent loop: TLA+ (TLC/SANY) and Apalache. nixpkgs has no official
       # package, so we fetch the release artifacts and wrap them with a JRE.
       # Versions/hashes pinned via nix-prefetch-url; bump both together.
       tla2tools = pkgs.fetchurl {
@@ -51,22 +51,22 @@
       # python3 with what the oracles import: Z3 (smt_oracle.py), lizard (verifiability.py).
       python = pkgs.python3.withPackages (ps: [ ps.z3-solver ps.lizard ]);
 
-      # The loop oracles and lint (loopeng/bin) as commands on PATH, so a
+      # The loop oracles and lint (agentloop/bin) as commands on PATH, so a
       # repository can call them without pointing at a versioned plugin cache.
-      loopengTools = pkgs.runCommand "hymme-loopeng-tools" { buildInputs = [ python pkgs.bashNonInteractive ]; } ''
+      agentloopTools = pkgs.runCommand "hymme-agentloop-tools" { buildInputs = [ python pkgs.bashNonInteractive ]; } ''
         mkdir -p $out/bin
-        install -m 755 ${./loopeng/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability}.py ${./loopeng/bin}/tla_lint.sh ${./loopeng/bin}/hymme ${./loopeng/bin}/loop-{outer,middle,inner} $out/bin/
-        # loop-* は1つ上の階層の Makefile.loopeng と templates を読む
-        cp ${./loopeng/Makefile.loopeng} $out/Makefile.loopeng
-        cp -r ${./loopeng/templates} $out/templates
+        install -m 755 ${./agentloop/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability}.py ${./agentloop/bin}/tla_lint.sh ${./agentloop/bin}/hymme ${./agentloop/bin}/agentloop-{outer,middle,inner} $out/bin/
+        # agentloop-* は1つ上の階層の Makefile.agentloop と templates を読む
+        cp ${./agentloop/Makefile.agentloop} $out/Makefile.agentloop
+        cp -r ${./agentloop/templates} $out/templates
         # bin/hymme は隣の lib/hymme を読む(hook と同じライブラリ。バージョンは lib/hymme/store.py の VERSION)
         mkdir -p $out/lib
-        cp -r ${./loopeng/lib}/hymme $out/lib/hymme
+        cp -r ${./agentloop/lib}/hymme $out/lib/hymme
         patchShebangs $out/bin
       '';
 
       tools = [
-        loopengTools
+        agentloopTools
         tlaplus
         apalache
         pkgs.gnumake
@@ -83,7 +83,7 @@
     in
     {
       packages = {
-        inherit tlaplus apalache loopengTools;
+        inherit tlaplus apalache agentloopTools;
         # Named `skill-tools` (not `tools`) so it shows a distinct profile entry
         # from dotfiles' own `tools`, which lets `nix profile upgrade skill-tools`
         # target it by name.
@@ -136,25 +136,25 @@
 
       # Runs against the whole skill-tools env on purpose: the tools must be on
       # the PATH a user gets, next to the sany they call.
-      checks.loopeng-tools = pkgs.runCommand "loopeng-tools" { nativeBuildInputs = [ pkgs.python3 ]; } ''
-        bash ${self}/scripts/loopeng-tools.test.sh ${self.packages.${system}.skill-tools}/bin
+      checks.agentloop-tools = pkgs.runCommand "agentloop-tools" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+        bash ${self}/scripts/agentloop-tools.test.sh ${self.packages.${system}.skill-tools}/bin
         touch $out
       '';
 
-      checks.loopeng-lint = pkgs.runCommand "loopeng-lint" { nativeBuildInputs = [ tlaplus apalache pkgs.python3 pkgs.git ]; } ''
+      checks.agentloop-lint = pkgs.runCommand "agentloop-lint" { nativeBuildInputs = [ tlaplus apalache pkgs.python3 pkgs.git ]; } ''
         cp -r ${self} src && chmod -R u+w src
-        bash src/scripts/loopeng-lint.test.sh
+        bash src/scripts/agentloop-lint.test.sh
         touch $out
       '';
 
-      checks.loopeng-trace-check = pkgs.runCommand "loopeng-trace-check" { nativeBuildInputs = [ tlaplus python ]; } ''
+      checks.agentloop-trace-check = pkgs.runCommand "agentloop-trace-check" { nativeBuildInputs = [ tlaplus python ]; } ''
         cp -r ${self} src && chmod -R u+w src
-        bash src/scripts/loopeng-trace-check.test.sh
+        bash src/scripts/agentloop-trace-check.test.sh
         touch $out
       '';
 
-      checks.loopeng-smt-oracle = pkgs.runCommand "loopeng-smt-oracle" { nativeBuildInputs = [ python ]; } ''
-        bash ${self}/scripts/loopeng-smt-oracle.test.sh
+      checks.agentloop-smt-oracle = pkgs.runCommand "agentloop-smt-oracle" { nativeBuildInputs = [ python ]; } ''
+        bash ${self}/scripts/agentloop-smt-oracle.test.sh
         touch $out
       '';
 

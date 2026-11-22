@@ -147,7 +147,7 @@ function swallow(s, k) {
 EOF
 mkdir -p "$tmp/bin"
 # shebang の /usr/bin/env が無い sandbox(Linux の nix build)でも動くよう、PATH に置くツールは /bin/sh でラップする
-printf '#!/bin/sh\nexec python3 "%s/loopeng/bin/verifiability.py" "$@"\n' "$root" >"$tmp/bin/verifiability.py"
+printf '#!/bin/sh\nexec python3 "%s/agentloop/bin/verifiability.py" "$@"\n' "$root" >"$tmp/bin/verifiability.py"
 chmod +x "$tmp/bin/verifiability.py"
 
 ledger() { # ledger <name> <body>  (今のひな形と同じく、合格は台帳に書かない)
@@ -277,7 +277,7 @@ ledger BadWaiver '## 対象
 
 run() { # run <want-exit> <ledger> [want-substring]
   local got=0
-  (cd "$tmp" && python3 "$root/loopeng/bin/verifiability.py" "tasks/verifiability/$2.md") >"$tmp/out" 2>&1 || got=$?
+  (cd "$tmp" && python3 "$root/agentloop/bin/verifiability.py" "tasks/verifiability/$2.md") >"$tmp/out" 2>&1 || got=$?
   if [ "$got" -ne "$1" ]; then
     ng "$(msg exit "$2" "$got" "$1")"
     cat "$tmp/out"
@@ -336,12 +336,12 @@ gate() { # gate <want-exit> <command> [cwd]
   fi
 }
 
-gate 0 'loop-middle SPEC=Good'
-gate 2 'loop-middle SPEC=Ccn'
-gate 2 'loop-outer SPEC=Absent'
-gate 0 'loop-inner SPEC=NoCode'
-gate 0 'loop-middle SPEC=NoCodeNoReview'
-gate 2 'make -f x/Makefile.loopeng loop-middle SPEC=Fold'
+gate 0 'agentloop-middle SPEC=Good'
+gate 2 'agentloop-middle SPEC=Ccn'
+gate 2 'agentloop-outer SPEC=Absent'
+gate 0 'agentloop-inner SPEC=NoCode'
+gate 0 'agentloop-middle SPEC=NoCodeNoReview'
+gate 2 'make -f x/Makefile.agentloop agentloop-middle SPEC=Fold'
 gate 0 'smt_oracle.py tasks/loopeng/Good.smt.py'
 gate 2 'smt_oracle.py tasks/loopeng/Impure.smt.py'
 gate 2 'python3 /opt/bin/smt_oracle.py tasks/loopeng/Absent.smt.py'
@@ -359,9 +359,9 @@ gate 2 'smt_oracle.py --timeout 5000 tasks/loopeng/Impure.smt.py'
 gate 2 '/usr/bin/python3 -I /x/trace_check.py tasks/loopeng/Ccn.tla r.jsonl'
 gate 2 'nix develop /h -c trace_check.py tasks/loopeng/Ccn.tla r.jsonl'
 gate 2 'timeout 600 smt_oracle.py tasks/loopeng/Impure.smt.py'
-gate 2 'FOO=1 loop-middle SPEC=Ccn'
+gate 2 'FOO=1 agentloop-middle SPEC=Ccn'
 gate 2 'cd tasks/loopeng && trace_check.py Ccn.tla r.jsonl'
-gate 2 'loop-middle SPEC=Good && loop-middle SPEC=Ccn'
+gate 2 'agentloop-middle SPEC=Good && agentloop-middle SPEC=Ccn'
 gate 2 'export TMPDIR=/tmp && cd tasks/fv/Fold && lake build'
 gate 2 'ELAN_HOME=x lake build' "$tmp/tasks/fv/Fold"
 gate 2 "cd $tmp/tasks/fv/Fold && lake build" /
@@ -370,88 +370,88 @@ gate 0 'trace_check.py --all tasks/loopeng/Good.tla run.jsonl'
 gate 2 $'cd tasks/fv/Fold\nlake build'
 gate 2 '(cd tasks/fv/Fold && lake build)'
 gate 2 'if smt_oracle.py tasks/loopeng/Impure.smt.py; then echo ok; fi'
-gate 2 "bash -c 'loop-middle SPEC=Ccn'"
+gate 2 "bash -c 'agentloop-middle SPEC=Ccn'"
 gate 2 'timeout -k 5 60 trace_check.py tasks/loopeng/Ccn.tla r.jsonl'
 gate 2 'python3 -W ignore /x/smt_oracle.py tasks/loopeng/Impure.smt.py'
 gate 2 'lake -d tasks/fv/Fold build'
-gate 2 'make -C tasks/loopeng -f x/Makefile.loopeng loop-middle SPEC=Fold'
+gate 2 'make -C tasks/loopeng -f x/Makefile.agentloop agentloop-middle SPEC=Fold'
 gate 2 'trace_check.py tasks/loopeng/Ccn.tla r.jsonl --all'
 # 環境変数の SPEC も make に届く
-gate 2 'SPEC=Ccn make -f x/Makefile.loopeng loop-outer'
-gate 2 'export SPEC=Ccn; make -f x/Makefile.loopeng loop-outer'
+gate 2 'SPEC=Ccn make -f x/Makefile.agentloop agentloop-outer'
+gate 2 'export SPEC=Ccn; make -f x/Makefile.agentloop agentloop-outer'
 # オプション付きの前置き
-gate 2 'nice -n 10 loop-middle SPEC=Ccn'
-gate 2 'sudo -E loop-middle SPEC=Ccn'
-gate 2 'time -p loop-middle SPEC=Ccn'
-gate 2 'bash -e -c "loop-middle SPEC=Ccn"'
-gate 2 'bash --norc -c "loop-middle SPEC=Ccn"'
-gate 2 'nix develop /h --command bash -c "loop-middle SPEC=Ccn"'
-gate 2 'bash -lc "loop-middle SPEC=Ccn"'
-gate 2 'bash -euo pipefail -c "loop-middle SPEC=Ccn"'
-gate 2 'fish -c "loop-middle SPEC=Ccn"'
+gate 2 'nice -n 10 agentloop-middle SPEC=Ccn'
+gate 2 'sudo -E agentloop-middle SPEC=Ccn'
+gate 2 'time -p agentloop-middle SPEC=Ccn'
+gate 2 'bash -e -c "agentloop-middle SPEC=Ccn"'
+gate 2 'bash --norc -c "agentloop-middle SPEC=Ccn"'
+gate 2 'nix develop /h --command bash -c "agentloop-middle SPEC=Ccn"'
+gate 2 'bash -lc "agentloop-middle SPEC=Ccn"'
+gate 2 'bash -euo pipefail -c "agentloop-middle SPEC=Ccn"'
+gate 2 'fish -c "agentloop-middle SPEC=Ccn"'
 # シェルが読む heredoc の本文は実行される
-gate 2 $'bash <<\'EOF\'\nloop-middle SPEC=Ccn\nEOF'
-gate 2 $'cat <<EOF | sh\nloop-middle SPEC=Ccn\nEOF'
+gate 2 $'bash <<\'EOF\'\nagentloop-middle SPEC=Ccn\nEOF'
+gate 2 $'cat <<EOF | sh\nagentloop-middle SPEC=Ccn\nEOF'
 # heredoc の開始行の後ろにあるコマンドは本文ではない
-gate 2 $'cat > x.txt <<EOF && loop-middle SPEC=Ccn\nbody\nEOF'
+gate 2 $'cat > x.txt <<EOF && agentloop-middle SPEC=Ccn\nbody\nEOF'
 # 先頭のリダイレクト、SPEC 省略(既定の Spec)、make のディレクトリ指定の別表記、lake --dir=
-gate 2 '> log.txt loop-middle SPEC=Ccn'
-gate 2 '2>&1 loop-middle SPEC=Ccn'
-gate 2 'make -f x/Makefile.loopeng loop-middle'
-gate 2 'make -Ctasks/loopeng -f x/Makefile.loopeng loop-middle SPEC=Fold'
-gate 2 'make --directory=tasks/loopeng -f x/Makefile.loopeng loop-middle SPEC=Fold'
+gate 2 '> log.txt agentloop-middle SPEC=Ccn'
+gate 2 '2>&1 agentloop-middle SPEC=Ccn'
+gate 2 'make -f x/Makefile.agentloop agentloop-middle'
+gate 2 'make -Ctasks/loopeng -f x/Makefile.agentloop agentloop-middle SPEC=Fold'
+gate 2 'make --directory=tasks/loopeng -f x/Makefile.agentloop agentloop-middle SPEC=Fold'
 gate 2 'lake --dir=tasks/fv/Fold build'
 # $(…) の中の cd は外に影響しない
-gate 2 'echo $(cd / && ls) && loop-middle SPEC=Ccn'
+gate 2 'echo $(cd / && ls) && agentloop-middle SPEC=Ccn'
 # シングルクォートの中のバッククォートは文字列。変数の SPEC は決まらないので止める
-gate 0 "git commit -m 'docs: run \`loop-middle SPEC=Ccn\` first'"
-gate 2 'for s in a b; do loop-middle SPEC=$s; done'
+gate 0 "git commit -m 'docs: run \`agentloop-middle SPEC=Ccn\` first'"
+gate 2 'for s in a b; do agentloop-middle SPEC=$s; done'
 # ダブルクォートの中のアポストロフィはクォートの開始ではない。エスケープした \` と \$( は文字列
-gate 2 $'echo "don\'t" "$(loop-middle SPEC=Ccn)"'
+gate 2 $'echo "don\'t" "$(agentloop-middle SPEC=Ccn)"'
 gate 0 'git commit -m "docs: mention \`trace_check.py\`"'
-gate 0 'git commit -m "fix: \$(loop-middle) docs"'
+gate 0 'git commit -m "fix: \$(agentloop-middle) docs"'
 # クォートしない heredoc の本文は $(…) を展開する
-gate 2 $'cat > n <<EOF\n$(loop-middle SPEC=Ccn)\nEOF'
+gate 2 $'cat > n <<EOF\n$(agentloop-middle SPEC=Ccn)\nEOF'
 # シェルや python の標準入力に流す形
-gate 2 'bash <<< "loop-middle SPEC=Ccn"'
-gate 2 "echo 'loop-middle SPEC=Ccn' | bash"
-gate 2 $'python3 - <<\'EOF\'\nimport os; os.system("loop-middle SPEC=Ccn")\nEOF'
-gate 2 "echo 'loop-middle SPEC=Ccn' | python3"
+gate 2 'bash <<< "agentloop-middle SPEC=Ccn"'
+gate 2 "echo 'agentloop-middle SPEC=Ccn' | bash"
+gate 2 $'python3 - <<\'EOF\'\nimport os; os.system("agentloop-middle SPEC=Ccn")\nEOF'
+gate 2 "echo 'agentloop-middle SPEC=Ccn' | python3"
 gate 0 "echo '{}' | python3 -m json.tool"
 # heredoc の本文ではクォートはただの文字(it's の後の $(…) も展開される)
-gate 2 $'cat <<EOF\nit\'s $(loop-middle SPEC=Ccn)\nEOF'
+gate 2 $'cat <<EOF\nit\'s $(agentloop-middle SPEC=Ccn)\nEOF'
 # python3 -m はモジュールを動かすだけで、標準入力をスクリプトとして読まない
-gate 0 'cat x.json | python3 -m json.tool && loop-middle SPEC=Good'
-gate 0 'echo "loop-middle SPEC=Ccn" | python3 -m json.tool'
-gate 0 $'cat <<\'EOF\' | python3 -m json.tool\n{"cmd": "loop-middle SPEC=Ccn"}\nEOF'
+gate 0 'cat x.json | python3 -m json.tool && agentloop-middle SPEC=Good'
+gate 0 'echo "agentloop-middle SPEC=Ccn" | python3 -m json.tool'
+gate 0 $'cat <<\'EOF\' | python3 -m json.tool\n{"cmd": "agentloop-middle SPEC=Ccn"}\nEOF'
 # 標準入力の判定はパイプで渡ってくる直前の区切りだけを見る
-gate 0 $'bash <<\'EOF\'\necho hi\nEOF\nloop-middle SPEC=Good'
-gate 0 'echo hi | python3 && loop-middle SPEC=Good'
+gate 0 $'bash <<\'EOF\'\necho hi\nEOF\nagentloop-middle SPEC=Good'
+gate 0 'echo hi | python3 && agentloop-middle SPEC=Good'
 # tasks/fv を使っていないリポジトリでは、変数を含む cd の後の lake build を止めない
 plain="$(mktemp -d)"
 gate 0 'cd "$HOME/proj" && lake build' "$plain"
 # 変数を含む cd でも、先に tasks/fv/<Name> が見えていれば台帳を特定できないので止める
 gate 2 'cd "$HOME/x/tasks/fv/Foo" && lake build' "$plain"
 # 多段のパイプでシェルへ流す形も、前の区切りまで遡って見る
-gate 2 "echo 'loop-middle SPEC=Ccn' | tee /dev/null | bash"
+gate 2 "echo 'agentloop-middle SPEC=Ccn' | tee /dev/null | bash"
 gate 2 'cd "$HOME/proj" && lake build' "$tmp/src"
 rmdir "$plain"
 # 変数を含む cd の先の lake build は台帳を特定できない
 gate 2 'cd $D && lake build'
 # コミットメッセージの本文(heredoc)に入口の語があっても、それは文字列なので止めない
-gate 0 $'git commit -m "$(cat <<\'EOF\'\nfeat(loopeng): add trace_check.py and lake build notes\nloop-middle SPEC=Ccn\nEOF\n)"'
+gate 0 $'git commit -m "$(cat <<\'EOF\'\nfeat(agentloop): add trace_check.py and lake build notes\nagentloop-middle SPEC=Ccn\nEOF\n)"'
 # 中身を読めない形に入口の語があれば止める。ただの文字列としての言及は止めない
 gate 2 'echo tasks/loopeng/Ccn.tla | xargs trace_check.py'
-gate 2 'eval "loop-middle SPEC=Ccn"'
+gate 2 'eval "agentloop-middle SPEC=Ccn"'
 gate 2 'echo $(smt_oracle.py tasks/loopeng/Impure.smt.py)'
-gate 2 $'python3 -c \'import os; os.system("loop-middle SPEC=Ccn")\''
+gate 2 $'python3 -c \'import os; os.system("agentloop-middle SPEC=Ccn")\''
 gate 0 'grep -n trace_check.py README.md'
 gate 2 'trace_check.py "tasks/loopeng/Bad Name.tla" r.jsonl'
 # 実ログの突き合わせは実装後の段: ただの「対象コード無し」は止め、「(実装後)」と理由があれば通す
 gate 2 'trace_check.py tasks/loopeng/NoCode.tla r.jsonl'
 gate 0 'trace_check.py tasks/loopeng/PostImpl.tla r.jsonl'
-gate 0 'loop-middle SPEC=PostImpl'
-gate 0 'loop-middle SPEC=NoCodeTmpl'
+gate 0 'agentloop-middle SPEC=PostImpl'
+gate 0 'agentloop-middle SPEC=NoCodeTmpl'
 # hook 入力の cwd を作業ディレクトリとして使う
 got=0
 printf '{"cwd":"%s","tool_input":{"command":"lake build"}}' "$tmp/tasks/fv/Fold" | (cd / && PATH="$tmp/bin:$PATH" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
@@ -459,35 +459,35 @@ if [ "$got" -eq 2 ]; then ok "gate は入力の cwd を使う"; else
   ng "$(msg exit "入力の cwd" "$got" 2)"
   cat "$tmp/gate.out"
 fi
-gate 0 'echo loop-middle SPEC=Ccn'
+gate 0 'echo agentloop-middle SPEC=Ccn'
 gate 0 'grep smt_oracle.py README.md'
-gate 2 'loop-middle' # SPEC 省略は Makefile.loopeng の既定 Spec
+gate 2 'agentloop-middle' # SPEC 省略は Makefile.agentloop の既定 Spec
 
 # 指標のツールが無い環境では止める(検証の入口を、検査せずには通さない)
 mkdir -p "$tmp/nobin"
 for c in bash cat grep awk sed head cut dirname basename python3; do ln -s "$(command -v "$c")" "$tmp/nobin/$c"; done
 got=0
-printf '{"tool_input":{"command":"loop-middle SPEC=Good"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
+printf '{"tool_input":{"command":"agentloop-middle SPEC=Good"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
 if [ "$got" -eq 2 ] && grep -q 'verifiability.py' "$tmp/gate.out"; then ok "verifiability.py が無ければ gate は止める"; else
   ng "$(msg exit "ツールなしの gate" "$got" 2)"
   cat "$tmp/gate.out"
 fi
 # 写すコードが無い台帳は、計測のツールが無くても通す
 got=0
-printf '{"tool_input":{"command":"loop-middle SPEC=NoCodeNoReview"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
+printf '{"tool_input":{"command":"agentloop-middle SPEC=NoCodeNoReview"}}' | (cd "$tmp" && PATH="$tmp/nobin" bash "$root/hooks/verifiability-gate.sh") >"$tmp/gate.out" 2>&1 || got=$?
 if [ "$got" -eq 0 ]; then ok "対象コード無しの台帳は verifiability.py が無くても通す"; else
   ng "$(msg exit "ツールなしの対象コード無し" "$got" 0)"
   cat "$tmp/gate.out"
 fi
 # 作業中のリポジトリに json.py があっても hook はそれを読み込まない
 printf 'raise SystemExit(0)\n' >"$tmp/json.py"
-gate 2 'loop-middle SPEC=Ccn'
+gate 2 'agentloop-middle SPEC=Ccn'
 rm "$tmp/json.py"
 
 # python3 が無く解析できないときは、入口らしき語があれば止め、無ければ通す
 mkdir -p "$tmp/nopy"
 for c in bash cat grep awk sed head cut dirname basename; do ln -s "$(command -v "$c")" "$tmp/nopy/$c"; done
-for c in "2 loop-middle SPEC=Good" "0 ls -la"; do
+for c in "2 agentloop-middle SPEC=Good" "0 ls -la"; do
   read -ra words <<<"$c"
   set -- "${words[@]}"
   got=0
@@ -498,6 +498,6 @@ for c in "2 loop-middle SPEC=Good" "0 ls -la"; do
   fi
 done
 
-if python3 loopeng/bin/verifiability.py --selfcheck >/dev/null; then ok "--selfcheck"; else ng "--selfcheck"; fi
+if python3 agentloop/bin/verifiability.py --selfcheck >/dev/null; then ok "--selfcheck"; else ng "--selfcheck"; fi
 
 exit "$fail"
