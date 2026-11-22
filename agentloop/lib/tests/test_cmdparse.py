@@ -31,8 +31,11 @@ class EntryTest(unittest.TestCase):
         pattern = re.search(r"grep -qE '([^']+)'", gate).group(1)
         for name in cmdparse.LOOPS:
             self.assertRegex(name + " SPEC=Cart", pattern)
+
+    def test_only_the_three_loop_commands_are_entries(self):
         self.assertEqual(sorted(cmdparse.OLD_LOOPS), ["loop-inner", "loop-middle", "loop-outer"])
-        self.assertNotRegex("loop-other SPEC=Cart", cmdparse.LOOP)  # only the three names are entries
+        self.assertNotRegex("agentloop-other SPEC=Cart", cmdparse.LOOP)
+        self.assertEqual(self.found("agentloop-other SPEC=Cart"), [])
 
     def test_wrappers_are_peeled(self):
         want = [("/r", "Cart", "agentloop-middle")]
