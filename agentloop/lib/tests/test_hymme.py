@@ -591,6 +591,17 @@ class ManagedRepoTest(Repo):
         self.ran("./run-check.sh --all")
         self.assertEqual(self.bash(self.pr)[0], 0)
 
+    def test_a_run_recorded_under_the_old_command_name_asks_for_the_new_one(self):
+        for entry in ("loop-middle", "loop-inner", "loop-outer"):  # written before the 0.15 rename
+            store.append("run", {"name": "Cart", "entry": entry, "exit": 0, "change": "old"}, self.root, self.key)
+        self.ran("verifiability.py tasks/verifiability/Cart.md")
+        self.ran("./run-check.sh --all")
+        err = self.bash(self.pr)[1]
+        self.assertRegex(err, r"agentloop-middle")
+        self.assertNotRegex(err, r"(?<!agent)loop-|agentloop-(inner|outer)")  # inner and outer are never asked for
+        self.ran("cd tasks/loopeng && agentloop-middle SPEC=Cart")
+        self.assertEqual(self.bash(self.pr)[0], 0)
+
     def test_a_failed_or_inconclusive_run_is_not_a_pass(self):
         self.ran("verifiability.py tasks/verifiability/Cart.md", 1)
         self.ran("./run-check.sh", 2)

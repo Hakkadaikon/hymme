@@ -216,6 +216,11 @@ def weakened(diff):
     return what
 
 
+def entry_name(entry):
+    """A run's entry under today's command name: a record from before 0.15 says loop-middle for agentloop-middle."""
+    return "agent" + entry if entry.startswith("loop-") else entry
+
+
 def stale_names(ctx, root):
     """Names whose mirrored code this branch changed (1-15, 1-16)."""
     changed = store.changed_files(ctx.cwd, ctx.ref)
@@ -267,11 +272,11 @@ def integration(ctx, body=None):
         if ctx.exempt("stale"):
             break
         ran = {
-            r["entry"]
+            entry_name(r["entry"])
             for r in ctx.recs("run", name=name, change=change)
             if r.get("exit") == 0 and not r.get("inconclusive")
         }
-        want = {r["entry"] for r in ctx.recs("run", name=name)} | {"verifiability"}
+        want = {entry_name(r["entry"]) for r in ctx.recs("run", name=name)} | {"verifiability"}
         if (root / "tasks" / "loopeng" / f"{name}.smt.py").exists():
             want.add("parity")  # 4-13: the real function and the model agree on the inputs that were tried
         need = sorted(want - ran - {"trace_check", "agentloop-inner", "agentloop-outer"})
