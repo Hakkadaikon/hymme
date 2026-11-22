@@ -218,7 +218,7 @@ def weakened(diff):
 
 def entry_name(entry):
     """A run's entry under today's command name: a record from before 0.15 says loop-middle for agentloop-middle."""
-    return "agent" + entry if entry.startswith("loop-") else entry
+    return "agent" + entry if entry in ("loop-outer", "loop-middle", "loop-inner") else entry
 
 
 def stale_names(ctx, root):

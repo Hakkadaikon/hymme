@@ -602,6 +602,13 @@ class ManagedRepoTest(Repo):
         self.ran("cd tasks/loopeng && agentloop-middle SPEC=Cart")
         self.assertEqual(self.bash(self.pr)[0], 0)
 
+    def test_a_passing_run_under_the_old_command_name_still_counts(self):
+        change = store.change_id(self.root, "HEAD")  # passed on 0.14, then the plugin moved to 0.15
+        store.append("run", {"name": "Cart", "entry": "loop-middle", "exit": 0, "change": change}, self.root, self.key)
+        self.ran("verifiability.py tasks/verifiability/Cart.md")
+        self.ran("./run-check.sh --all")
+        self.assertEqual(self.bash(self.pr)[0], 0)
+
     def test_a_failed_or_inconclusive_run_is_not_a_pass(self):
         self.ran("verifiability.py tasks/verifiability/Cart.md", 1)
         self.ran("./run-check.sh", 2)
