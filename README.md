@@ -441,3 +441,4 @@ hymme 自身の段の宣言は `tasks/stages.md`、実システムの定義は `
 - 確かさの段階
 - 振る舞いを変えない構造の変更(refactor-flow)
 - 捨てる前提の試作と、読み取りだけの調査(`skills/_shared/prototype.md`、`skills/_shared/investigation.md`)
+- 手作業の代わりに作るスクリプト(`skills/_shared/scripted-work.md`)
