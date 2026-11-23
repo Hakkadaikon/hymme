@@ -26,7 +26,7 @@
 - 「取り込まない」は、理由を書きます。主な理由は4つです。hymme の承認と検査の考え方と逆であること、Cursor に固有であること、検証の流れの外にあること、superpowers など別の道具が既に担っていることです。
 - 台帳に行が無いのに取り込むべき内容は、表では親の要素の採否を変えず、表のあとの節に挙げます。
 
-件数は、取り込むが27、既に在るが8、取り込まないが46で、合計81です。
+件数は、取り込むが33、既に在るが8、取り込まないが40で、合計81です(2026-11-23 に、強制できない要素のうち6つを「取り込む」に変えました。変えた行は根拠の欄に日付を書いています)。
 
 ## 原則のスキル(24本)
 
@@ -34,9 +34,9 @@
 |---|---|---|---|
 | principle-attack-the-premise | 同じ前提に立つ修正が同じ検査で2回落ちたら、前提を書き出して直接確かめます。 | 取り込む | 4-16 |
 | principle-boundary-discipline | 検証とエラー処理を外部との境界に集め、内側は型を信じ、業務の判断を純粋関数に置きます。 | 取り込む | 5-06(境界で検証する)。純粋関数への切り出しは `skills/verifiability/SKILL.md:47` に既に在ります。 |
-| principle-build-the-lever | 手作業をやめ、作業を行うか証明する道具(スクリプト、codemod)を作ります。 | 取り込まない | 作業の進め方の助言で、強制できません。再実行できる検査を証跡にする考えは 4-02 と 5-03 が受けています。 |
+| principle-build-the-lever | 手作業をやめ、作業を行うか証明する道具(スクリプト、codemod)を作ります。 | 取り込む | 2026-11-23 に方針を変更。強制はできないが、手順として `skills/_shared/scripted-work.md` に置いた。対象は同じ操作を多くの対象に当てる作業に絞った。 |
 | principle-encode-lessons-in-structure | 同じ指示を2回書いたら、文ではなく lint、検査、スクリプトにします。 | 取り込む | 5-10。1回目で検出網に埋め込む手順は `skills/review-feedback/SKILL.md:42` に既に在ります。 |
-| principle-exhaust-the-design-space | 前例の無い設計では、試作を2〜3個作って比べます。 | 取り込まない | 検証の流れの外です。設計の選び方は superpowers:brainstorming が担います。 |
+| principle-exhaust-the-design-space | 前例の無い設計では、試作を2〜3個作って比べます。 | 取り込む | 2026-11-23 に方針を変更。`skills/_shared/prototype.md` の手順4(案が複数あるときは2〜3案を並べる)。 |
 | principle-experience-first | 実装の都合より使い手の体験を選び、機能を絞って磨きます。 | 取り込まない | 検証の流れの外です。製品の方針の話です。 |
 | principle-explain-the-number | 測る前に判断と雑音の幅を書き、数値を縛る要因を特定し、別のものを測った可能性を消します。 | 取り込む | 5-12。行の文面は7つの問いだけなので、広げる必要があります(後述)。 |
 | principle-fix-root-causes | 症状の出た場所ではなく、最初に誤った場所を直します。あってはならない状態へのガードは修正と認めません。 | 取り込む | 5-06(起きてはならない状態を隠すだけの修正を通さない)。同種の箇所を探す手順は `skills/review-feedback/SKILL.md:38` に既に在ります。 |
@@ -44,13 +44,13 @@
 | principle-guard-the-context-window | 大きな出力はサブエージェントへ回し、本体には要約だけを置きます。 | 既に在る | `agents/modeler.md:3`、`skills/_shared/parallel-delegation.md:115` |
 | principle-laziness-protocol | 判断を1か所にまとめ、差分を最小にします。 | 既に在る | `skills/diff-review/references/design.md:35`(YAGNI を優先)。過剰設計のレビューは ponytail も担います。 |
 | principle-make-operations-idempotent | 状態を変える操作は、何回実行しても、前回がどこで止まっても、同じ状態に収束させます。 | 取り込む | 5-07(2回実行したとき、途中で止まったあと) |
-| principle-migrate-callers-then-delete-legacy-apis | 新しい内部 API を入れたら、同じ波で呼び出し元を移し、古い API を消します。 | 取り込まない | 検証の流れの外です。互換の扱いはリポジトリごとの方針です。 |
+| principle-migrate-callers-then-delete-legacy-apis | 新しい内部 API を入れたら、同じ波で呼び出し元を移し、古い API を消します。 | 取り込む | 2026-11-23 に方針を変更。`skills/refactor-flow/SKILL.md` の手順4。互換を残す条件(リポジトリの外の利用者、保存済みのデータ)を足した。 |
 | principle-minimize-reader-load | たどる層の数と、頭に置く可変の状態を減らします。 | 取り込む | 5-06(読み手の負荷を減らす) |
 | principle-model-the-domain | 領域を条件分岐に散らさず、データ構造(状態機械、判別共用体、表)に写します。 | 取り込む | 5-06(領域をデータ構造に写す) |
 | principle-never-block-on-the-human | 取り消せる作業では人に尋ねず、進めてから見せます。 | 取り込まない | hymme の承認と検査の考え方と逆です。台帳の対象外に明記されています。 |
 | principle-outcome-oriented-execution | 計画した移行では、途中の壊れを許し、目標の構造へ向かいます。 | 取り込まない | 段ごとに検査を通してから進む hymme の流れ(`skills/commit-flow/SKILL.md:60`)と合いません。 |
 | principle-prove-it-works | 完了の前に実物で確かめます。更新時刻、自己申告、「コンパイルが通る」は数えません。 | 取り込む | 4-02、4-14 |
-| principle-redesign-from-first-principles | 新しい要件は継ぎ足さず、初めからその前提だったとして設計し直します。 | 取り込まない | 検証の流れの外です。設計の進め方です。 |
+| principle-redesign-from-first-principles | 新しい要件は継ぎ足さず、初めからその前提だったとして設計し直します。 | 取り込む | 2026-11-23 に方針を変更。`skills/refactor-flow/SKILL.md` の手順2 と `skills/diff-review/references/design.md` の「継ぎ足し」。 |
 | principle-separate-before-serializing-shared-state | 複数の書き手が同じ対象に書くなら、まず共有をやめ、だめなら構造で直列にします。 | 取り込む | 5-07(複数の書き手が同じ対象に書くとき)。サブエージェントの運用としては `skills/_shared/parallel-delegation.md:19` に既に在ります。 |
 | principle-sequence-verifiable-units | 作業を、検査で終わる小さな単位に分け、失敗するテスト、修正の順に届けます。 | 取り込む | 4-03(順序)。単位ごとの検査は `skills/commit-flow/SKILL.md:60` に既に在ります。 |
 | principle-subtract-before-you-add | 足す前に、死んだコードと余分な検証を消します。 | 取り込む | 5-06(先に削る) |
@@ -106,13 +106,13 @@
 | eval | 候補に評価だと悟らせない形で、スキルの変種を比べます。 | 取り込まない | 台帳の対象外に明記されています。 |
 | feature | 設計、委任、実物での確かめ、小さなコミットの順で機能を作ります。 | 取り込まない | 工程は superpowers が担います。実物での確かめは 4-14 が受けます。 |
 | hillclimb | 1つの指標を、1変更1計測で、採るか戻すかを決めながら改善します。 | 取り込まない | 台帳の対象外に明記されています。 |
-| investigation | 読み取りだけで、引用つきの説明か推奨を返します。 | 取り込まない | 検証の流れの外です。調査は Explore が担います。 |
+| investigation | 読み取りだけで、引用つきの説明か推奨を返します。 | 取り込む | 2026-11-23 に方針を変更。`skills/_shared/investigation.md`。委任先は組み込みの Explore のまま。 |
 | multi-phase-plan | PR ごとに依存、変更、確かめ方をチェックボックスで書いた計画を作ります。 | 取り込まない | 計画は superpowers:writing-plans と `skills/commit-flow/SKILL.md:24` が担います。 |
 | opening-a-pr | PR の題と本文の形(Why、What changed、Scope、Tradeoffs、Blast Radius、Verification)を決めます。 | 取り込む | 5-11(影響の範囲と検証の結果の欄)。下書きにしない方針は取り込みません(`skills/pr-create/SKILL.md:15` と逆)。 |
 | pause-safely | 安全な区切りで止まり、冷えた状態から再開できる覚え書きを残します。 | 既に在る | `skills/ledger-flow/SKILL.md:40`(再開の起点は1文書に固定) |
 | perf-issue | 基準の計測を採り、計測に結び付けて直し、前後を比べます。 | 既に在る | `skills/nonfunctional-perf/SKILL.md:86`(計測で特定してから直す)、同 `:87`。数値の点検は benchmark-checklist の行(5-12)が受けます。 |
-| prototype | 設計の判断のために、捨てる前提の試作を作ります。 | 取り込まない | 検証の基準を意図して下げる playbook です。前提の確かめは `skills/agent-loop/SKILL.md:44` の spike が担います。 |
-| refactoring | 先に振る舞いを固定し、小さな手順で形を変え、実物で不変を示します。 | 取り込む | 4-12。切り出しの場面では `skills/verifiability/SKILL.md:44` に既に在ります。 |
+| prototype | 設計の判断のために、捨てる前提の試作を作ります。 | 取り込む | 2026-11-23 に方針を変更。`skills/_shared/prototype.md`。試作はリポジトリの外に作り、製品のコードに入れない。agent-loop の spike もここを指す。 |
+| refactoring | 先に振る舞いを固定し、小さな手順で形を変え、実物で不変を示します。 | 取り込む | 4-12。通常のリファクタリングの手順は `skills/refactor-flow/SKILL.md` に置いた(2026-11-23)。切り出しの場面では `skills/verifiability/SKILL.md` がそこを参照する。 |
 | runtime-forensics | 動いているプロセスに計装し、原因を引用つきで診断します。 | 取り込まない | Cursor の control スキルと CDP に依存します。診断の手順で、検査の強制に当たりません。 |
 | session-pickup | 前の記録を読み、済んだ作業をやり直さずに再開し、引き継いだ主張は実物で確かめます。 | 既に在る | `skills/_shared/parallel-delegation.md:82`(報告と引き継ぎは検証してから信じる)、`skills/ledger-flow/SKILL.md:40` |
 | shipping | PR ごとに書き手でない者が検証し、patch-id で判定の有効を確かめ、下から順にマージします。 | 取り込む | 1-13。自動マージは台帳の対象外です。 |

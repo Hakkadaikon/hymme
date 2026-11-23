@@ -148,7 +148,7 @@ EARS にした要件について、形式検証で何を実証するかを、検
 - [x] 4-09 `trace_check.py` に渡されたログが 4-08 の記録と一致するかを検査する 機械 → checks.py の integration(log_not_captured。test_real_logs_are_required_for_a_spec_and_the_broken_one_must_fail)
 - [x] 4-10 TLA+ 経路を通った作業では、正常系、高負荷、障害注入のログが通ることを 1-14 の入口で求める 機械 → 同じテスト
 - [x] 4-11 わざと壊した実装のログが `trace_check.py` で不一致になることを、出口の条件に加える 機械 → 同じテスト(壊したログは終了コード 1 だけを認める)
-- [~] 4-12 verifiability の切り出しの前後で、同じ固定テストが通ることを台帳に記録する。通常のリファクタリングにも先に振る舞いを固定する同じ手順を当てる 機械 → skills/verifiability のひな形に、切り出し前後のコマンドの欄を置いた。残り: 機械の検査は無い(reviewer が見る)。通常のリファクタリングへの適用は skills/diff-review/references/design.md の観点まで
+- [~] 4-12 verifiability の切り出しの前後で、同じ固定テストが通ることを台帳に記録する。通常のリファクタリングにも先に振る舞いを固定する同じ手順を当てる 機械 → skills/verifiability のひな形に、切り出し前後のコマンドの欄を置いた。残り: 機械の検査は無い(reviewer が見る)。通常のリファクタリングの手順は skills/refactor-flow に置いた(強制の手段は無く、skills/diff-review/references/design.md の観点で見る)
 - [x] 4-13 D-5 の結論に沿って SMT 経路の実物での確かめを作る。実関数とモデルの出力が食い違う入力が0件であることを、スクリプトの終了コードで示す 機械 → ledgers.py の parity_commands と checks.py(test_a_model_of_a_pure_decision_needs_the_real_function_compared)
 - [x] 4-14 通常の作業でも、4-04 の定義で実物を動かした証跡が今の patch-id に対して在ることを、1-14 の入口で求める(D-2 の結論に沿う) 機械 → checks.py の integration(surface_not_run。test_a_failed_or_inconclusive_run_is_not_a_pass)。hymme の台帳を持つリポジトリだけ
 - [x] 4-15 道具が失敗した規則の名前を記録に残すようにする 機械 → 方法を変更: 道具の出力から hook が規則の名前を読む(hook.py の RULES)。名前は記録にだけ残り、本体には出ない
