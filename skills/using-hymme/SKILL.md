@@ -25,8 +25,8 @@ description: SessionStart hook が毎セッション注入する地図。hymme �
 - **訂正**: `superpowers:receiving-code-review` → `hymme:review-feedback`(水平展開・lessons)。
 - **台帳**: `hymme:ledger-flow`。plan 実行の ledger(executing-plans / SDD 共通)は superpowers 形式のまま。
 - **構造の変更**(リファクタリング、名前の変更、内部 API の作り替え): `hymme:refactor-flow`。先に振る舞いをテストで固定する。既存の設計に新しい要件を入れるときも、継ぎ足さず、同スキルの手順2で目標の形を決める。
-- **些細でない作業**(編集、移行、分析、点検): 手で行わず、スクリプトにして残す(`${CLAUDE_PLUGIN_ROOT}/skills/_shared/scripted-work.md` を Read)。手でよいのは2〜3か所の明らかな編集だけ。
-- **試作**(前例がコードベースに無い設計の判断、動かさないと決まらない判断): 捨てる前提で2〜3案を作って比べる(`${CLAUDE_PLUGIN_ROOT}/skills/_shared/prototype.md` を Read)。試作のコードは製品のコードに入れない。
+- **同じ操作を多くの対象に当てる作業**(置き換え、移行、集計、点検): 手で行わず、スクリプトにして残す(`${CLAUDE_PLUGIN_ROOT}/skills/_shared/scripted-work.md` を Read)。手でよいのは2〜3か所の明らかな編集だけ。テストから書く実装と、読んで答える調査は対象外。
+- **試作**(前例がコードベースに無い設計の判断、動かさないと決まらない判断): 捨てる前提で作り、案が複数あるなら2〜3案を比べる(`${CLAUDE_PLUGIN_ROOT}/skills/_shared/prototype.md` を Read)。試作のコードは製品のコードに入れない。
 - **調査**(どう動くか、なぜこうか、どちらを選ぶか): コードを変えず、主張ごとに根拠を付けて答える(`${CLAUDE_PLUGIN_ROOT}/skills/_shared/investigation.md` を Read)。
 - **履歴破壊**: `hymme:rebase-flow` / `hymme:reset-flow`(git-guard hook が arm なしを止める)。
 
