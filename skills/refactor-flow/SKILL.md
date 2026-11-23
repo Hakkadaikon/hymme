@@ -65,7 +65,7 @@ argument-hint: "[変える構造と範囲（例: loopeng を agentloop に改名
 
 ### 5. 機械的な変更はスクリプトで行う
 
-名前の置き換え、呼び出し方の書き換え、ファイルの移動は、手で直さずスクリプトにする。手でよいのは、2〜3か所の明らかな編集だけである。作り方と残し方は [`../_shared/scripted-work.md`](../_shared/scripted-work.md) に従う。
+名前の置き換え、呼び出し方の書き換え、ファイルの移動は、手で直さずスクリプトにする。手で直してよい範囲、作り方、残し方は [`../_shared/scripted-work.md`](../_shared/scripted-work.md) に従う。
 
 スクリプトにできない編集を subagent に委任するときは、依頼文に、対象のファイルパス、動かす名前、保つ振る舞い(手順1の固定のコマンド)を書く。
 
@@ -96,7 +96,7 @@ argument-hint: "[変える構造と範囲（例: loopeng を agentloop に改名
 
 ### 9. コミットを並べる
 
-削除、作り替え、後片付けの順に、小さなコミットに分ける。どのコミットでも手順1の固定が通ること。粒度は `hymme:commit-flow`、実行は `hymme:micro-commit` に従う。作ったコミットを並べ直すなら `hymme:rebase-flow` の手順を使う。
+固定のテスト、削除、作り替え、後片付けの順に、小さなコミットに分ける。どのコミットでも手順1の固定が通ること。粒度は `hymme:commit-flow`、実行は `hymme:micro-commit` に従う。作ったコミットを並べ直すなら `hymme:rebase-flow` の手順を使う。
 
 ## 報告
 

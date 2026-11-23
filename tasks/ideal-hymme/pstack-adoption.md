@@ -34,7 +34,7 @@
 |---|---|---|---|
 | principle-attack-the-premise | 同じ前提に立つ修正が同じ検査で2回落ちたら、前提を書き出して直接確かめます。 | 取り込む | 4-16 |
 | principle-boundary-discipline | 検証とエラー処理を外部との境界に集め、内側は型を信じ、業務の判断を純粋関数に置きます。 | 取り込む | 5-06(境界で検証する)。純粋関数への切り出しは `skills/verifiability/SKILL.md:47` に既に在ります。 |
-| principle-build-the-lever | 手作業をやめ、作業を行うか証明する道具(スクリプト、codemod)を作ります。 | 取り込む | 2026-11-23 に方針を変更。強制はできないが、手順として `skills/_shared/scripted-work.md` に置いた。対象は同じ操作を多くの対象に当てる作業に絞った。 |
+| principle-build-the-lever | 手作業をやめ、作業を行うか証明する道具(スクリプト、codemod)を作ります。 | 取り込む | 2026-11-23 に方針を変更。強制はできないが、手順として `skills/_shared/scripted-work.md` に置いた。対象は、手で行うと誤る余地がある置き換え・移行・集計・点検に絞った(実装の編集と調査は外した)。 |
 | principle-encode-lessons-in-structure | 同じ指示を2回書いたら、文ではなく lint、検査、スクリプトにします。 | 取り込む | 5-10。1回目で検出網に埋め込む手順は `skills/review-feedback/SKILL.md:42` に既に在ります。 |
 | principle-exhaust-the-design-space | 前例の無い設計では、試作を2〜3個作って比べます。 | 取り込む | 2026-11-23 に方針を変更。`skills/_shared/prototype.md` の手順4(案が複数あるときは2〜3案を並べる)。 |
 | principle-experience-first | 実装の都合より使い手の体験を選び、機能を絞って磨きます。 | 取り込まない | 検証の流れの外です。製品の方針の話です。 |
