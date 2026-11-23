@@ -24,6 +24,8 @@ description: SessionStart hook が毎セッション注入する地図。hymme �
 - **バグ**: `superpowers:systematic-debugging` が基底。`hymme:gh-ci-investigate` と flakiness-*(`${CLAUDE_PLUGIN_ROOT}/skills/flakiness-<種別>/SKILL.md` を Read)は Phase 1 のツール。後段(結合・e2e・実ログ・CI・本番)で見つかった欠陥と、報告されたバグは `hymme:escape-flow`。実システムで再現し、拾えたはずの前の段にテストを足すまで、変更は統合できない。バグの報告と CI の失敗は、指示や細かい手順の説明を待たずに、ログ・エラー・失敗したテストを手がかりに自分で直す。systematic-debugging の「修正が3回失敗したら止めて相談する」は守る。
 - **訂正**: `superpowers:receiving-code-review` → `hymme:review-feedback`(水平展開・lessons)。
 - **台帳**: `hymme:ledger-flow`。plan 実行の ledger(executing-plans / SDD 共通)は superpowers 形式のまま。
+- **構造の変更**(リファクタリング、名前の変更、内部 API の作り替え): `hymme:refactor-flow`。先に振る舞いをテストで固定し、機械的な置き換えはスクリプトで行う。
+- **設計の判断を試作で決めるとき**: 捨てる前提で2〜3案を作って比べる(`${CLAUDE_PLUGIN_ROOT}/skills/_shared/prototype.md` を Read)。試作のコードは本体に入れない。
 - **履歴破壊**: `hymme:rebase-flow` / `hymme:reset-flow`(git-guard hook が arm なしを止める)。
 
 `hymme:verification-reviewer` は合格が返るまで往復させる(運用は `${CLAUDE_PLUGIN_ROOT}/skills/_shared/reviewer-loop.md`)。
@@ -47,7 +49,7 @@ description: SessionStart hook が毎セッション注入する地図。hymme �
 
 ## 委任先
 
-実装・設計(plan)・レビューを agent に委任する前に、作業中のリポジトリの `.claude/agents/` を見る。同種の agent があれば、その指示・ツールの制約・出力形式を優先して、リポジトリ側に委任する。無いときは上の地図に従う。地図に無いものは、過剰設計のレビューが `ponytail:ponytail-review` スキル、調査が組み込みの `Explore`。
+実装・設計(plan)・レビューを agent に委任する前に、作業中のリポジトリの `.claude/agents/` を見る。同種の agent があれば、その指示・ツールの制約・出力形式を優先して、リポジトリ側に委任する。無いときは上の地図に従う。地図に無いものは、過剰設計のレビューが `ponytail:ponytail-review` スキル、調査が組み込みの `Explore`。調査はコードを変えず、主張ごとに根拠を付けて返す(`${CLAUDE_PLUGIN_ROOT}/skills/_shared/investigation.md`)。
 
 ## 応答と文章
 

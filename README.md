@@ -56,6 +56,7 @@ flowchart TD
 | PR | finishing-a-development-branch | pr-create |
 | バグ | systematic-debugging | gh-ci-investigate(CI のログ集め)、escape-flow(欠陥を前の段で検出できるようにする) |
 | 訂正 | receiving-code-review | review-feedback(同種の問題を探し、再発を防ぐ) |
+| 構造の変更 | 規約なし | refactor-flow(振る舞いを変えずに構造を変える手順) |
 | 台帳 | plan 実行の ledger | ledger-flow(それ以外の進捗・引き継ぎ文書) |
 | 履歴 | using-git-worktrees | rebase-flow / reset-flow と git-guard hook |
 
@@ -132,6 +133,7 @@ hymme は次の2つのコマンドで更新する。自動更新は無効。反�
 | **review-feedback** | レビュー指摘や自分で見つけた失敗を直す。原因を調べ、同種の問題を探し、再発を防ぐ |
 | **ledger-flow** | 進捗の台帳と引き継ぎ文書の書き方 |
 | **rebase-flow** / **reset-flow** | 履歴を壊す操作の安全な手順。手順を踏まない実行は git-guard hook が止める |
+| **refactor-flow** | 振る舞いを変えずに構造を変える。先に振る舞いをテストで固定し、機械的な置き換えはスクリプトで行い、名前の変更の漏れを探す |
 | **pr-create** | PR を作る |
 | **escape-flow** | 後段で見つかった欠陥と報告されたバグを、検出できたはずの前の段で検出できるようにする |
 | **real-surface** | 実システムの動かし方をリポジトリごとに決め、完了前に実システムで確かめる |
@@ -437,3 +439,5 @@ hymme 自身の段の宣言は `tasks/stages.md`、実システムの定義は `
 - 実システムでの確かめ
 - 検証の鮮度
 - 確かさの段階
+- 振る舞いを変えない構造の変更(refactor-flow)
+- 捨てる前提の試作と、読み取りだけの調査(`skills/_shared/prototype.md`、`skills/_shared/investigation.md`)
