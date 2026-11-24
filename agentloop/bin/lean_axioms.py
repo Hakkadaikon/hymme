@@ -15,6 +15,9 @@ Exit: 0 every declaration rests on the standard axioms only, 1 some declaration 
 """
 
 import argparse
+import contextlib
+import io
+import os
 import subprocess
 import sys
 import tempfile
@@ -24,6 +27,7 @@ STANDARD = {"propext", "Classical.choice", "Quot.sound"}
 MARK = "HYMME-AXIOMS"
 MESSAGES = {
     "no_modules": "{project} に Lean のファイルが無い。",
+    "stale": "ビルドのあとにソースが変わっている: {mods}。検査が読むのはビルドの結果なので、先に `lake build` を通す。",
     "lean_failed": "Lean が公理を列挙できなかった(終了コード {code})。先に `lake build` を通す。"
     "ビルドの対象でない .lean がプロジェクトに在ると、ここで読めずに止まる。\n{tail}",
     "declared": "プロジェクトが公理を宣言している: {name}。証明するか、命題から外す。",
@@ -47,6 +51,18 @@ def modules(project):
         if rel.parts[0] == ".lake" or rel.name == "lakefile.lean":
             continue
         out.append(".".join(rel.with_suffix("").parts))
+    return out
+
+
+def stale(project, mods):
+    """Modules whose source is newer than what was built from it: Lean reads the built file and never looks."""
+    out = []
+    for mod in mods:
+        rel = Path(*mod.split("."))
+        built = Path(project) / ".lake" / "build" / "lib" / "lean" / rel.with_suffix(".olean")
+        source = Path(project) / rel.with_suffix(".lean")
+        if not built.exists() or built.stat().st_mtime < source.stat().st_mtime:
+            out.append(mod)
     return out
 
 
@@ -114,6 +130,19 @@ def selfcheck():
         ("a standard axiom is not reported", not any("propext" in p for p in problems(dirty)[0])),
         ("nested modules are imported", "import «A».«B»" in check_source(["A", "A.B"])),
     ]
+    with tempfile.TemporaryDirectory() as tmp:
+        source, built = Path(tmp) / "A.lean", Path(tmp) / ".lake" / "build" / "lib" / "lean" / "A.olean"
+        source.write_text("theorem t : 1 = 1 := rfl\n", encoding="utf-8")
+        cases.append(("a module that was never built is stale", stale(tmp, ["A"]) == ["A"]))
+        built.parent.mkdir(parents=True)
+        built.write_bytes(b"")
+        os.utime(source, (1000, 1000))
+        os.utime(built, (2000, 2000))
+        cases.append(("a module built after its last edit is fresh", stale(tmp, ["A"]) == []))
+        os.utime(source, (3000, 3000))
+        cases.append(("a module edited after the build is stale", stale(tmp, ["A"]) == ["A"]))
+        with contextlib.redirect_stderr(io.StringIO()):
+            cases.append(("a stale project is not checked", main([tmp]) == 2))
     bad = [what for what, ok in cases if not ok]
     print(msg("selfcheck_ng", what=", ".join(bad)) if bad else msg("selfcheck_ok"))
     return 1 if bad else 0
@@ -131,6 +160,10 @@ def main(argv=None):
     mods = modules(args.project)
     if not mods:
         print(msg("no_modules", project=args.project), file=sys.stderr)
+        return 2
+    old = stale(args.project, mods)
+    if old:
+        print(msg("stale", mods=", ".join(old)), file=sys.stderr)
         return 2
     with tempfile.NamedTemporaryFile("w", suffix=".lean", encoding="utf-8") as f:
         f.write(check_source(mods))
