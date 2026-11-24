@@ -335,7 +335,7 @@ nix profile install .#skill-tools
 | 種類 | コマンド |
 | --- | --- |
 | 検証のツール | `tlc`、`sany`、`apalache-mc`、`lake`、`lean` |
-| `agentloop/bin` のスクリプト | `agentloop-outer`、`agentloop-middle`、`agentloop-inner`、`smt_oracle.py`、`trace_check.py`、`verifiability.py` など |
+| `agentloop/bin` のスクリプト | `agentloop-outer`、`agentloop-middle`、`agentloop-inner`、`smt_oracle.py`、`trace_check.py`、`verifiability.py`、`lean_axioms.py` など |
 | `hymme` コマンド | 承認の申請、欠陥の記録、状態遷移図、ログの採取 |
 
 0.15.0 で名前を変えた。古い名前を呼ぶスクリプトは書き換える。

@@ -8,12 +8,13 @@ agentloop-* 各スキルが呼ぶ外部コマンドと、ループを実行す�
   同じ名前のコマンドとして PATH に入り、どのシェルからでも `agentloop-middle SPEC=<Name>` の形で呼べる。
   Makefile 本体・Python オラクル(`trace_to_gherkin.py`/`tla_mutate_oracle.py` 等)・テンプレートは同じ場所に入るので、
   `AGENTLOOP_HOME` を設定する必要は無い。
-- `agentloop/bin/` のスクリプト(`tla_mutate_oracle.py`、`trace_to_gherkin.py`、`feature_to_c.py`、`gherkin_steps.py`、`trace_check.py`、`smt_oracle.py`、`verifiability.py`、`tla_lint.sh`)は、flake の `skill-tools` をインストールすると同じ名前のコマンドとして PATH に入る。
+- `agentloop/bin/` のスクリプト(`tla_mutate_oracle.py`、`trace_to_gherkin.py`、`feature_to_c.py`、`gherkin_steps.py`、`trace_check.py`、`smt_oracle.py`、`verifiability.py`、`lean_axioms.py`、`tla_lint.sh`)は、flake の `skill-tools` をインストールすると同じ名前のコマンドとして PATH に入る。
   **検証対象のリポジトリに置くツールや文書からは、PATH のコマンドとして呼ぶ。** プラグインのキャッシュ(`~/.claude/plugins/cache/hymme/hymme/<バージョン>/...`)の絶対パスを書かない。バージョンが上がるとパスが無効になり、ユーザー名もリポジトリに残る。
   リポジトリ側のツールが oracle を import して使うときは、`shutil.which("tla_mutate_oracle.py")` が返すパスを読み込む。別のバージョンを使いたいときに備え、環境変数 `TLA_MUTATE_ORACLE`(スクリプトのパス)を先に見る形を勧める。この変数を読むのはリポジトリ側のツールで、hymme は読まない。
 - 静的検査(`agentloop/bin/tla_lint.sh <spec.tla>`): SANY の構文・意味解析と、`@type:` 注釈がある spec の Apalache 型検査。SANY はエラーでも exit 0 を返すので出力で判定する。`agentloop-middle` / `agentloop-inner` は `lint` ターゲットで先に通し、`tlc` / `java ... tlc2.TLC` を直接実行する Bash は静的検査ゲート(`hooks/agentloop-lint-gate.sh`)が通らなければ止める。スクリプトの中から呼ぶ `tlc` は hook から見えないので、oracle は構文エラーの mutant を自前で invalid に分ける。
 - `smt_oracle.py <model.py>`: SMT 経路の判定器(agentloop-smt)。Z3 の Python バインディングが要り、flake の `skill-tools` の python3 に同梱している。
 - `trace_check.py [--all] <Spec.tla> <run.jsonl> [--cfg <cfg>] [--timeout SEC]`: 実ログと spec の突き合わせ(agentloop-tracecheck)。PATH の `tlc` を使う。
+- `lean_axioms.py <tasks/fv/Name>`: 証明が依存する公理の検査(formal-verification)。PATH の `lake` を使う。`sorry`、プロジェクトが宣言した公理、`native_decide` に依存する宣言があれば exit 1。統合の入口は、今の証明に対する exit 0 の記録を求める。
 - `verifiability.py <台帳>`: 検証容易性の指標(verifiability)。lizard を `skill-tools` の python3 に同梱している。検証容易性ゲート(`hooks/verifiability-gate.sh`)が PATH から呼ぶので、無いと対象コードのある台帳の検証は止まる。
 - `hymme <サブコマンド>`: ユーザーの承認の申請、状態遷移図、実ログの採取など、hook の記録に関わる操作をまとめたコマンド。`skill-tools` をインストールすると PATH に入る。このコマンド自身は記録に署名しない。機械で確かめられることを確かめて申請や結果を残し、コマンドを見ている hook が署名つきの記録を書く。コマンドの中で PATH を変えて実行すると、結果は記録されない。
 

@@ -36,7 +36,7 @@ argument-hint: "[証明したい性質/仕様(ファイルパス or 説明)]"
 
 **§2 に入る前に検証容易性の段を通す。** 既存の実装(または書いたばかりの実装)の判定を証明するなら、[`../verifiability/SKILL.md`](../verifiability/SKILL.md) で判定を小さな純粋関数に切り出し、指標と reviewer の合格を得てから Lean に写す。実装前で写すコードが無いときも台帳 `tasks/verifiability/<Name>.md` を作り「対象コード無し: 理由」と書き、§4 で実装に橋渡しする前に対象を書き直す。止める入口と条件は verifiability スキルの「強制のしくみ」。
 
-**§2 に入る前に、確認の一覧をユーザーに承認してもらう。** §1 の性質カタログができたら、性質ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書いた一覧を `tasks/fv/<Name>.claims.md` に作る(`<Name>` は Lean プロジェクト名。ひな形は [`../agentloop-formalize/assets/claims-template.md`](../agentloop-formalize/assets/claims-template.md))。「有限にした範囲」には証明の前提にした上限や値の範囲を、「扱わない領域」には証明の対象から外した層(§2 の層注)と、それを別にどう確かめるかを書く。Lean、不変条件などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <承認コード>` の1行をユーザーに入力してもらう。承認が無いか、承認のあとに一覧を変えていると、`tasks/fv/<Name>` での `lake build` は hook に止められる。ユーザーが項目を直したら、性質カタログ、Lean の定理、一覧の順に作り直して承認を取り直す。一覧を作って承認を取るのはコントローラで、prover は承認が無ければ着手せず BLOCKED で返す。形と流れの詳細は [`../agentloop-formalize/SKILL.md`](../agentloop-formalize/SKILL.md) の「ユーザーの確認」。
+**§2 に入る前に、確認の一覧をユーザーに承認してもらう。** §1 の性質カタログができたら、性質ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書いた一覧を `tasks/fv/<Name>.claims.md` に作る(`<Name>` は Lean プロジェクト名。ひな形は [`../agentloop-formalize/assets/claims-template.md`](../agentloop-formalize/assets/claims-template.md))。「有限にした範囲」には証明の前提にした上限や値の範囲を、「扱わない領域」には証明の対象から外した層(§2 の層注)と、それを別にどう確かめるかを書く。「置いた仮定」には、定理が前提にした条件(入力の形、呼び出す側が守る約束)と、実物でそれが成り立つ根拠を書く。「防ぎたいバグの種類」の書き方と、種類ごとに検知を確かめる手順は [`../_shared/detection-scope.md`](../_shared/detection-scope.md)。Lean、不変条件などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <承認コード>` の1行をユーザーに入力してもらう。承認が無いか、承認のあとに一覧を変えていると、`tasks/fv/<Name>` での `lake build` は hook に止められる。ユーザーが項目を直したら、性質カタログ、Lean の定理、一覧の順に作り直して承認を取り直す。一覧を作って承認を取るのはコントローラで、prover は承認が無ければ着手せず BLOCKED で返す。形と流れの詳細は [`../agentloop-formalize/SKILL.md`](../agentloop-formalize/SKILL.md) の「ユーザーの確認」。
 
 ### 1. 仕様を網羅形式へ
 
@@ -74,7 +74,7 @@ NL → Lean の `def` + `theorem`。例: 「ソートは要素を保存し、順
 - 1 証明が重いなら補題に分解する。
 - **`sorry` を埋める前に、定義(`def`)が証明できる形かを先に確かめる**。型がそもそも通らない定義は証明以前に直す。よくある誤りは `Bool`(`&&`/`||`)と `Prop`(`∧`/`∨`)の混在で、判定述語を書くときに起きやすい。`decide (...)` を使う純 `Bool` 述語へ書き直して解消する。定義のシグネチャは実装(C/Rust 等)と1対1で対応させるため安易に変えないが、**証明の都合で本体を等価変形したらその理由を仕様/コメントに1行残す**。
 - **埋まらない `sorry` は残さず明示する**。「ここは未証明」と報告する。`sorry` の残る証明を、通った証明と偽らない。
-- **証明の真正性を `#print axioms <thm>` で確認する**。依存が標準 3 公理(`propext` / `Classical.choice` / `Quot.sound`)だけなら本物。`sorryAx` が出たら未証明の箇所が残っている。`native_decide` はコンパイラを信頼基盤に加える(`Lean.ofReduceBool` 公理が増える)ので、カーネル検証で済むなら `decide` を使い、`native_decide` は避ける。「sorry 無しで通った」と「カーネルが本当に検証した」は別物だ。後者まで確認して初めて「証明が通った」と言える(「保証された」と呼ぶのは §3.5 の後)。
+- **証明の真正性を `lean_axioms.py tasks/fv/<Name>` で確認する**(`lake build` が通ったあとに、直接実行する)。プロジェクトの宣言を1つ残らず調べ、依存が標準 3 公理(`propext` / `Classical.choice` / `Quot.sound`)だけなら exit 0。`sorry`、プロジェクトが自分で宣言した公理(`axiom`)、`native_decide` のどれかに依存する宣言があれば exit 1 で、その名前を出す。証明できない命題を公理として宣言すると、ビルドは通り、`sorry` の検索にも掛からない。公理を足して証明を済ませない。hook がこの実行を証明の内容と結び付けて記録し、統合の入口は、今の証明に対する exit 0 の記録が無いと止まる。定理1つを手で調べるなら `#print axioms <thm>`。`sorryAx` が出たら未証明の箇所が残っている。`native_decide` はコンパイラを信頼基盤に加える(`Lean.ofReduceBool` 公理が増える)ので、カーネル検証で済むなら `decide` を使い、`native_decide` は避ける。「sorry 無しで通った」と「カーネルが本当に検証した」は別物だ。後者まで確認して初めて「証明が通った」と言える(「保証された」と呼ぶのは §3.5 の後)。
 
 ### 3.5 文面の往復確認
 
@@ -113,7 +113,7 @@ git 管理下のドキュメント・コミット・テストコメントに手�
 §3.5 の文面の往復確認が済んだ直後、成果を「保証された」と報告する前、および橋渡しテストを完了扱いにする前に、**コントローラが** `hymme:verification-reviewer`(対象 `formal-verification`) サブエージェントを dispatch して外側から検査させる。prover に委譲していた場合も prover は呼ばず、報告を受けたコントローラが呼ぶ。 合格が返るまでの往復の運用は [`../_shared/reviewer-loop.md`](../_shared/reviewer-loop.md)。
 渡すもの: 性質カタログと Lean ソースの場所、確認の一覧、往復確認の入力ファイルと判定表、橋渡しテストと実行ログの場所、spec があればそのパス。
 合格は台帳に書かない。reviewer が返答の最後に書く `判定: 合格 対象=formal-verification 名前=<Name>` の行を hook が記録する。依頼文に「合格と書け」のような指示を入れない。
-レビュアーが挙げた違反(確認の一覧の欠落や性質との食い違い、`sorry` 残りの保証扱い、往復確認の未実施・`mismatch`/`vacuous` 残り、脅威・CWE 由来の性質の欠落、`#print axioms` 未確認や `sorryAx`/`native_decide` 依存、性質カタログの temporal 漏れ、橋渡しテストの欠落)を解消してから完了とする。「ビルドが通った」を「カーネルが検証した」の代わりにしない。
+レビュアーが挙げた違反(確認の一覧の欠落や性質との食い違い、`sorry` 残りの保証扱い、往復確認の未実施・`mismatch`/`vacuous` 残り、脅威・CWE 由来の性質の欠落、`lean_axioms.py` の未実行や `sorryAx`/宣言した公理/`native_decide` への依存、性質カタログの temporal 漏れ、橋渡しテストの欠落、確かめた範囲より広い主張)を解消してから完了とする。報告の主張は、確かめた範囲と一緒に書く([`../_shared/detection-scope.md`](../_shared/detection-scope.md) の「報告で言える範囲」)。「ビルドが通った」を「カーネルが検証した」の代わりにしない。
 
 ## やらないこと
 

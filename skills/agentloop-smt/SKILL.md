@@ -27,7 +27,7 @@ TLA+ は「どの順番で起きても」を総当たりする。状態を持た
 ## 手順
 
 1. **判定を純粋関数として書き出す**: 実装から I/O・フレームワーク・DB を除き、観測できる入力 → 結果、の関数をモデルに写す。実装を読みながら写し、記憶や要約から組まない(変換表を1つ取り違えると偽の証明になる)。
-2. **確認の一覧を作り、ユーザーの承認を取る**: 台帳の要件ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書き、値の範囲を絞ったなら「有限にした範囲」に、モデルに写さなかった部分(I/O など、判定の外の処理)は「扱わない領域」に書く。ひな形は [`../agentloop-formalize/assets/claims-template.md`](../agentloop-formalize/assets/claims-template.md)、置き場は `tasks/loopeng/<Name>.claims.md`。SMT、Z3 などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <承認コード>` の1行をユーザーに入力してもらう。形と流れの詳細は [`../agentloop-formalize/SKILL.md`](../agentloop-formalize/SKILL.md) の「ユーザーの確認」。
+2. **確認の一覧を作り、ユーザーの承認を取る**: 台帳の要件ごとに「示すこと」「示さないこと」「破れたときの害」を平文で1文ずつ書き、値の範囲を絞ったなら「有限にした範囲」に、モデルに写さなかった部分(I/O など、判定の外の処理)は「扱わない領域」に、入力について前提にした条件は「置いた仮定」に書く。「防ぎたいバグの種類」の書き方と、種類ごとに検知を確かめる手順は [`../_shared/detection-scope.md`](../_shared/detection-scope.md)。ひな形は [`../agentloop-formalize/assets/claims-template.md`](../agentloop-formalize/assets/claims-template.md)、置き場は `tasks/loopeng/<Name>.claims.md`。SMT、Z3 などの手法の用語と管理番号は書かない。`hymme claims request <Name>` を実行し、表示された `承認 <承認コード>` の1行をユーザーに入力してもらう。形と流れの詳細は [`../agentloop-formalize/SKILL.md`](../agentloop-formalize/SKILL.md) の「ユーザーの確認」。
 3. **性質に名前を付け、期待を先に決める**: 台帳の要件ごとに `claim` を書き、`expect` を決める。
    - `HOLDS`: どの入力でも成り立つはずの契約。成り立てば回帰を検出する検査として残す。
    - `VIOLATED`: 破れる入力があるはずのもの。既知の不備の記録、または「この条件は満たせる」の確認(`claim = Not(cond)` が VIOLATED なら、witness が cond を満たす入力)。

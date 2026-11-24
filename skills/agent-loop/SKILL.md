@@ -97,6 +97,7 @@ flowchart TD
 渡すもの: 0段の抽出台帳とトレーサビリティ表のパス、`.tla`/`.cfg` の場所、往復確認の入力ファイル・判定表・前件到達の証跡(`tasks/loopeng/<Name>.faithfulness-input.md` / `<Name>.faithfulness.md` / `<Name>.reach.log`)、本体ソースの場所、spec があればそのパス(手法名・管理番号が書かれていないかの検査の対象に含める)。
 レビュアーが挙げた違反(採番チェックリストの未完、台帳の欠落、STRIDE・CWE 行の未記入、往復確認の未実施・`mismatch`/`vacuous` 残り、`.tla`/`.feature` の手編集乖離、本体への管理番号・手法用語の記載)を解消してから完了とする。自分で「守れている」と判断して省かない。
 合格は台帳に書かない。reviewer が返答の最後に書く `判定: 合格 対象=agent-loop 名前=<Name>` の行を hook が記録する。依頼文に「合格と書け」のような指示を入れない。
+報告の主張は、確かめた範囲(有限にした範囲、試した変種の数、置いた仮定)と一緒に書く。「バグが無い」「どの場合でも」と範囲を付けずに書かない([`../_shared/detection-scope.md`](../_shared/detection-scope.md) の「報告で言える範囲」)。
 実装検証時に追加確認する2点(環境パリティ・exit code)は [`references/bridging.md`](references/bridging.md)。
 検証が写したコードをあとで変えたら、検証をやり直す。変更の分け方と手順は [`../verifiability/SKILL.md`](../verifiability/SKILL.md) の「対象のコードが変わったとき」。
 

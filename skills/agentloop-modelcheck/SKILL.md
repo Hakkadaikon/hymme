@@ -24,6 +24,8 @@ description: >
 
 > survivor の大半は **equivalent-mutant**(kill 不能)。見分け方・判定手順・打ち切り基準は [`references/mutation-oracle.md`](references/mutation-oracle.md)。「真の安全性 survivor が 0」で打ち切ってよい。
 
+mutation oracle の変種は機械的な書き換えで、ユーザーが防ぎたいバグの種類に当たるとは限らない。確認の一覧の「防ぎたいバグの種類」の行ごとに、その種類に当たる変更を spec に入れて TLC が反例を出すことを確かめる。検知できない種類は、時間を区切って spec を直すか、一覧で「未検証」にして承認を取り直す(手順は [`../_shared/detection-scope.md`](../_shared/detection-scope.md))。
+
 `agentloop-middle` が実行するのは上の2段まで。両方が緑になったら3段目に進む。3段目の入力ファイルと前件到達の証跡は式を書いた側(委譲していれば modeler)が作り、読み手の dispatch と判定はコントローラが行う。
 
 3. **文面の往復確認**: 初期状態・不変条件・temporal 性質・遷移の文面(入力の範囲は共有手順の手順 1)を独立した読み手に平文へ戻させ、EARS と突き合わせる。検査が緑でも、式が要件と違うことを言っていれば何も保証しない。手順・担当・判定は [`../_shared/faithfulness-check.md`](../_shared/faithfulness-check.md)。
