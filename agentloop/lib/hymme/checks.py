@@ -281,16 +281,18 @@ def integration(ctx, body=None):
     for name, paths in stale_names(ctx, root).items():
         if ctx.exempt("stale"):
             break
+        proof = proof_hash(root, name)
         ran = {
             entry_name(r["entry"])
             for r in ctx.recs("run", name=name, change=change)
             if r.get("exit") == 0
             and not r.get("inconclusive")
             # tasks/ is untracked, so the change id does not see an axiom added after the check
-            and (r["entry"] != "axioms" or r.get("proof") == proof_hash(root, name))
+            and (r["entry"] != "axioms" or r.get("proof") == proof)
         }
-        want = {entry_name(r["entry"]) for r in ctx.recs("run", name=name)} | {"verifiability"}
-        if proof_hash(root, name):
+        # a proof that was removed has nothing left to check, whatever ran on it before
+        want = {entry_name(r["entry"]) for r in ctx.recs("run", name=name)} - {"axioms"} | {"verifiability"}
+        if proof:
             want.add("axioms")  # the build passes on sorry, a declared axiom and native_decide alike
         if (root / "tasks" / "loopeng" / f"{name}.smt.py").exists():
             want.add("parity")  # 4-13: the real function and the model agree on the inputs that were tried

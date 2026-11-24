@@ -208,6 +208,12 @@ class LedgerTest(unittest.TestCase):
         # the word elsewhere in the list is not the assumption being stated
         self.assertTrue(ledgers.claims_problems(CLAIMS.replace("上限は 3 まで", "公平性のため上限は 3 まで"), fair))
 
+    def test_a_fairness_line_left_from_the_template_or_denying_it_states_nothing(self):
+        fair = "Spec == Init /\\ WF_vars(Next)\n"
+        none = "- 無し: 操作の順序にも外の仕組みにも前提を置かない"
+        for line in ("- <示すなら「公平性: …」と、実物でそう言える根拠>", "- 無し: 公平性は置かない"):
+            self.assertIn("公平性", "\n".join(ledgers.claims_problems(CLAIMS.replace(none, none + "\n" + line), fair)))
+
     def test_fairness_in_a_comment_of_the_spec_assumes_nothing(self):
         for spec in (
             "\\* WF_vars(Next) を外した\nSpec == Init\n",
@@ -631,11 +637,24 @@ class ManagedRepoTest(Repo):
         self.ran("./run-check.sh --all")
         self.assertIn("axioms", self.bash(self.pr)[1])
         self.ran("lean_axioms.py tasks/fv/Cart", 1)
+        self.assertIn(hook.AXIOMS_OK, (Path(__file__).parents[2] / "bin" / "lean_axioms.py").read_text("utf-8"))
         self.assertIn("axioms", self.bash(self.pr)[1])
-        self.ran("cd tasks/fv && python3 /opt/bin/lean_axioms.py Cart")
+        self.ran(
+            "lean_axioms.py tasks/fv/Cart 2>&1 | tail -3", 0, "holed は証明されていない前提に依存している: sorryAx。"
+        )
+        self.assertIn("axioms", self.bash(self.pr)[1])  # the pipe hid the exit code; the output did not say ok
+        self.ran("cd tasks/fv && python3 /opt/bin/lean_axioms.py Cart", 0, "1 個の宣言を調べた。" + hook.AXIOMS_OK)
         self.assertEqual(self.bash(self.pr)[0], 0)
         self.write("tasks/fv/Cart/Cart.lean", "axiom cheat : 1 = 2\n")  # the proof changed after the check
         self.assertIn("axioms", self.bash(self.pr)[1])
+
+    def test_a_proof_that_is_gone_asks_for_no_axiom_check(self):
+        self.write("tasks/fv/Cart/Cart.lean", "theorem t : 1 = 1 := rfl\n")
+        self.ran("lean_axioms.py tasks/fv/Cart", 0, hook.AXIOMS_OK)
+        shutil.rmtree(self.root / "tasks/fv/Cart")
+        self.ran("verifiability.py tasks/verifiability/Cart.md")
+        self.ran("./run-check.sh --all")
+        self.assertEqual(self.bash(self.pr)[0], 0)
 
     def test_a_run_recorded_under_the_old_command_name_asks_for_the_new_one(self):
         for entry in ("loop-middle", "loop-inner", "loop-outer"):  # written before the 0.15 rename

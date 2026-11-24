@@ -25,7 +25,8 @@ STANDARD = {"propext", "Classical.choice", "Quot.sound"}
 MARK = "HYMME-AXIOMS"
 MESSAGES = {
     "no_modules": "{project} に Lean のファイルが無い。",
-    "lean_failed": "Lean が公理を列挙できなかった(終了コード {code})。先に `lake build` を通す。\n{tail}",
+    "lean_failed": "Lean が公理を列挙できなかった(終了コード {code})。先に `lake build` を通す。"
+    "ビルドの対象でない .lean がプロジェクトに在ると、ここで読めずに止まる。\n{tail}",
     "declared": "プロジェクトが公理を宣言している: {name}。証明するか、命題から外す。",
     "uses": "{name} は証明されていない前提に依存している: {axioms}。",
     "ok": "{n} 個の宣言を調べた。依存する公理は標準の3つ(propext, Classical.choice, Quot.sound)だけ。",

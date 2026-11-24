@@ -48,6 +48,9 @@ PR_TOOL = re.compile(r"create_(pull|merge)_request", re.I)
 MAX_EXCEPTION_DAYS = 90
 
 
+AXIOMS_OK = "依存する公理は標準の3つ"  # what lean_axioms.py prints when every declaration passes
+
+
 def msg(code, /, **kw):
     """端末に出すメッセージをコードから引く(メッセージをこの表1か所に集める)。"""
     return MESSAGES.get(code, "未知のメッセージコード: " + code).format(**kw)
@@ -221,7 +224,7 @@ def post_tool(payload, key):
             rec["log"] = next((store.sha256_file(Path(at) / a) for a in args if a.endswith(".jsonl")), None)
         store.append("run", rec, cwd, key)
 
-    for verb, args, _c, _e in gate.commands:
+    for verb, args, at, _e in gate.commands:
         if verb == "verifiability.py":
             ledger = next((a for a in args if a.endswith(".md")), "")
             store.append(
@@ -232,10 +235,13 @@ def post_tool(payload, key):
             )
 
         if verb == "lean_axioms.py":
-            project = next((os.path.normpath(os.path.join(_c, a)) for a in args if not a.startswith("-")), "")
+            project = next((os.path.normpath(os.path.join(at, a)) for a in args if not a.startswith("-")), "")
             m = re.fullmatch(r"(.*)/tasks/fv/([^/]+)", project)
             if m:
-                rec = {"name": m.group(2), "entry": "axioms", "exit": code, "change": ctx.change()}
+                # a pipe or `|| true` hides the tool's exit code: a pass is the tool saying so
+                passed = code == 0 and AXIOMS_OK in text
+                rec = {"name": m.group(2), "entry": "axioms", "exit": 0 if passed else code or 1}
+                rec["change"] = ctx.change()
                 store.append("run", {**rec, "proof": checks.proof_hash(m.group(1), m.group(2))}, cwd, key)
 
     for name, prefix in ledgers.parity_commands(root).items():

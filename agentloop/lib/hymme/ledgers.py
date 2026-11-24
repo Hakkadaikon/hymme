@@ -111,10 +111,12 @@ def claims_problems(text, spec=""):
         if not [ln for ln in section(text, heading) if ln.strip() and not placeholder(ln)]:
             problems.append(f"「## {heading}」が空(無ければ「無し: 理由」と書く)")
     # a fairness condition leaves behaviours out of the check: the worker decides whether the real system keeps it
-    if assumes_fairness(spec) and not any("公平性" in ln for ln in section(text, "置いた仮定")):
+    if assumes_fairness(spec) and not any(
+        re.match(r"[-*]\s*公平性", ln) and not placeholder(ln) for ln in section(text, "置いた仮定")
+    ):
         problems.append(
             "検証の定義が公平性(実行できる操作は、いつかは実行される)を仮定しているのに、"
-            "「## 置いた仮定」に「公平性」の行が無い。実物でこの仮定が成り立つ根拠を書く"
+            "「## 置いた仮定」に「公平性」で始まる行が無い。実物でこの仮定が成り立つ根拠を書く"
         )
     leaked = sorted(set(METHOD_WORDS.findall(text)))
     if leaked:
