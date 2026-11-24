@@ -21,13 +21,16 @@ import os
 import subprocess
 import sys
 import tempfile
+import unittest.mock
 from pathlib import Path
 
 STANDARD = {"propext", "Classical.choice", "Quot.sound"}
 MARK = "HYMME-AXIOMS"
 MESSAGES = {
     "no_modules": "{project} に Lean のファイルが無い。",
-    "stale": "ビルドのあとにソースが変わっている: {mods}。検査が読むのはビルドの結果なので、先に `lake build` を通す。",
+    "stale": "ビルドの結果が無いか、ソースより古い: {mods}。"
+    "検査が読むのはビルドの結果なので、先に `lake build` を通す。"
+    "通しても同じなら、そのファイルはビルドの対象に入っていない(ライブラリのルートの import に足す)。",
     "lean_failed": "Lean が公理を列挙できなかった(終了コード {code})。先に `lake build` を通す。"
     "ビルドの対象でない .lean がプロジェクトに在ると、ここで読めずに止まる。\n{tail}",
     "declared": "プロジェクトが公理を宣言している: {name}。証明するか、命題から外す。",
@@ -141,8 +144,20 @@ def selfcheck():
         cases.append(("a module built after its last edit is fresh", stale(tmp, ["A"]) == []))
         os.utime(source, (3000, 3000))
         cases.append(("a module edited after the build is stale", stale(tmp, ["A"]) == ["A"]))
-        with contextlib.redirect_stderr(io.StringIO()):
-            cases.append(("a stale project is not checked", main([tmp]) == 2))
+
+        def exit_with(code, output):
+            """main() on a fresh build, with Lean answering <output> and exiting <code>."""
+            lean = subprocess.CompletedProcess([], code, stdout=output, stderr="")
+            with unittest.mock.patch.object(subprocess, "run", return_value=lean):
+                with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                    return main([tmp])
+
+        cases.append(("a stale project is not checked", exit_with(0, clean) == 2))
+        os.utime(built, (4000, 4000))
+        cases.append(("Lean printing nothing is not a pass", exit_with(0, "") == 2))
+        cases.append(("Lean failing is not a pass", exit_with(1, clean) == 2))
+        cases.append(("an unproven premise exits 1", exit_with(0, dirty) == 1))
+        cases.append(("standard axioms only exits 0", exit_with(0, clean) == 0))
     bad = [what for what, ok in cases if not ok]
     print(msg("selfcheck_ng", what=", ".join(bad)) if bad else msg("selfcheck_ok"))
     return 1 if bad else 0

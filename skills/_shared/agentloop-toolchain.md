@@ -14,7 +14,7 @@ agentloop-* 各スキルが呼ぶ外部コマンドと、ループを実行す�
 - 静的検査(`agentloop/bin/tla_lint.sh <spec.tla>`): SANY の構文・意味解析と、`@type:` 注釈がある spec の Apalache 型検査。SANY はエラーでも exit 0 を返すので出力で判定する。`agentloop-middle` / `agentloop-inner` は `lint` ターゲットで先に通し、`tlc` / `java ... tlc2.TLC` を直接実行する Bash は静的検査ゲート(`hooks/agentloop-lint-gate.sh`)が通らなければ止める。スクリプトの中から呼ぶ `tlc` は hook から見えないので、oracle は構文エラーの mutant を自前で invalid に分ける。
 - `smt_oracle.py <model.py>`: SMT 経路の判定器(agentloop-smt)。Z3 の Python バインディングが要り、flake の `skill-tools` の python3 に同梱している。
 - `trace_check.py [--all] <Spec.tla> <run.jsonl> [--cfg <cfg>] [--timeout SEC]`: 実ログと spec の突き合わせ(agentloop-tracecheck)。PATH の `tlc` を使う。
-- `lean_axioms.py <tasks/fv/Name>`: 証明が依存する公理の検査(formal-verification)。PATH の `lake` を使う。`sorry`、プロジェクトが宣言した公理、`native_decide` に依存する宣言があれば exit 1。統合の入口は、検証容易性の台帳が写したコードをそのブランチが変えているとき、今の証明に対する合格の記録を求める。
+- `lean_axioms.py <tasks/fv/Name>`: 証明が依存する公理の検査(formal-verification)。PATH の `lake` を使う。`sorry`、プロジェクトが宣言した公理、`native_decide` に依存する宣言があれば exit 1、ビルドが古いか Lean が失敗すれば exit 2。単独で実行する(実行の決まりは formal-verification の SKILL.md の §3)。統合の入口は、検証容易性の台帳が写したコードをそのブランチが変えているとき、今の証明に対する合格の記録を求める。
 - `verifiability.py <台帳>`: 検証容易性の指標(verifiability)。lizard を `skill-tools` の python3 に同梱している。検証容易性ゲート(`hooks/verifiability-gate.sh`)が PATH から呼ぶので、無いと対象コードのある台帳の検証は止まる。
 - `hymme <サブコマンド>`: ユーザーの承認の申請、状態遷移図、実ログの採取など、hook の記録に関わる操作をまとめたコマンド。`skill-tools` をインストールすると PATH に入る。このコマンド自身は記録に署名しない。機械で確かめられることを確かめて申請や結果を残し、コマンドを見ている hook が署名つきの記録を書く。コマンドの中で PATH を変えて実行すると、結果は記録されない。
 
