@@ -657,7 +657,9 @@ class ManagedRepoTest(Repo):
         self.ran("lean_axioms.py tasks/fv/Cart; lean_axioms.py tasks/fv/Other", 0, hook.AXIOMS_OK)
         self.assertIn("axioms", self.bash(self.pr)[1])
         # nor may another command supply them: an old passing output shown after a failing check
-        self.ran("lean_axioms.py tasks/fv/Cart; cat tasks/fv/Cart.axioms.txt", 0, hook.AXIOMS_OK)
+        told = self.ran("lean_axioms.py tasks/fv/Cart; cat tasks/fv/Cart.axioms.txt", 0, hook.AXIOMS_OK)[2]
+        self.assertIn("additionalContext", told)  # the tool printed ok: say why the record is a failure
+        self.assertIn("単独", told)
         self.assertIn("axioms", self.bash(self.pr)[1])
 
     def test_a_proof_that_is_gone_asks_for_no_axiom_check(self):
