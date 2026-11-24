@@ -100,12 +100,12 @@ def selfcheck():
         return "".join("\t".join((MARK, *row.split("|"))) + "\n" for row in rows)
 
     clean = out("seen|good", "uses|good|propext", "uses|good|Quot.sound") + "noise\n"
-    dirty = out(
-        "seen|Demo.cheat", "declared|Demo.cheat", "uses|Demo.cheat|Demo.cheat",
-        "seen|viaAxiom", "uses|viaAxiom|Demo.cheat",
-        "seen|holed", "uses|holed|sorryAx", "uses|holed|propext",
-        "seen|«my thm»", "uses|«my thm»|sorryAx",
-    )  # fmt: skip
+    dirty = (
+        out("seen|Demo.cheat", "declared|Demo.cheat", "uses|Demo.cheat|Demo.cheat")
+        + out("seen|viaAxiom", "uses|viaAxiom|Demo.cheat")
+        + out("seen|holed", "uses|holed|sorryAx", "uses|holed|propext")
+        + out("seen|«my thm»", "uses|«my thm»|sorryAx")
+    )
     cases = [
         ("clean output passes", problems(clean) == ([], 1)),
         ("a declared axiom is reported once", len([p for p in problems(dirty)[0] if "Demo.cheat" in p]) == 1),

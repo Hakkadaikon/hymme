@@ -112,7 +112,7 @@ def claims_problems(text, spec=""):
             problems.append(f"「## {heading}」が空(無ければ「無し: 理由」と書く)")
     # a fairness condition leaves behaviours out of the check: the worker decides whether the real system keeps it
     if assumes_fairness(spec) and not any(
-        re.match(r"[-*]\s*公平性", ln) and not placeholder(ln) for ln in section(text, "置いた仮定")
+        re.match(r"\s*[-*]\s*公平性(?![::]\s*無し)", ln) and not placeholder(ln) for ln in section(text, "置いた仮定")
     ):
         problems.append(
             "検証の定義が公平性(実行できる操作は、いつかは実行される)を仮定しているのに、"

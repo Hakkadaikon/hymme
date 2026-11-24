@@ -211,7 +211,7 @@ class LedgerTest(unittest.TestCase):
     def test_a_fairness_line_left_from_the_template_or_denying_it_states_nothing(self):
         fair = "Spec == Init /\\ WF_vars(Next)\n"
         none = "- 無し: 操作の順序にも外の仕組みにも前提を置かない"
-        for line in ("- <示すなら「公平性: …」と、実物でそう言える根拠>", "- 無し: 公平性は置かない"):
+        for line in ("- <示すなら「公平性: …」と、実物でそう言える根拠>", "- 無し: 公平性は置かない", "- 公平性: 無し"):
             self.assertIn("公平性", "\n".join(ledgers.claims_problems(CLAIMS.replace(none, none + "\n" + line), fair)))
 
     def test_fairness_in_a_comment_of_the_spec_assumes_nothing(self):
@@ -661,6 +661,14 @@ class ManagedRepoTest(Repo):
         self.assertIn("additionalContext", told)  # the tool printed ok: say why the record is a failure
         self.assertIn("単独", told)
         self.assertIn("axioms", self.bash(self.pr)[1])
+        # the ok line went to a file: the record fails, and the hook says so once
+        told = self.ran("lean_axioms.py tasks/fv/Cart > tasks/fv/Cart.axioms.txt")[2]
+        self.assertEqual(len(told.splitlines()), 1)
+        self.assertIn("単独", told)
+        self.assertEqual(
+            len(self.ran("lean_axioms.py tasks/fv/Cart; lean_axioms.py tasks/fv/Other")[2].splitlines()), 1
+        )
+        self.assertEqual(self.ran("lean_axioms.py tasks/fv/Cart", 1)[2], "")  # a plain failure needs no note
 
     def test_a_proof_that_is_gone_asks_for_no_axiom_check(self):
         self.write("tasks/fv/Cart/Cart.lean", "theorem t : 1 = 1 := rfl\n")

@@ -31,8 +31,9 @@ MESSAGES = {
     "approve_version": "hymme: ツール(バージョン {tool})と hook(バージョン {hook})が食い違っています。両方を同じバージョンに更新してください。",
     "escape_opened": "hymme: {stage} の段のコマンドが失敗したので、欠陥の記録 {id} を開きました({path})。"
     "拾えたはずの前の段にテストを足し、`hymme escape verify {id}` を通すまで、変更は統合できません。",
-    "axioms_not_alone": "hymme: lean_axioms.py をほかのコマンドと一緒に実行したので、結果を不合格として記録しました。"
-    "どのコマンドの終了コードと出力かを区別できません。lean_axioms.py だけを単独で実行してください(cd は付けてよい)。",
+    "axioms_not_alone": "hymme: lean_axioms.py の合格を確かめられなかったので、結果を不合格として記録しました。"
+    "ほかのコマンドと一緒に実行したか、出力をファイルへ向けています。どのコマンドの終了コードと出力かを区別できません。"
+    "lean_axioms.py だけを単独で、リダイレクトを付けずに実行してください(cd は付けてよい)。",
     "path_tampered": "hymme: コマンドの中で PATH を変えているので、hymme のツールの結果は記録しません。PATH を変えずに実行してください。",
 }
 
@@ -226,6 +227,7 @@ def post_tool(payload, key):
             rec["log"] = next((store.sha256_file(Path(at) / a) for a in args if a.endswith(".jsonl")), None)
         store.append("run", rec, cwd, key)
 
+    unheard = False
     for verb, args, at, _e in gate.commands:
         if verb == "verifiability.py":
             ledger = next((a for a in args if a.endswith(".md")), "")
@@ -251,9 +253,10 @@ def post_tool(payload, key):
                     "proof": checks.proof_hash(m.group(1), m.group(2)),
                 }
                 store.append("run", rec, cwd, key)
-                if not alone:
-                    event = payload.get("hook_event_name", "PostToolUse")
-                    emit(system=msg("axioms_not_alone"), context=msg("axioms_not_alone"), event=event)
+                unheard = unheard or (code == 0 and rec["exit"] != 0)
+    if unheard:  # the command succeeded and the record says failed: nothing else would tell the agent why
+        event = payload.get("hook_event_name", "PostToolUse")
+        emit(system=msg("axioms_not_alone"), context=msg("axioms_not_alone"), event=event)
 
     for name, prefix in ledgers.parity_commands(root).items():
         if command.strip().startswith(prefix):
