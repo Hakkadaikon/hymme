@@ -15,7 +15,6 @@ Exit: 0 every declaration rests on the standard axioms only, 1 some declaration 
 """
 
 import argparse
-import re
 import subprocess
 import sys
 import tempfile
@@ -64,11 +63,11 @@ run_cmd do
   for (n, info) in env.constants.map₁.toList do
     let some idx := env.getModuleIdxFor? n | continue
     if !mine.contains env.header.moduleNames[idx.toNat]! then continue
-    IO.println s!"{MARK} seen {{n}}"
+    IO.println s!"{MARK}\\tseen\\t{{n}}"
     if let .axiomInfo _ := info then
-      IO.println s!"{MARK} declared {{n}}"
+      IO.println s!"{MARK}\\tdeclared\\t{{n}}"
     for a in (← liftCoreM (collectAxioms n)) do
-      IO.println s!"{MARK} uses {{n}} {{a}}"
+      IO.println s!"{MARK}\\tuses\\t{{n}}\\t{{a}}"
 """
 
 
@@ -76,10 +75,10 @@ def problems(output):
     """(reasons to stop, number of declarations seen) from the output of the check file."""
     declared, uses, seen = [], {}, 0
     for line in output.splitlines():
-        m = re.match(rf"{MARK} (seen|declared|uses) (\S+)(?: (\S+))?$", line)
-        if not m:
+        # tab-separated: a Lean name may hold spaces («my thm»)
+        mark, kind, name, axiom = (line.split("\t") + [None] * 4)[:4]
+        if mark != MARK or not name:
             continue
-        kind, name, axiom = m.groups()
         if kind == "seen":
             seen += 1
         elif kind == "declared":
@@ -97,16 +96,21 @@ def problems(output):
 
 
 def selfcheck():
-    clean = f"{MARK} seen good\n{MARK} uses good propext\n{MARK} uses good Quot.sound\nnoise\n"
-    dirty = (
-        f"{MARK} seen Demo.cheat\n{MARK} declared Demo.cheat\n{MARK} uses Demo.cheat Demo.cheat\n"
-        f"{MARK} seen viaAxiom\n{MARK} uses viaAxiom Demo.cheat\n"
-        f"{MARK} seen holed\n{MARK} uses holed sorryAx\n{MARK} uses holed propext\n"
-    )
+    def out(*rows):
+        return "".join("\t".join((MARK, *row.split("|"))) + "\n" for row in rows)
+
+    clean = out("seen|good", "uses|good|propext", "uses|good|Quot.sound") + "noise\n"
+    dirty = out(
+        "seen|Demo.cheat", "declared|Demo.cheat", "uses|Demo.cheat|Demo.cheat",
+        "seen|viaAxiom", "uses|viaAxiom|Demo.cheat",
+        "seen|holed", "uses|holed|sorryAx", "uses|holed|propext",
+        "seen|«my thm»", "uses|«my thm»|sorryAx",
+    )  # fmt: skip
     cases = [
         ("clean output passes", problems(clean) == ([], 1)),
         ("a declared axiom is reported once", len([p for p in problems(dirty)[0] if "Demo.cheat" in p]) == 1),
         ("sorry is reported", any("holed" in p and "sorryAx" in p for p in problems(dirty)[0])),
+        ("a name with a space is reported", any("«my thm»" in p for p in problems(dirty)[0])),
         ("a standard axiom is not reported", not any("propext" in p for p in problems(dirty)[0])),
         ("nested modules are imported", "import «A».«B»" in check_source(["A", "A.B"])),
     ]

@@ -238,9 +238,9 @@ def post_tool(payload, key):
             project = next((os.path.normpath(os.path.join(at, a)) for a in args if not a.startswith("-")), "")
             m = re.fullmatch(r"(.*)/tasks/fv/([^/]+)", project)
             if m:
-                # a pipe or `|| true` hides the tool's exit code: a pass is the tool saying so. With two
-                # checks in one command, the exit code and the ok line may both belong to the other one.
-                alone = [v for v, _a, _c, _e in gate.commands].count(verb) == 1
+                # a pipe or `|| true` hides the tool's exit code: a pass is the tool saying so. With anything
+                # else in the command, the exit code and the ok line may both belong to that other thing.
+                alone = [v for v, _a, _c, _e in gate.commands if v != "cd"] == [verb]
                 rec = {
                     "name": m.group(2),
                     "entry": "axioms",

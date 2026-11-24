@@ -656,6 +656,9 @@ class ManagedRepoTest(Repo):
         # the exit code and the ok line may both belong to the other project
         self.ran("lean_axioms.py tasks/fv/Cart; lean_axioms.py tasks/fv/Other", 0, hook.AXIOMS_OK)
         self.assertIn("axioms", self.bash(self.pr)[1])
+        # nor may another command supply them: an old passing output shown after a failing check
+        self.ran("lean_axioms.py tasks/fv/Cart; cat tasks/fv/Cart.axioms.txt", 0, hook.AXIOMS_OK)
+        self.assertIn("axioms", self.bash(self.pr)[1])
 
     def test_a_proof_that_is_gone_asks_for_no_axiom_check(self):
         self.write("tasks/fv/Cart/Cart.lean", "theorem t : 1 = 1 := rfl\n")
