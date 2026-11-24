@@ -231,6 +231,13 @@ def post_tool(payload, key):
                 key,
             )
 
+        if verb == "lean_axioms.py":
+            project = next((os.path.normpath(os.path.join(_c, a)) for a in args if not a.startswith("-")), "")
+            m = re.fullmatch(r"(.*)/tasks/fv/([^/]+)", project)
+            if m:
+                rec = {"name": m.group(2), "entry": "axioms", "exit": code, "change": ctx.change()}
+                store.append("run", {**rec, "proof": checks.proof_hash(m.group(1), m.group(2))}, cwd, key)
+
     for name, prefix in ledgers.parity_commands(root).items():
         if command.strip().startswith(prefix):
             store.append("run", {"name": name, "entry": "parity", "exit": code, "change": ctx.change()}, cwd, key)

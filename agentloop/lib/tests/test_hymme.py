@@ -33,6 +33,10 @@ CLAIMS = """# 確認の一覧
 ## 扱わない領域
 
 - 無し: 状態は数1つだけ
+
+## 置いた仮定
+
+- 無し: 操作の順序にも外の仕組みにも前提を置かない
 """
 
 EXTRACT = """# 抽出台帳
@@ -190,6 +194,28 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(ledgers.claims_problems(CLAIMS.replace("数は上限以下", "数 n は n < 4 を保つ")), [])
         self.assertTrue(ledgers.claims_problems(CLAIMS.replace("数は上限以下", "<検証が示すこと>")))
 
+    def test_claims_list_needs_the_assumptions_it_rests_on(self):
+        self.assertIn("置いた仮定", "\n".join(ledgers.claims_problems(CLAIMS.split("## 置いた仮定")[0])))
+
+    def test_a_spec_that_assumes_fairness_needs_the_assumption_in_the_list(self):
+        fair = "Spec == Init /\\ [][Next]_vars /\\ WF_vars(Next)\n"
+        self.assertIn("公平性", "\n".join(ledgers.claims_problems(CLAIMS, fair)))
+        self.assertIn("公平性", "\n".join(ledgers.claims_problems(CLAIMS, fair.replace("WF_", "SF_"))))
+        said = CLAIMS.replace(
+            "- 無し: 操作の順序にも外の仕組みにも前提を置かない", "- 公平性: 実行できる操作は、いつかは実行される"
+        )
+        self.assertEqual(ledgers.claims_problems(said, fair), [])
+        # the word elsewhere in the list is not the assumption being stated
+        self.assertTrue(ledgers.claims_problems(CLAIMS.replace("上限は 3 まで", "公平性のため上限は 3 まで"), fair))
+
+    def test_fairness_in_a_comment_of_the_spec_assumes_nothing(self):
+        for spec in (
+            "\\* WF_vars(Next) を外した\nSpec == Init\n",
+            "(* SF_vars(Next)\n を外した *)\nSpec == Init\n",
+            "",
+        ):
+            self.assertEqual(ledgers.claims_problems(CLAIMS, spec), [])
+
     def test_claims_list_without_a_table_or_a_column(self):
         self.assertEqual(len(ledgers.claims_problems("# x\n")), 1)
         self.assertIn("示さないこと", "\n".join(ledgers.claims_problems(CLAIMS.replace("| 示さないこと ", ""))))
@@ -299,6 +325,14 @@ class ClaimsGateTest(Repo):
         self.assertEqual(self.bash("cd tasks/loopeng && tlc Cart.tla")[0], 0)
         self.write("tasks/loopeng/Cart.claims.md", CLAIMS.replace("3 まで", "5 まで"))
         self.assertEqual(self.bash(self.entry)[0], 2)
+
+    def test_a_fairness_assumption_the_list_leaves_out_stops_the_request_and_the_entry(self):
+        self.write("tasks/loopeng/Cart.tla", "Spec == Init /\\ [][Next]_vars /\\ WF_vars(Next)\n")
+        self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
+        code, text = self.cli("claims", "request", "Cart")
+        self.assertEqual(code, 1)
+        self.assertIn("公平性", text)
+        self.assertIn("公平性", self.bash(self.entry)[1])
 
     def test_approval_needs_the_whole_input_and_a_known_code(self):
         self.write("tasks/loopeng/Cart.claims.md", CLAIMS)
@@ -590,6 +624,18 @@ class ManagedRepoTest(Repo):
         self.ran("verifiability.py tasks/verifiability/Cart.md")
         self.ran("./run-check.sh --all")
         self.assertEqual(self.bash(self.pr)[0], 0)
+
+    def test_a_proof_needs_its_axioms_checked_as_it_stands(self):
+        self.write("tasks/fv/Cart/Cart.lean", "theorem t : 1 = 1 := rfl\n")
+        self.ran("verifiability.py tasks/verifiability/Cart.md")
+        self.ran("./run-check.sh --all")
+        self.assertIn("axioms", self.bash(self.pr)[1])
+        self.ran("lean_axioms.py tasks/fv/Cart", 1)
+        self.assertIn("axioms", self.bash(self.pr)[1])
+        self.ran("cd tasks/fv && python3 /opt/bin/lean_axioms.py Cart")
+        self.assertEqual(self.bash(self.pr)[0], 0)
+        self.write("tasks/fv/Cart/Cart.lean", "axiom cheat : 1 = 2\n")  # the proof changed after the check
+        self.assertIn("axioms", self.bash(self.pr)[1])
 
     def test_a_run_recorded_under_the_old_command_name_asks_for_the_new_one(self):
         for entry in ("loop-middle", "loop-inner", "loop-outer"):  # written before the 0.15 rename

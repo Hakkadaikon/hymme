@@ -105,8 +105,9 @@ def claims(ctx):
         text = ledgers.read(path)
         if text is None:
             out.append(msg("claims_missing", path=path, name=name))
-        elif ledgers.claims_problems(text):
-            out.append(msg("claims_invalid", path=path, why="; ".join(ledgers.claims_problems(text))))
+        elif ledgers.claims_problems(text, ledgers.claims_spec(root, name)):
+            why = "; ".join(ledgers.claims_problems(text, ledgers.claims_spec(root, name)))
+            out.append(msg("claims_invalid", path=path, why=why))
         elif not approved(ctx, root, name):
             out.append(msg("claims_unapproved", name=name))
         elif _kind == "trace_check" and chart_problem(ctx, root, name):
@@ -221,6 +222,15 @@ def entry_name(entry):
     return cmdparse.OLD_LOOPS.get(entry, entry)
 
 
+def proof_hash(root, name):
+    """What the Lean proof of <name> says now (None without one): an axiom check counts for this text only."""
+    project = Path(root) / "tasks" / "fv" / name
+    files = sorted(p for p in project.rglob("*.lean") if ".lake" not in p.parts)
+    if not files:
+        return None
+    return ledgers.sha("".join(f"{p.relative_to(project)}:{store.sha256_file(p)}\n" for p in files))
+
+
 def stale_names(ctx, root):
     """Names whose mirrored code this branch changed (1-15, 1-16)."""
     changed = store.changed_files(ctx.cwd, ctx.ref)
@@ -274,9 +284,14 @@ def integration(ctx, body=None):
         ran = {
             entry_name(r["entry"])
             for r in ctx.recs("run", name=name, change=change)
-            if r.get("exit") == 0 and not r.get("inconclusive")
+            if r.get("exit") == 0
+            and not r.get("inconclusive")
+            # tasks/ is untracked, so the change id does not see an axiom added after the check
+            and (r["entry"] != "axioms" or r.get("proof") == proof_hash(root, name))
         }
         want = {entry_name(r["entry"]) for r in ctx.recs("run", name=name)} | {"verifiability"}
+        if proof_hash(root, name):
+            want.add("axioms")  # the build passes on sorry, a declared axiom and native_decide alike
         if (root / "tasks" / "loopeng" / f"{name}.smt.py").exists():
             want.add("parity")  # 4-13: the real function and the model agree on the inputs that were tried
         need = sorted(want - ran - {"trace_check", cmdparse.LOOP_INNER, cmdparse.LOOP_OUTER})

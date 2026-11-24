@@ -69,7 +69,7 @@ def claims(args):
     text = ledgers.read(path)
     if text is None:
         return fail("claims_missing", path=path)
-    problems = ledgers.claims_problems(text)
+    problems = ledgers.claims_problems(text, ledgers.claims_spec(root, args.name))
     if problems:
         return fail("claims_invalid", path=path, why="\n".join("- " + p for p in problems))
     if args.action == "check":

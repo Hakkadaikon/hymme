@@ -55,7 +55,7 @@
       # repository can call them without pointing at a versioned plugin cache.
       agentloopTools = pkgs.runCommand "hymme-agentloop-tools" { buildInputs = [ python pkgs.bashNonInteractive ]; } ''
         mkdir -p $out/bin
-        install -m 755 ${./agentloop/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability}.py ${./agentloop/bin}/tla_lint.sh ${./agentloop/bin}/hymme ${./agentloop/bin}/agentloop-{outer,middle,inner} $out/bin/
+        install -m 755 ${./agentloop/bin}/{tla_mutate_oracle,trace_to_gherkin,feature_to_c,gherkin_steps,trace_check,smt_oracle,verifiability,lean_axioms}.py ${./agentloop/bin}/tla_lint.sh ${./agentloop/bin}/hymme ${./agentloop/bin}/agentloop-{outer,middle,inner} $out/bin/
         # agentloop-* は1つ上の階層の Makefile.agentloop と templates を読む
         cp ${./agentloop/Makefile.agentloop} $out/Makefile.agentloop
         cp -r ${./agentloop/templates} $out/templates

@@ -78,7 +78,18 @@ def claims_path(root, name):
     return Path(root) / "tasks" / "loopeng" / f"{name}.claims.md"
 
 
-def claims_problems(text):
+def claims_spec(root, name):
+    """The spec the claims list of <name> speaks for ("" before it is written, and for a proof)."""
+    return read(Path(root) / "tasks" / "loopeng" / f"{name}.tla") or ""
+
+
+def assumes_fairness(spec):
+    """Whether a spec narrows the behaviours it checks with WF_/SF_ (comments aside)."""
+    code = re.sub(r"\(\*.*?\*\)", "", spec, flags=re.S)
+    return bool(re.search(r"\b[WS]F_", re.sub(r"\\\*.*", "", code)))
+
+
+def claims_problems(text, spec=""):
     """Why a claims list cannot be shown to a worker yet ([] when it can)."""
     problems = []
     rows = [ln for ln in section(text, "実証する項目") if ln.startswith("|") and not re.match(r"\|\s*[-:]+", ln)]
@@ -96,9 +107,15 @@ def claims_problems(text):
         for field in ("要件", *CLAIM_FIELDS):
             if not row[header.index(field)] or placeholder(row[header.index(field)]):
                 problems.append(f"「{row[header.index('要件')] or '?'}」の「{field}」が空")
-    for heading in ("有限にした範囲", "扱わない領域"):
+    for heading in ("有限にした範囲", "扱わない領域", "置いた仮定"):
         if not [ln for ln in section(text, heading) if ln.strip() and not placeholder(ln)]:
             problems.append(f"「## {heading}」が空(無ければ「無し: 理由」と書く)")
+    # a fairness condition leaves behaviours out of the check: the worker decides whether the real system keeps it
+    if assumes_fairness(spec) and not any("公平性" in ln for ln in section(text, "置いた仮定")):
+        problems.append(
+            "検証の定義が公平性(実行できる操作は、いつかは実行される)を仮定しているのに、"
+            "「## 置いた仮定」に「公平性」の行が無い。実物でこの仮定が成り立つ根拠を書く"
+        )
     leaked = sorted(set(METHOD_WORDS.findall(text)))
     if leaked:
         problems.append("手法の用語か管理番号がある: " + ", ".join(leaked))

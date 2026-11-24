@@ -25,13 +25,13 @@ ng() {
   fail=1
 }
 
-for tool in tla_mutate_oracle.py trace_to_gherkin.py feature_to_c.py trace_check.py smt_oracle.py verifiability.py tla_lint.sh hymme agentloop-outer agentloop-middle agentloop-inner; do
+for tool in tla_mutate_oracle.py trace_to_gherkin.py feature_to_c.py trace_check.py smt_oracle.py verifiability.py lean_axioms.py tla_lint.sh hymme agentloop-outer agentloop-middle agentloop-inner; do
   if [ -x "$bin/$tool" ]; then ok "$(msg installed "$tool")"; else ng "$(msg missing "$tool")"; fi
 done
 
 # python のスクリプトが PATH から起動できる(shebang が nix の python を指す)
 if "$bin/tla_mutate_oracle.py" --help >/dev/null 2>&1; then ok 'tla_mutate_oracle.py --help'; else ng "$(msg failed 'tla_mutate_oracle.py --help')"; fi
-for tool in trace_to_gherkin.py feature_to_c.py trace_check.py smt_oracle.py verifiability.py; do
+for tool in trace_to_gherkin.py feature_to_c.py trace_check.py smt_oracle.py verifiability.py lean_axioms.py; do
   if "$bin/$tool" --selfcheck >/dev/null 2>&1; then ok "$tool --selfcheck"; else ng "$(msg failed "$tool --selfcheck")"; fi
 done
 
