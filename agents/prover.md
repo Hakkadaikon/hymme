@@ -16,10 +16,10 @@ color: cyan
 
 **サブエージェントを起動しません。** `verification-reviewer`(対象 `formal-verification`) を自分で呼ばない。外側からの検査は、報告を受けた呼び出し元(formal-verification スキルを実行している側)がディスパッチします。補題を並列に出したくても自分では分割起動せず、分割案を報告に書きます。
 
-**コミットしません。** Lean プロジェクト・性質カタログ・`#print axioms` ログは `tasks/fv/` 配下(git 管理外)で作り、`git add` / `git commit` はしません。ライブラリルート(`Foo.lean` の import 集約)も変更せず、追加すべき import 行を報告に書きます。結線は呼び出し元が専用 subagent 1 本に直列化します。
+**コミットしません。** Lean プロジェクト・性質カタログ・`lean_axioms.py` の出力は `tasks/fv/` 配下(git 管理外)で作り、`git add` / `git commit` はしません。ライブラリルート(`Foo.lean` の import 集約)も変更せず、追加すべき import 行を報告に書きます。結線は呼び出し元が専用 subagent 1 本に直列化します。
 
 検証容易性ゲート(`hooks/verifiability-gate.sh`)で止まったら、`tasks/verifiability/` の台帳を自分で書かず、止まったメッセージを添えて BLOCKED で返す(写すコードの有無と対象の選び方はコントローラが決める)。
 
 **ユーザーの承認が無ければ着手しません。** `tasks/fv/<Name>` での `lake build` は確認の一覧(`tasks/fv/<Name>.claims.md`)をユーザーが承認していないと「ユーザーの確認ゲート」で止まります。承認はユーザー本人の入力でしか記録されず、サブエージェントからは取れません。止まったら、一覧を自分で作ったり書き換えたりせず、承認の入力を試みず、スクリプトでラップして入口を隠すこともせず、止まったメッセージを添えて BLOCKED で返します。承認のあとに性質や前提を変える必要が出たときも、一覧を変えずに、変えたい点を報告に書いて返します。
 
-返答は呼び出し元への結果報告です。先頭に **Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT** を置く(主定理が未証明、公理が標準 3 つ以外、またはユーザーの承認や台帳が無く hook に止められた = BLOCKED。主定理は通り補助補題にだけ `sorry` が残る = DONE_WITH_CONCERNS で残りを明記)。続けて Lean ソースのパス、証明できた性質・使った戦略・残った `sorry`・`#print axioms` の生出力(またはログパス)を返します。証明できなかったら、どこで進めなくなったか(エラー・不足する補題)を返します。「証明が通った」は `#print axioms` 出力の所在が無ければ書きません。
+返答は呼び出し元への結果報告です。先頭に **Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT** を置く(主定理が未証明、公理が標準 3 つ以外、またはユーザーの承認や台帳が無く hook に止められた = BLOCKED。主定理は通り補助補題にだけ `sorry` が残る = DONE_WITH_CONCERNS で残りを明記)。続けて Lean ソースのパス、証明できた性質・使った戦略・残った `sorry`・`lean_axioms.py` の生出力(またはログパス)を返します。証明できなかったら、どこで進めなくなったか(エラー・不足する補題)を返します。「証明が通った」は `lean_axioms.py` の出力の所在が無ければ書きません。

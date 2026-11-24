@@ -648,6 +648,15 @@ class ManagedRepoTest(Repo):
         self.write("tasks/fv/Cart/Cart.lean", "axiom cheat : 1 = 2\n")  # the proof changed after the check
         self.assertIn("axioms", self.bash(self.pr)[1])
 
+    def test_two_axiom_checks_in_one_command_pass_neither(self):
+        for name in ("Cart", "Other"):
+            self.write(f"tasks/fv/{name}/{name}.lean", "theorem t : 1 = 1 := rfl\n")
+        self.ran("verifiability.py tasks/verifiability/Cart.md")
+        self.ran("./run-check.sh --all")
+        # the exit code and the ok line may both belong to the other project
+        self.ran("lean_axioms.py tasks/fv/Cart; lean_axioms.py tasks/fv/Other", 0, hook.AXIOMS_OK)
+        self.assertIn("axioms", self.bash(self.pr)[1])
+
     def test_a_proof_that_is_gone_asks_for_no_axiom_check(self):
         self.write("tasks/fv/Cart/Cart.lean", "theorem t : 1 = 1 := rfl\n")
         self.ran("lean_axioms.py tasks/fv/Cart", 0, hook.AXIOMS_OK)

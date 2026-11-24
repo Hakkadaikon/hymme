@@ -238,11 +238,17 @@ def post_tool(payload, key):
             project = next((os.path.normpath(os.path.join(at, a)) for a in args if not a.startswith("-")), "")
             m = re.fullmatch(r"(.*)/tasks/fv/([^/]+)", project)
             if m:
-                # a pipe or `|| true` hides the tool's exit code: a pass is the tool saying so
-                passed = code == 0 and AXIOMS_OK in text
-                rec = {"name": m.group(2), "entry": "axioms", "exit": 0 if passed else code or 1}
-                rec["change"] = ctx.change()
-                store.append("run", {**rec, "proof": checks.proof_hash(m.group(1), m.group(2))}, cwd, key)
+                # a pipe or `|| true` hides the tool's exit code: a pass is the tool saying so. With two
+                # checks in one command, the exit code and the ok line may both belong to the other one.
+                alone = [v for v, _a, _c, _e in gate.commands].count(verb) == 1
+                rec = {
+                    "name": m.group(2),
+                    "entry": "axioms",
+                    "exit": 0 if alone and code == 0 and AXIOMS_OK in text else code or 1,
+                    "change": ctx.change(),
+                    "proof": checks.proof_hash(m.group(1), m.group(2)),
+                }
+                store.append("run", rec, cwd, key)
 
     for name, prefix in ledgers.parity_commands(root).items():
         if command.strip().startswith(prefix):

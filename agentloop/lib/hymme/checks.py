@@ -105,9 +105,8 @@ def claims(ctx):
         text = ledgers.read(path)
         if text is None:
             out.append(msg("claims_missing", path=path, name=name))
-        elif ledgers.claims_problems(text, ledgers.claims_spec(root, name)):
-            why = "; ".join(ledgers.claims_problems(text, ledgers.claims_spec(root, name)))
-            out.append(msg("claims_invalid", path=path, why=why))
+        elif problems := ledgers.claims_problems(text, ledgers.claims_spec(root, name)):
+            out.append(msg("claims_invalid", path=path, why="; ".join(problems)))
         elif not approved(ctx, root, name):
             out.append(msg("claims_unapproved", name=name))
         elif _kind == "trace_check" and chart_problem(ctx, root, name):
